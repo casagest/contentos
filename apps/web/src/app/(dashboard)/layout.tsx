@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "../(auth)/actions";
 import {
   LayoutDashboard,
   MessageSquareText,
@@ -97,7 +98,7 @@ export default function DashboardLayout({
           <Settings className="w-[18px] h-[18px] text-gray-400" />
           <span className="text-sm text-gray-300">Setări</span>
         </Link>
-        <form action="/api/auth/signout" method="post">
+        <form action={logout}>
           <button
             type="submit"
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-white/[0.04] transition"
