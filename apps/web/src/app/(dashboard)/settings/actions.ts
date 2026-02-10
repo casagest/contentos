@@ -56,3 +56,40 @@ export async function saveBusinessProfile(profile: BusinessProfile) {
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+export async function disconnectSocialAccount(accountId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Neautentificat." };
+  }
+
+  // Get user's organization to ensure they own this account
+  const { data: userData } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!userData?.organization_id) {
+    return { error: "Nu s-a găsit organizația." };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("social_accounts")
+    .delete()
+    .eq("id", accountId)
+    .eq("organization_id", userData.organization_id);
+
+  if (deleteError) {
+    return { error: `Eroare la deconectare: ${deleteError.message}` };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
