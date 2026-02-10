@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { logout } from "../(auth)/actions";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -67,6 +68,14 @@ export default async function DashboardLayout({
               <div className="text-xs text-gray-500">Free Plan</div>
             </div>
           </Link>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="mt-2 w-full rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] transition text-left"
+            >
+              Deconectare
+            </button>
+          </form>
         </div>
       </aside>
 
