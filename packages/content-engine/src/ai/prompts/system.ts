@@ -3,7 +3,13 @@
 // ContentOS AI System Prompts — Romanian-Optimized
 // ============================================================
 
-import type { Platform, Language, DentalCategory } from "../../types";
+import type { Platform, Language, ContentType, DentalCategory } from "../../types";
+import {
+  FACEBOOK_METRICS,
+  INSTAGRAM_METRICS,
+  TIKTOK_METRICS,
+  YOUTUBE_METRICS,
+} from "../../types";
 
 // ============================================================
 // BASE SYSTEM PROMPT

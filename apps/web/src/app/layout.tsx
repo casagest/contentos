@@ -1,11 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
 import "./globals.css";
-
-const dmSans = DM_Sans({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-dm-sans",
-});
 
 export const metadata: Metadata = {
   title: "ContentOS — AI Content Intelligence pentru România",
@@ -38,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" className={`${dmSans.variable} dark`} suppressHydrationWarning>
+    <html lang="ro" className="dark" suppressHydrationWarning>
       <body className="min-h-screen font-sans">{children}</body>
     </html>
   );
