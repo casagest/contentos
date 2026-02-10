@@ -1,0 +1,760 @@
+"use client";
+
+import { useEffect, useState, useCallback, useTransition, useRef } from "react";
+import Link from "next/link";
+import {
+  UserPlus,
+  CalendarCheck,
+  CheckCircle2,
+  Euro,
+  TrendingDown,
+  Target,
+  Stethoscope,
+  ClipboardList,
+  Activity,
+  PhoneCall,
+  Star,
+  UtensilsCrossed,
+  ShoppingBag,
+  RefreshCw,
+  Search,
+  Globe,
+  MapPin,
+  Heart,
+  Users,
+  Gift,
+  Share2,
+  Eye,
+  Sparkles,
+  ShoppingCart,
+  CreditCard,
+  Truck,
+  Building2,
+  FolderOpen,
+  Send,
+  MessageSquare,
+  FileText,
+  FileCheck,
+  Rocket,
+  TrendingUp,
+  Plane,
+  Camera,
+  BarChart3,
+  Home,
+  Shirt,
+  GraduationCap,
+  Monitor,
+  Crown,
+  ThumbsUp,
+  Receipt,
+  Zap,
+  Scale,
+  Briefcase,
+  Brain,
+  PenTool,
+  MessageSquareText,
+  Lightbulb,
+  ArrowRight,
+  Settings,
+  ChevronRight,
+  Dumbbell,
+  Loader2,
+  Check,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { getIndustryConfig, INDUSTRY_CONFIGS } from "@/lib/dashboard/industry-config";
+import type { IndustryConfig, KpiConfig, FunnelStage } from "@/lib/dashboard/industry-config";
+import type { BusinessProfile, Industry } from "@contentos/database/schemas/types";
+import { saveKpiValues, quickSetIndustry } from "./actions";
+
+// Icon resolver - maps string names to lucide components
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  UserPlus, CalendarCheck, CheckCircle2, Euro, TrendingDown, Target,
+  Stethoscope, ClipboardList, Activity, PhoneCall, Star, UtensilsCrossed,
+  ShoppingBag, RefreshCw, Search, Globe, MapPin, Heart, Users, Gift,
+  Share2, Eye, Sparkles, ShoppingCart, CreditCard, Truck, Building2,
+  FolderOpen, Send, MessageSquare, FileText, FileCheck, Rocket, TrendingUp,
+  Plane, Camera, BarChart3, Home, Shirt, GraduationCap, Monitor, Crown,
+  ThumbsUp, Receipt, Zap, Scale, Briefcase, Dumbbell,
+};
+
+function getIcon(name: string) {
+  return ICON_MAP[name] || Briefcase;
+}
+
+// Format values based on KPI format type
+function formatKpiValue(value: number, format: string): string {
+  switch (format) {
+    case "currency":
+      return `€${value.toLocaleString("ro-RO")}`;
+    case "percent":
+      return `${value}%`;
+    case "multiplier":
+      return value.toFixed(1);
+    default:
+      return value.toLocaleString("ro-RO");
+  }
+}
+
+// Industry quick-select grid items
+const INDUSTRY_GRID: { value: Industry; label: string; icon: string; color: string }[] = [
+  { value: "dental", label: "Dental", icon: "Stethoscope", color: "#6366f1" },
+  { value: "restaurant", label: "Restaurant", icon: "UtensilsCrossed", color: "#f59e0b" },
+  { value: "fitness", label: "Fitness", icon: "Dumbbell", color: "#10b981" },
+  { value: "beauty", label: "Beauty", icon: "Sparkles", color: "#ec4899" },
+  { value: "ecommerce", label: "E-commerce", icon: "ShoppingCart", color: "#8b5cf6" },
+  { value: "agency", label: "Agenție", icon: "Building2", color: "#06b6d4" },
+  { value: "turism", label: "Turism", icon: "Plane", color: "#f97316" },
+  { value: "altele", label: "Altele", icon: "Briefcase", color: "#64748b" },
+];
+
+// ============================================================
+// Animated Counter Component
+// ============================================================
+function AnimatedNumber({
+  value,
+  format,
+  duration = 1200,
+}: {
+  value: number;
+  format: string;
+  duration?: number;
+}) {
+  const [display, setDisplay] = useState(0);
+  const frameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (value === 0) {
+      setDisplay(0);
+      return;
+    }
+    const start = performance.now();
+    const from = 0;
+    const to = value;
+
+    function animate(now: number) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(from + (to - from) * eased));
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate);
+      }
+    }
+
+    frameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    };
+  }, [value, duration]);
+
+  return <span>{formatKpiValue(display, format)}</span>;
+}
+
+// ============================================================
+// KPI Card Component
+// ============================================================
+function KpiCard({
+  kpi,
+  value,
+  onEdit,
+}: {
+  kpi: KpiConfig;
+  value: number;
+  onEdit: (key: string, value: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [inputVal, setInputVal] = useState(String(value));
+  const Icon = getIcon(kpi.icon);
+
+  function handleSave() {
+    const num = parseFloat(inputVal) || 0;
+    onEdit(kpi.key, num);
+    setEditing(false);
+  }
+
+  return (
+    <div
+      className="group relative rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
+      onClick={() => !editing && setEditing(true)}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: `${kpi.color}15` }}
+        >
+          <Icon className="w-4 h-4" style={{ color: kpi.color }} />
+        </div>
+        {!editing && (
+          <span className="text-[10px] text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
+            click to edit
+          </span>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="number"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") setEditing(false);
+            }}
+            autoFocus
+            className="w-full bg-white/[0.06] border border-white/[0.12] rounded-lg px-2 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          />
+          <button
+            onClick={handleSave}
+            className="p-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white transition"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="text-2xl font-bold text-white dashboard-number-animate">
+          <AnimatedNumber value={value} format={kpi.format} />
+        </div>
+      )}
+
+      <div className="text-xs text-gray-500 mt-1 truncate">{kpi.label}</div>
+    </div>
+  );
+}
+
+// ============================================================
+// Funnel Visualization
+// ============================================================
+function FunnelVisualization({ stages }: { stages: FunnelStage[] }) {
+  return (
+    <div className="space-y-2">
+      {stages.map((stage, i) => {
+        const Icon = getIcon(stage.icon);
+        const widthPercent = 100 - (i / (stages.length - 1)) * 40;
+        const placeholderCount = Math.max(10 - i * 2, 1);
+
+        return (
+          <div key={stage.id} className="group">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: `${stage.color}20` }}
+              >
+                <Icon className="w-4 h-4" style={{ color: stage.color }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-white">{stage.label}</span>
+                  <span className="text-xs text-gray-500">{placeholderCount}</span>
+                </div>
+                <div className="h-6 bg-white/[0.03] rounded-lg overflow-hidden">
+                  <div
+                    className="h-full rounded-lg transition-all duration-1000 ease-out dashboard-bar-animate"
+                    style={{
+                      width: `${widthPercent}%`,
+                      backgroundColor: `${stage.color}30`,
+                      borderRight: `2px solid ${stage.color}`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            {i < stages.length - 1 && (
+              <div className="ml-[18px] h-4 border-l border-dashed border-white/[0.06]" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// Content Calendar Preview (Next 7 Days)
+// ============================================================
+function ContentCalendarPreview() {
+  const days: { label: string; date: string }[] = [];
+  const now = new Date();
+  const dayNames = ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    days.push({
+      label: i === 0 ? "Azi" : i === 1 ? "Mâine" : dayNames[d.getDay()],
+      date: `${d.getDate()}.${String(d.getMonth() + 1).padStart(2, "0")}`,
+    });
+  }
+
+  return (
+    <div className="grid grid-cols-7 gap-1.5">
+      {days.map((day) => (
+        <div
+          key={day.date}
+          className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2 text-center hover:border-brand-500/30 transition group"
+        >
+          <div className="text-[10px] text-gray-500 font-medium">{day.label}</div>
+          <div className="text-xs text-gray-400 mb-2">{day.date}</div>
+          <div className="h-8 flex items-center justify-center">
+            <span className="text-gray-700 text-[10px]">—</span>
+          </div>
+          <Link
+            href="/braindump"
+            className="mt-1 block text-[9px] text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            + Creează
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// AI Content Suggestions
+// ============================================================
+function AiContentSuggestions({ config }: { config: IndustryConfig }) {
+  const suggestions = config.bestPostTypes.slice(0, 3).map((type, i) => {
+    const platforms = ["Instagram", "TikTok", "Facebook"];
+    return {
+      title: `${type} — ${config.contentTips[i % config.contentTips.length]}`,
+      platform: platforms[i % platforms.length],
+      engagement: ["Ridicat", "Mediu-Ridicat", "Ridicat"][i],
+    };
+  });
+
+  return (
+    <div className="space-y-3">
+      {suggestions.map((s, i) => (
+        <div
+          key={i}
+          className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-brand-500/20 transition"
+        >
+          <div className="text-sm text-white font-medium mb-1">{s.title}</div>
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span className="px-2 py-0.5 rounded bg-brand-600/10 text-brand-300 text-[10px]">
+              {s.platform}
+            </span>
+            <span>Engagement estimat: {s.engagement}</span>
+          </div>
+        </div>
+      ))}
+      <Link
+        href="/braindump"
+        className="flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-brand-500/30 text-brand-400 text-sm hover:bg-brand-500/5 transition"
+      >
+        <Brain className="w-4 h-4" />
+        Generează cu AI
+      </Link>
+    </div>
+  );
+}
+
+// ============================================================
+// Industry Tips
+// ============================================================
+function IndustryTips({ tips }: { tips: string[] }) {
+  return (
+    <div className="space-y-2">
+      {tips.map((tip, i) => (
+        <div
+          key={i}
+          className="flex items-start gap-2 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+        >
+          <Lightbulb className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <span className="text-sm text-gray-300">{tip}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// Quick Actions
+// ============================================================
+function QuickActions() {
+  const actions = [
+    { href: "/braindump", label: "Brain Dump", icon: Brain, gradient: "from-purple-600 to-purple-700" },
+    { href: "/compose", label: "Composer", icon: PenTool, gradient: "from-brand-600 to-brand-700" },
+    { href: "/coach", label: "AI Coach", icon: MessageSquareText, gradient: "from-emerald-600 to-emerald-700" },
+    { href: "/analyze", label: "Scorer", icon: BarChart3, gradient: "from-cyan-600 to-cyan-700" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {actions.map((action) => {
+        const Icon = action.icon;
+        return (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="group flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-brand-500/30 transition"
+          >
+            <div
+              className={`w-9 h-9 rounded-lg bg-gradient-to-br ${action.gradient} flex items-center justify-center flex-shrink-0`}
+            >
+              <Icon className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-sm text-gray-300 group-hover:text-white transition">
+              {action.label}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// Empty Activity Feed
+// ============================================================
+function RecentActivityFeed() {
+  return (
+    <div className="space-y-2">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+        >
+          <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
+            <FileText className="w-4 h-4 text-gray-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="h-3 w-2/3 bg-white/[0.04] rounded" />
+            <div className="h-2 w-1/3 bg-white/[0.03] rounded mt-1.5" />
+          </div>
+        </div>
+      ))}
+      <p className="text-xs text-gray-600 text-center py-2">
+        Nicio activitate recentă. Creează primul tău post!
+      </p>
+    </div>
+  );
+}
+
+// ============================================================
+// Onboarding Card (No business profile)
+// ============================================================
+function OnboardingCard({
+  onSelectIndustry,
+  isPending,
+}: {
+  onSelectIndustry: (industry: Industry) => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="rounded-2xl bg-gradient-to-br from-brand-600/10 via-purple-600/5 to-pink-600/10 border border-brand-500/20 p-8 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-pink-500 flex items-center justify-center mx-auto mb-5">
+          <Building2 className="w-8 h-8 text-white" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">
+          Bine ai venit la ContentOS!
+        </h2>
+        <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto">
+          Configurează profilul afacerii tale pentru un dashboard personalizat.
+          Selectează industria ta pentru a începe.
+        </p>
+
+        {isPending && (
+          <div className="flex items-center justify-center gap-2 text-brand-400 mb-4">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Se configurează...</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {INDUSTRY_GRID.map((ind) => {
+            const Icon = getIcon(ind.icon);
+            return (
+              <button
+                key={ind.value}
+                onClick={() => onSelectIndustry(ind.value)}
+                disabled={isPending}
+                className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.2] hover:bg-white/[0.06] transition-all duration-200 disabled:opacity-50"
+              >
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: `${ind.color}15` }}
+                >
+                  <Icon className="w-5 h-5" style={{ color: ind.color }} />
+                </div>
+                <span className="text-xs text-gray-400 group-hover:text-white transition">
+                  {ind.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-2 text-sm text-brand-400 hover:text-brand-300 transition"
+        >
+          Configurare completă
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Main Business Dashboard Page
+// ============================================================
+export default function BusinessDashboardPage() {
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
+  const [kpiValues, setKpiValues] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Load data from Supabase
+  const loadData = useCallback(async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: userData } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!userData?.organization_id) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("settings")
+      .eq("id", userData.organization_id)
+      .single();
+
+    const settings = (org?.settings as Record<string, unknown>) || {};
+    const bp = settings.businessProfile as BusinessProfile | undefined;
+    const kpis = (settings.dashboardKpis as Record<string, number>) || {};
+
+    if (bp?.name || bp?.industry) {
+      setBusinessProfile(bp);
+    }
+    setKpiValues(kpis);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Update clock every minute
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Handle quick industry selection (onboarding)
+  function handleQuickIndustry(industry: Industry) {
+    startTransition(async () => {
+      const result = await quickSetIndustry(industry);
+      if (result.success) {
+        setBusinessProfile({
+          name: "",
+          description: "",
+          industry,
+          tones: [],
+          targetAudience: "",
+          usps: "",
+          avoidPhrases: "",
+          preferredPhrases: "",
+          language: "ro",
+          compliance: [],
+        });
+      }
+    });
+  }
+
+  // Handle KPI value editing
+  function handleKpiEdit(key: string, value: number) {
+    const updated = { ...kpiValues, [key]: value };
+    setKpiValues(updated);
+    startTransition(async () => {
+      await saveKpiValues(updated);
+    });
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-brand-400 animate-spin" />
+      </div>
+    );
+  }
+
+  // No business profile - show onboarding
+  if (!businessProfile || (!businessProfile.name && !businessProfile.industry)) {
+    return <OnboardingCard onSelectIndustry={handleQuickIndustry} isPending={isPending} />;
+  }
+
+  const config = getIndustryConfig(businessProfile.industry);
+  const IndustryIcon = getIcon(config.icon);
+
+  const dateStr = currentTime.toLocaleDateString("ro-RO", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const timeStr = currentTime.toLocaleTimeString("ro-RO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className="space-y-6 dashboard-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: `${config.kpis[0]?.color || "#6366f1"}15` }}
+          >
+            <IndustryIcon
+              className="w-5 h-5"
+              style={{ color: config.kpis[0]?.color || "#6366f1" }}
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-white">
+                {businessProfile.name || "Dashboard"}
+              </h1>
+              <span
+                className="px-2 py-0.5 rounded-md text-[10px] font-medium border"
+                style={{
+                  color: config.kpis[0]?.color || "#6366f1",
+                  borderColor: `${config.kpis[0]?.color || "#6366f1"}30`,
+                  backgroundColor: `${config.kpis[0]?.color || "#6366f1"}10`,
+                }}
+              >
+                {config.label}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 capitalize">{dateStr}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20">
+            <span className="w-2 h-2 rounded-full bg-green-400 dashboard-live-pulse" />
+            <span className="text-xs font-medium text-green-400">LIVE</span>
+          </div>
+          <span className="text-sm text-gray-400">{timeStr}</span>
+          <Link
+            href="/settings"
+            className="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 hover:text-white transition"
+          >
+            <Settings className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {config.kpis.map((kpi) => (
+          <KpiCard
+            key={kpi.key}
+            kpi={kpi}
+            value={kpiValues[kpi.key] ?? kpi.defaultValue}
+            onEdit={handleKpiEdit}
+          />
+        ))}
+      </div>
+
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left Column (60%) */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Funnel Visualization */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <Target className="w-4 h-4 text-brand-400" />
+                Funnel de Conversie
+              </h2>
+              <span className="text-[10px] text-gray-600">Date placeholder</span>
+            </div>
+            <FunnelVisualization stages={config.funnelStages} />
+          </div>
+
+          {/* Content Calendar Preview */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <CalendarCheck className="w-4 h-4 text-purple-400" />
+                Calendar Conținut
+              </h2>
+              <Link
+                href="/braindump"
+                className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1 transition"
+              >
+                Creează post <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <ContentCalendarPreview />
+          </div>
+
+          {/* AI Content Suggestions */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400" />
+                Sugestii AI de Conținut
+              </h2>
+            </div>
+            <AiContentSuggestions config={config} />
+          </div>
+        </div>
+
+        {/* Right Column (40%) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Recent Activity Feed */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              Activitate Recentă
+            </h2>
+            <RecentActivityFeed />
+          </div>
+
+          {/* Industry Tips */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-yellow-400" />
+              Tips pentru {config.label}
+            </h2>
+            <IndustryTips tips={config.contentTips} />
+          </div>
+
+          {/* Quick Actions */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-orange-400" />
+              Acțiuni Rapide
+            </h2>
+            <QuickActions />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
