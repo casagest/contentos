@@ -1,9 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @contentos/web build",
-  "outputDirectory": "apps/web/.next",
+  "rootDirectory": "apps/web",
+  "installCommand": "cd ../.. && pnpm install",
+  "buildCommand": "cd ../.. && pnpm build",
+  "outputDirectory": ".next",
   "ignoreCommand": "npx turbo-ignore @contentos/web",
   "headers": [
     {
