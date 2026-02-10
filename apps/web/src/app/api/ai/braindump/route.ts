@@ -1,28 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-const SYSTEM_PROMPT = `Ești un expert în social media marketing, specializat pe piața românească.
-Generezi conținut viral, optimizat pentru algoritmi, cu diacritice corecte (ă, â, î, ș, ț).
+const SYSTEM_PROMPT = `Esti un expert in social media marketing, specializat pe piata romaneasca.
+Transformi ganduri brute si idei in postari virale, optimizate pentru algoritmi.
 
-REGULI:
-1. Scrie NATIV în română - nu traduce din engleză
-2. Folosește expresii și referințe culturale românești
-3. Adaptează tonul per platformă:
-   - Facebook: conversațional, informativ, comunitate. Lungime optimă: 100-250 cuvinte.
-   - Instagram: vizual, aspirațional, hashtags strategice. Caption + maxim 30 hashtags relevante. Include alt text pentru accesibilitate.
-   - TikTok: hook în primele 2 secunde, trending, Gen Z friendly. Script 15-60 secunde. Include sugestie de sound/trend.
-   - YouTube: SEO optimizat, click-worthy titles, comprehensive descriptions. Include tags și idee thumbnail.
-4. Include CTA-uri clare
-5. Folosește emoji-uri strategic (nu exagerat)
-6. Pentru conținut medical/dental: respectă CMSR 2025 (fără superlative absolute, fără rezultate garantate, include disclaimer "Rezultatele pot varia. Consultați un specialist pentru evaluare personalizată.")
-7. Estimează engagement-ul potențial (Low / Medium / High / Viral Potential)
-8. Oferă 2-3 tips specifice per platformă pentru maximizarea reach-ului
+REGULI STRICTE:
+1. Genereaza continut EXCLUSIV pe baza textului primit de la utilizator - NU inventa informatii, NU presupune domeniul de activitate, NU adauga detalii care nu exista in text
+2. Daca utilizatorul mentioneaza un website sau un brand, NU presupune ce face acel brand - foloseste DOAR informatiile din textul primit
+3. Scrie NATIV in romana cu diacritice corecte (a, a, i, s, t)
+4. Adapteaza tonul si formatul per platforma:
+   - Facebook: conversational, informativ, 100-250 cuvinte, CTA clar
+   - Instagram: vizual, aspirational, caption + 25-30 hashtags relevante, emoji strategic, include alt text
+   - TikTok: hook puternic in primele 2 secunde, script 15-60s, trending sounds, Gen Z friendly
+   - YouTube: titlu SEO click-worthy, descriere 200+ cuvinte cu keywords, 15-20 tags, idee thumbnail
+5. Foloseste expresii si referinte culturale romanesti
+6. Include CTA-uri clare per platforma
+7. Emoji-uri: foloseste strategic, nu exagerat (max 5-7 per post)
+8. Pentru continut medical/dental (DOAR daca utilizatorul mentioneaza explicit):
+   - ZERO superlative absolute (cel mai bun, nr. 1, unic)
+   - ZERO rezultate garantate
+   - Include disclaimer: "Rezultatele pot varia. Consultati un specialist."
+   - ZERO comparatii cu alte clinici
+9. NU inventa statistici, testimoniale sau informatii pe care utilizatorul nu le-a furnizat
+10. Estimeaza engagement-ul potential (Low / Medium / High / Viral Potential)
+11. Ofera 2-3 tips specifice per platforma
 
-FORMAT RĂSPUNS: Răspunde STRICT în JSON valid, fără markdown, fără backticks. Structura exactă:
+FORMAT RASPUNS: Raspunde STRICT in JSON valid, fara markdown, fara backticks. Structura exacta:
 {
   "platforms": {
     "facebook": {
-      "content": "textul complet al postării",
+      "content": "textul complet al postarii",
       "hashtags": ["#hashtag1", "#hashtag2"],
       "estimatedEngagement": "Medium",
       "tips": ["Tip 1", "Tip 2"]
@@ -31,11 +38,11 @@ FORMAT RĂSPUNS: Răspunde STRICT în JSON valid, fără markdown, fără backti
       "caption": "caption-ul complet",
       "hashtags": ["#hashtag1", "#hashtag2", "...max 30"],
       "altText": "descriere imagine pentru accesibilitate",
-      "bestTimeToPost": "ora optimă de postare",
+      "bestTimeToPost": "ora optima de postare",
       "tips": ["Tip 1", "Tip 2"]
     },
     "tiktok": {
-      "hook": "primele 2 secunde - hook-ul care oprește scroll-ul",
+      "hook": "primele 2 secunde - hook-ul care opreste scroll-ul",
       "script": "scriptul complet 15-60s",
       "hashtags": ["#hashtag1", "#hashtag2"],
       "soundSuggestion": "sugestie de sunet/trend",
@@ -43,7 +50,7 @@ FORMAT RĂSPUNS: Răspunde STRICT în JSON valid, fără markdown, fără backti
     },
     "youtube": {
       "title": "titlu SEO optimizat",
-      "description": "descriere completă cu timestamps",
+      "description": "descriere completa cu timestamps",
       "tags": ["tag1", "tag2"],
       "thumbnailIdea": "idee pentru thumbnail",
       "tips": ["Tip 1", "Tip 2"]
@@ -51,7 +58,7 @@ FORMAT RĂSPUNS: Răspunde STRICT în JSON valid, fără markdown, fără backti
   }
 }
 
-Generează DOAR platformele cerute. Nu include platforme care nu sunt în lista cerută.`;
+Genereaza DOAR platformele cerute.`;
 
 interface BrainDumpRequest {
   rawInput: string;
@@ -64,7 +71,7 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Configurare server incompletă. Cheia API lipsește." },
+        { error: "Configurare server incompleta. Cheia API lipseste." },
         { status: 500 }
       );
     }
@@ -80,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     if (!body.platforms?.length) {
       return NextResponse.json(
-        { error: "Selectează cel puțin o platformă." },
+        { error: "Selecteaza cel putin o platforma." },
         { status: 400 }
       );
     }
@@ -90,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     if (!platforms.length) {
       return NextResponse.json(
-        { error: "Nicio platformă validă selectată." },
+        { error: "Nicio platforma valida selectata." },
         { status: 400 }
       );
     }
@@ -98,76 +105,62 @@ export async function POST(request: NextRequest) {
     const language = body.language === "en" ? "en" : "ro";
     const languageInstruction =
       language === "en"
-        ? "\n\nIMPORTANT: The user requested content in ENGLISH. Write all content in English, but keep the same quality and structure."
+        ? "\n\nIMPORTANT: Write all content in ENGLISH."
         : "";
 
-    const userMessage = `Generează conținut optimizat pentru următoarele platforme: ${platforms.join(", ")}.
+    const userMessage = `Genereaza continut optimizat pentru: ${platforms.join(", ")}.
 
-Ideea/Brain dump de la utilizator:
+TEXTUL UTILIZATORULUI (foloseste DOAR aceste informatii, nu inventa nimic in plus):
 """
 ${body.rawInput.slice(0, 4000)}
 """
 ${languageInstruction}
 
-Răspunde STRICT în JSON valid. Generează DOAR pentru platformele: ${platforms.join(", ")}.`;
+Raspunde STRICT in JSON valid. Genereaza DOAR pentru: ${platforms.join(", ")}.`;
 
     const client = new Anthropic({ apiKey });
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: userMessage,
-        },
-      ],
+      messages: [{ role: "user", content: userMessage }],
       system: SYSTEM_PROMPT,
     });
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
       return NextResponse.json(
-        { error: "Răspunsul AI nu conține text." },
+        { error: "Raspunsul AI nu contine text." },
         { status: 500 }
       );
     }
 
     let parsed;
     try {
-      // Try to extract JSON from the response - sometimes the model wraps it
       let jsonText = textBlock.text.trim();
-      // Remove potential markdown code fences
       if (jsonText.startsWith("```")) {
         jsonText = jsonText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
       }
       parsed = JSON.parse(jsonText);
     } catch {
       return NextResponse.json(
-        {
-          error: "Eroare la procesarea răspunsului AI. Încearcă din nou.",
-          raw: textBlock.text,
-        },
+        { error: "Eroare la procesarea raspunsului AI. Incearca din nou.", raw: textBlock.text },
         { status: 500 }
       );
     }
 
     return NextResponse.json(parsed);
   } catch (error: unknown) {
-    // Handle Anthropic-specific errors
     if (error instanceof Anthropic.APIError) {
       if (error.status === 429) {
         return NextResponse.json(
-          {
-            error:
-              "Prea multe cereri. Te rugăm să aștepți câteva secunde și să încerci din nou.",
-          },
+          { error: "Prea multe cereri. Asteapta cateva secunde." },
           { status: 429 }
         );
       }
       if (error.status === 401) {
         return NextResponse.json(
-          { error: "Cheie API invalidă. Verifică configurarea." },
+          { error: "Cheie API invalida." },
           { status: 401 }
         );
       }
@@ -179,10 +172,7 @@ Răspunde STRICT în JSON valid. Generează DOAR pentru platformele: ${platforms
 
     console.error("Brain Dump AI Error:", error);
     return NextResponse.json(
-      {
-        error:
-          "A apărut o eroare neașteptată. Te rugăm să încerci din nou.",
-      },
+      { error: "Eroare neasteptata. Incearca din nou." },
       { status: 500 }
     );
   }

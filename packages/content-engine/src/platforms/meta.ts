@@ -28,17 +28,7 @@ export class FacebookAdapter implements PlatformAdapter {
   // ----------------------------------------------------------
 
   getAuthUrl(redirectUri: string, scopes: string[] = []): string {
-    const defaultScopes = [
-      "pages_show_list",
-      "pages_read_engagement",
-      "pages_read_user_content",
-      "pages_manage_posts",
-      "read_insights",
-      "instagram_basic",
-      "instagram_manage_insights",
-      "instagram_content_publish",
-      "business_management",
-    ];
+    const defaultScopes = ["public_profile"];
 
     const allScopes = [...new Set([...defaultScopes, ...scopes])];
 
@@ -317,7 +307,7 @@ export class FacebookAdapter implements PlatformAdapter {
   }
 
   private extractHashtags(text: string): string[] {
-    const matches = text.match(/#[\wăâîșțĂÂÎȘȚ]+/g);
+    const matches = text.match(/#[\wÄĂ˘Ă®Č™Č›Ä‚Ă‚ĂŽČČš]+/g);
     return matches ? matches.map((h) => h.toLowerCase()) : [];
   }
 
@@ -370,12 +360,7 @@ export class InstagramAdapter implements PlatformAdapter {
       appId: this.appId,
       appSecret: this.appSecret,
     });
-    return fb.getAuthUrl(redirectUri, [
-      ...scopes,
-      "instagram_basic",
-      "instagram_manage_insights",
-      "instagram_content_publish",
-    ]);
+    return fb.getAuthUrl(redirectUri, scopes);
   }
 
   async exchangeCodeForTokens(code: string, redirectUri: string) {
@@ -522,7 +507,7 @@ export class InstagramAdapter implements PlatformAdapter {
   }
 
   private extractHashtags(text: string): string[] {
-    const matches = text.match(/#[\wăâîșțĂÂÎȘȚ]+/g);
+    const matches = text.match(/#[\wÄĂ˘Ă®Č™Č›Ä‚Ă‚ĂŽČČš]+/g);
     return matches ? matches.map((h) => h.toLowerCase()) : [];
   }
 
@@ -629,3 +614,4 @@ interface IGPostRaw {
     }>;
   };
 }
+
