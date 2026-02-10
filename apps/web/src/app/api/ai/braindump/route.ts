@@ -2,23 +2,30 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 const SYSTEM_PROMPT = `Ești un expert în social media marketing, specializat pe piața românească.
-Generezi conținut viral, optimizat pentru algoritmi, cu diacritice corecte (ă, â, î, ș, ț).
+Transformi gânduri brute și idei în postări virale, optimizate pentru algoritmi.
 
-REGULI:
-1. Scrie NATIV în română - nu traduce din engleză
-2. Folosește expresii și referințe culturale românești
-3. Adaptează tonul per platformă:
-   - Facebook: conversațional, informativ, comunitate. Lungime optimă: 100-250 cuvinte.
-   - Instagram: vizual, aspirațional, hashtags strategice. Caption + maxim 30 hashtags relevante. Include alt text pentru accesibilitate.
-   - TikTok: hook în primele 2 secunde, trending, Gen Z friendly. Script 15-60 secunde. Include sugestie de sound/trend.
-   - YouTube: SEO optimizat, click-worthy titles, comprehensive descriptions. Include tags și idee thumbnail.
-4. Include CTA-uri clare
-5. Folosește emoji-uri strategic (nu exagerat)
-6. Pentru conținut medical/dental: respectă CMSR 2025 (fără superlative absolute, fără rezultate garantate, include disclaimer "Rezultatele pot varia. Consultați un specialist pentru evaluare personalizată.")
-7. Estimează engagement-ul potențial (Low / Medium / High / Viral Potential)
-8. Oferă 2-3 tips specifice per platformă pentru maximizarea reach-ului
+REGULI STRICTE:
+1. Generezi conținut EXCLUSIV pe baza textului primit de la utilizator - nu inventa informații
+2. Scrie NATIV în română cu diacritice corecte (ă, â, î, ș, ț)
+3. Adaptează tonul și formatul per platformă:
+   - Facebook: conversațional, informativ, 100-250 cuvinte, CTA clar
+   - Instagram: vizual, aspirațional, caption + 25-30 hashtags relevante, emoji strategic
+   - TikTok: hook puternic în primele 2 secunde, script 15-60s, trending sounds, Gen Z friendly
+   - YouTube: titlu SEO click-worthy, descriere 200+ cuvinte cu keywords, 15-20 tags
+4. Folosește expresii și referințe culturale românești
+5. Include CTA-uri clare per platformă
+6. Emoji-uri: folosește strategic, nu exagerat (max 5-7 per post)
+7. Pentru conținut medical/dental: respectă CMSR 2025:
+   - ZERO superlative absolute (cel mai bun, nr. 1, unic)
+   - ZERO rezultate garantate
+   - Include disclaimer: "Rezultatele pot varia. Consultați un specialist."
+   - ZERO comparații cu alte clinici
+   - ZERO reduceri la acte medicale
+8. NU inventa statistici, testimoniale sau informații pe care utilizatorul nu le-a furnizat
 
-FORMAT RĂSPUNS: Răspunde STRICT în JSON valid, fără markdown, fără backticks. Structura exactă:
+FORMAT RĂSPUNS: Răspunde STRICT în JSON valid conform structurii cerute. Fără markdown, fără backticks, fără text în afara JSON-ului.
+
+Structura exactă:
 {
   "platforms": {
     "facebook": {
@@ -101,15 +108,14 @@ export async function POST(request: NextRequest) {
         ? "\n\nIMPORTANT: The user requested content in ENGLISH. Write all content in English, but keep the same quality and structure."
         : "";
 
-    const userMessage = `Generează conținut optimizat pentru următoarele platforme: ${platforms.join(", ")}.
+    const userMessage = `PLATFORME CERUTE: ${platforms.join(", ")}
 
-Ideea/Brain dump de la utilizator:
+TEXTUL UTILIZATORULUI (transformă DOAR acest conținut în postări social media):
 """
 ${body.rawInput.slice(0, 4000)}
 """
 ${languageInstruction}
-
-Răspunde STRICT în JSON valid. Generează DOAR pentru platformele: ${platforms.join(", ")}.`;
+IMPORTANT: Generează conținut EXCLUSIV pe baza textului de mai sus. Nu adăuga informații, statistici sau detalii care nu sunt menționate în text. Răspunde STRICT în JSON valid. Generează DOAR pentru platformele: ${platforms.join(", ")}.`;
 
     const client = new Anthropic({ apiKey });
 
