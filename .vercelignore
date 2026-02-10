@@ -1,0 +1,20 @@
+# Documentation
+*.md
+LICENSE
+
+# Supabase local config
+supabase/.temp/
+
+# CI/CD
+.github/
+
+# Editor & OS
+.vscode/
+.idea/
+.DS_Store
+
+# Test & coverage
+coverage/
+__tests__/
+*.test.*
+*.spec.*
