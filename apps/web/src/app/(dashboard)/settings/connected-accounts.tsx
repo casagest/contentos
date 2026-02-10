@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect } from "react";
 import {
   Wifi,
   Plus,
@@ -9,7 +9,6 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react";
-import { disconnectSocialAccount } from "./actions";
 
 interface SocialAccount {
   id: string;
@@ -17,9 +16,7 @@ interface SocialAccount {
   platform_username: string;
   platform_name: string;
   avatar_url: string | null;
-  followers_count: number;
   sync_status: string;
-  sync_error: string | null;
   is_active: boolean;
 }
 
@@ -30,13 +27,13 @@ const platformMeta: Record<
   facebook: {
     label: "Facebook",
     color: "bg-blue-600 hover:bg-blue-500",
-    connectUrl: "/api/auth/facebook",
+    connectUrl: "/api/auth/callback/facebook",
     icon: "F",
   },
   instagram: {
     label: "Instagram",
     color: "bg-pink-600 hover:bg-pink-500",
-    connectUrl: "/api/auth/facebook", // Instagram connects via Facebook OAuth
+    connectUrl: "/api/auth/facebook",
     icon: "I",
   },
   tiktok: {
@@ -68,53 +65,105 @@ function platformGradient(platform: string): string {
   }
 }
 
+async function disconnectSocialAccount(accountId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/social-accounts/disconnect?id=${accountId}`, {
+      method: "DELETE",
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      return { success: false, error: error.message || "Failed to disconnect" };
+    }
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: "Network error" };
+  }
+}
+
 export default function ConnectedAccounts({
-  accounts,
   showSuccess,
 }: {
-  accounts: SocialAccount[];
   showSuccess: boolean;
 }) {
-  const [localAccounts, setLocalAccounts] = useState(accounts);
+  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
+  const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [showSuccessBanner, setShowSuccessBanner] = useState(showSuccess);
 
-  const connectedPlatforms = new Set(localAccounts.map((a) => a.platform));
+  // Fetch accounts from API
+  useEffect(() => {
+    fetch("/api/social-accounts")
+      .then((res) => res.json())
+      .then((data) => {
+        setAccounts(data.accounts || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch accounts:", err);
+        setLoading(false);
+      });
+  }, []);
 
-  function handleDisconnect(accountId: string) {
-    if (!confirm("Ești sigur că vrei să deconectezi acest cont?")) return;
+  // Auto-dismiss success banner after 5 seconds
+  useEffect(() => {
+    if (showSuccess) {
+      setShowSuccessBanner(true);
+      const timer = setTimeout(() => {
+        setShowSuccessBanner(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccess]);
+
+  const connectedPlatforms = new Set(accounts.map((a) => a.platform));
+
+  async function handleDisconnect(accountId: string) {
+    if (!confirm("Esti sigur ca vrei sa deconectezi acest cont?")) return;
 
     setDisconnecting(accountId);
-    startTransition(async () => {
-      const result = await disconnectSocialAccount(accountId);
-      if (result.success) {
-        setLocalAccounts((prev) => prev.filter((a) => a.id !== accountId));
-      }
-      setDisconnecting(null);
-    });
+    const result = await disconnectSocialAccount(accountId);
+    if (result.success) {
+      setAccounts((prev) => prev.filter((a) => a.id !== accountId));
+    }
+    setDisconnecting(null);
+  }
+
+  if (loading) {
+    return (
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Wifi className="w-4 h-4 text-gray-400" />
+          <h2 className="text-base font-semibold text-white">Conturi conectate</h2>
+        </div>
+        <div className="text-center py-6 text-gray-500 text-sm">
+          <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+          Se incarca conturile...
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
       <div className="flex items-center gap-2 mb-4">
         <Wifi className="w-4 h-4 text-gray-400" />
-        <h2 className="text-base font-semibold text-white">
-          Conturi conectate
-        </h2>
+        <h2 className="text-base font-semibold text-white">Conturi conectate</h2>
       </div>
 
       {/* Success message */}
-      {showSuccess && (
-        <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+      {showSuccessBanner && (
+        <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-green-400" />
           <span className="text-sm text-green-300">
-            Contul Facebook a fost conectat cu succes!
+            ✓ Contul tau Facebook a fost conectat cu succes!
           </span>
         </div>
       )}
 
       <div className="space-y-3">
-        {localAccounts.map((account) => {
+        {accounts.map((account) => {
           const meta = platformMeta[account.platform];
           const isDisconnecting = disconnecting === account.id;
 
@@ -142,16 +191,7 @@ export default function ConnectedAccounts({
                     {account.platform_name}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span>{meta?.label || account.platform}</span>
-                    {account.followers_count > 0 && (
-                      <>
-                        <span className="text-gray-700">&middot;</span>
-                        <span>
-                          {account.followers_count.toLocaleString("ro-RO")}{" "}
-                          urmăritori
-                        </span>
-                      </>
-                    )}
+                    <span>@{account.platform_username}</span>
                   </div>
                 </div>
               </div>
@@ -165,20 +205,20 @@ export default function ConnectedAccounts({
                 ) : account.sync_status === "error" ? (
                   <span className="flex items-center gap-1 text-xs text-red-400">
                     <AlertCircle className="w-3 h-3" />
-                    {account.sync_error || "Eroare"}
+                    Eroare
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 text-xs text-yellow-400">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    Se sincronizează...
+                    Se sincronizeaza...
                   </span>
                 )}
 
                 <button
                   onClick={() => handleDisconnect(account.id)}
-                  disabled={isDisconnecting || isPending}
+                  disabled={isDisconnecting}
                   className="ml-2 p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition disabled:opacity-50"
-                  title="Deconectează"
+                  title="Deconecteaza"
                 >
                   {isDisconnecting ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -191,17 +231,17 @@ export default function ConnectedAccounts({
           );
         })}
 
-        {localAccounts.length === 0 && (
+        {accounts.length === 0 && (
           <div className="text-center py-6 text-gray-500 text-sm">
-            Niciun cont conectat. Conectează-ți conturile de social media
-            pentru a începe.
+            Niciun cont conectat. Conecteaza-ti conturile de social media
+            pentru a incepe.
           </div>
         )}
 
         {/* Connect more platforms */}
         <div className="pt-3 border-t border-white/[0.06]">
           <p className="text-xs text-gray-500 mb-3">
-            Conectează mai multe platforme:
+            Conecteaza mai multe platforme:
           </p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(platformMeta)

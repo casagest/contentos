@@ -23,7 +23,7 @@ export async function saveBusinessProfile(profile: BusinessProfile) {
     .single();
 
   if (userError || !userData?.organization_id) {
-    return { error: "Nu s-a găsit organizația." };
+    return { error: "Nu s-a gasit organizatia." };
   }
 
   // Fetch current settings to merge
@@ -34,7 +34,7 @@ export async function saveBusinessProfile(profile: BusinessProfile) {
     .single();
 
   if (orgError) {
-    return { error: "Eroare la citirea setărilor." };
+    return { error: "Eroare la citirea setarilor." };
   }
 
   const currentSettings = (org?.settings as Record<string, unknown>) || {};
@@ -50,43 +50,6 @@ export async function saveBusinessProfile(profile: BusinessProfile) {
 
   if (updateError) {
     return { error: `Eroare la salvare: ${updateError.message}` };
-  }
-
-  revalidatePath("/settings");
-  revalidatePath("/dashboard");
-  return { success: true };
-}
-
-export async function disconnectSocialAccount(accountId: string) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Neautentificat." };
-  }
-
-  // Get user's organization to ensure they own this account
-  const { data: userData } = await supabase
-    .from("users")
-    .select("organization_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!userData?.organization_id) {
-    return { error: "Nu s-a găsit organizația." };
-  }
-
-  const { error: deleteError } = await supabase
-    .from("social_accounts")
-    .delete()
-    .eq("id", accountId)
-    .eq("organization_id", userData.organization_id);
-
-  if (deleteError) {
-    return { error: `Eroare la deconectare: ${deleteError.message}` };
   }
 
   revalidatePath("/settings");
