@@ -3,6 +3,87 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import type { BusinessProfile } from "@contentos/database/schemas/types";
 
+const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
+const MAX_URLS = 3;
+const MAX_CHARS_PER_URL = 3000;
+const FETCH_TIMEOUT_MS = 10_000;
+
+function extractUrls(text: string): string[] {
+  const matches = text.match(URL_REGEX);
+  if (!matches) return [];
+  // Deduplicate and limit
+  return [...new Set(matches)].slice(0, MAX_URLS);
+}
+
+function stripHtmlToText(html: string): string {
+  // Remove script and style blocks entirely
+  let text = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, "");
+  // Remove nav and footer blocks
+  text = text.replace(/<nav[\s\S]*?<\/nav>/gi, "");
+  text = text.replace(/<footer[\s\S]*?<\/footer>/gi, "");
+  // Remove header blocks (site headers, not h1-h6)
+  text = text.replace(/<header[\s\S]*?<\/header>/gi, "");
+  // Remove all remaining HTML tags
+  text = text.replace(/<[^>]+>/g, " ");
+  // Decode common HTML entities
+  text = text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&nbsp;/g, " ");
+  // Collapse whitespace
+  text = text.replace(/\s+/g, " ").trim();
+  return text;
+}
+
+async function fetchUrlContent(
+  url: string
+): Promise<{ url: string; content: string } | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; ContentosBot/1.0; +https://contentos.app)",
+        Accept: "text/html, application/xhtml+xml, text/plain",
+      },
+      redirect: "follow",
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type") || "";
+    // Only process text/html or text/plain responses
+    if (
+      !contentType.includes("text/html") &&
+      !contentType.includes("text/plain")
+    ) {
+      return null;
+    }
+
+    const html = await response.text();
+    const text = stripHtmlToText(html);
+
+    if (text.length < 50) return null; // Skip pages with very little content
+
+    return {
+      url,
+      content: text.slice(0, MAX_CHARS_PER_URL),
+    };
+  } catch {
+    // Network error, timeout, or other issue — skip this URL
+    return null;
+  }
+}
+
 const BASE_SYSTEM_PROMPT = `Ești un expert în social media marketing, specializat pe piața românească.
 Transformi gânduri brute și idei în postări virale, optimizate pentru algoritmi.
 
@@ -213,6 +294,22 @@ export async function POST(request: NextRequest) {
       systemPrompt = BASE_SYSTEM_PROMPT;
     }
 
+    // Extract and fetch URL content from user input
+    const urls = extractUrls(body.rawInput);
+    let urlContextBlock = "";
+    if (urls.length > 0) {
+      const results = await Promise.all(urls.map(fetchUrlContent));
+      const fetched = results.filter(
+        (r): r is { url: string; content: string } => r !== null
+      );
+      if (fetched.length > 0) {
+        const sections = fetched
+          .map((r) => `[Conținut extras de la ${r.url}]:\n${r.content}`)
+          .join("\n\n");
+        urlContextBlock = `\n\nCONȚINUT EXTRAS DIN URL-URILE MENȚIONATE:\n${sections}\n`;
+      }
+    }
+
     const language = body.language === "en" ? "en" : "ro";
     const languageInstruction =
       language === "en"
@@ -225,8 +322,8 @@ TEXTUL UTILIZATORULUI (transformă DOAR acest conținut în postări social medi
 """
 ${body.rawInput.slice(0, 4000)}
 """
-${languageInstruction}
-IMPORTANT: Generează conținut EXCLUSIV pe baza textului de mai sus. Nu adăuga informații, statistici sau detalii care nu sunt menționate în text. Răspunde STRICT în JSON valid. Generează DOAR pentru platformele: ${platforms.join(", ")}.`;
+${urlContextBlock}${languageInstruction}
+IMPORTANT: Generează conținut EXCLUSIV pe baza textului de mai sus${urlContextBlock ? " și conținutului extras din URL-uri" : ""}. Nu adăuga informații, statistici sau detalii care nu sunt menționate în text. Răspunde STRICT în JSON valid. Generează DOAR pentru platformele: ${platforms.join(", ")}.`;
 
     const client = new Anthropic({ apiKey });
 
