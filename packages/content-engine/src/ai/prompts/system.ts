@@ -3,7 +3,7 @@
 // ContentOS AI System Prompts — Romanian-Optimized
 // ============================================================
 
-import type { Platform, Language, DentalCategory } from "../../types";
+import type { Platform, Language, ContentType, DentalCategory } from "../../types";
 
 // ============================================================
 // BASE SYSTEM PROMPT
@@ -437,6 +437,58 @@ FORMAT RĂSPUNS (JSON):
   "tips": "..."
 }`;
 }
+
+// ============================================================
+// PLATFORM SCORING METRICS
+// ============================================================
+
+const FACEBOOK_METRICS = [
+  "conversation_quality",
+  "share_with_comment",
+  "dwell_time",
+  "originality",
+  "video_retention",
+  "save_rate",
+  "engagement_bait_check",
+  "link_penalty",
+  "hashtag_optimization",
+] as const;
+
+const INSTAGRAM_METRICS = [
+  "save_to_like_ratio",
+  "reel_completion_rate",
+  "carousel_engagement",
+  "caption_hook",
+  "hashtag_strategy",
+  "visual_quality",
+  "alt_text_seo",
+  "posting_time",
+  "content_originality",
+] as const;
+
+const TIKTOK_METRICS = [
+  "hook_strength",
+  "watch_time_prediction",
+  "loop_potential",
+  "share_probability",
+  "comment_bait",
+  "sound_trend_match",
+  "text_overlay_usage",
+  "pattern_interrupt",
+  "cta_effectiveness",
+] as const;
+
+const YOUTUBE_METRICS = [
+  "thumbnail_ctr_prediction",
+  "title_optimization",
+  "first_30s_retention",
+  "audience_retention",
+  "engagement_signals",
+  "seo_optimization",
+  "chapter_usage",
+  "end_screen_cta",
+  "description_optimization",
+] as const;
 
 // ============================================================
 // ALGORITHM SCORING PROMPT

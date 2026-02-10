@@ -326,11 +326,12 @@ export class FacebookAdapter implements PlatformAdapter {
     return matches ? matches.map((m) => m.toLowerCase()) : [];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async graphRequest(
     endpoint: string,
     accessToken: string,
     params: Record<string, string> = {}
-  ): Promise<Record<string, unknown>> {
+  ): Promise<any> {
     const url = new URL(`${META_GRAPH_API}${endpoint}`);
     url.searchParams.set("access_token", accessToken);
     for (const [key, value] of Object.entries(params)) {
@@ -530,11 +531,12 @@ export class InstagramAdapter implements PlatformAdapter {
     return matches ? matches.map((m) => m.toLowerCase()) : [];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async graphRequest(
     endpoint: string,
     accessToken: string,
     params: Record<string, string> = {}
-  ): Promise<Record<string, unknown>> {
+  ): Promise<any> {
     const url = new URL(`${META_GRAPH_API}${endpoint}`);
     url.searchParams.set("access_token", accessToken);
     for (const [key, value] of Object.entries(params)) {

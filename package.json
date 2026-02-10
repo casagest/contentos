@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "pnpm --filter @contentos/web dev",
     "build": "pnpm --filter @contentos/web build",
-    "lint": "pnpm --filter @contentos/web lint"
+    "lint": "pnpm --filter @contentos/web lint",
+    "type-check": "pnpm --filter @contentos/web type-check"
   },
   "devDependencies": {
     "typescript": "^5.7.0"
