@@ -330,7 +330,8 @@ export class FacebookAdapter implements PlatformAdapter {
     endpoint: string,
     accessToken: string,
     params: Record<string, string> = {}
-  ): Promise<Record<string, unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any> {
     const url = new URL(`${META_GRAPH_API}${endpoint}`);
     url.searchParams.set("access_token", accessToken);
     for (const [key, value] of Object.entries(params)) {
@@ -534,7 +535,8 @@ export class InstagramAdapter implements PlatformAdapter {
     endpoint: string,
     accessToken: string,
     params: Record<string, string> = {}
-  ): Promise<Record<string, unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any> {
     const url = new URL(`${META_GRAPH_API}${endpoint}`);
     url.searchParams.set("access_token", accessToken);
     for (const [key, value] of Object.entries(params)) {
