@@ -93,11 +93,10 @@ export default function CoachPage() {
               <Sparkles className="w-8 h-8 text-emerald-400" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">
-              Cu ce te pot ajuta?
+              Salut! Sunt AI Coach-ul tău de conținut.
             </h2>
             <p className="text-sm text-gray-400 max-w-md mb-8">
-              Sunt coach-ul tău de conținut AI. Pot analiza performanța, sugera
-              strategii și te ajuta să creezi conținut mai bun.
+              Cu ce te pot ajuta?
             </p>
             <div className="space-y-2 w-full max-w-lg">
               {suggestions.map((s) => {

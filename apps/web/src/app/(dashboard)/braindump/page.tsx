@@ -25,6 +25,16 @@ export default function BrainDumpPage() {
     Record<string, { text: string; hashtags: string[] }> | null
   >(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Record<string, boolean>>({
+    facebook: true,
+    instagram: true,
+    tiktok: true,
+    youtube: true,
+  });
+
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms((prev) => ({ ...prev, [platform]: !prev[platform] }));
+  };
 
   const processDump = () => {
     if (!dump.trim()) return;
@@ -32,7 +42,7 @@ export default function BrainDumpPage() {
 
     // Simulated processing (will connect to Claude API in production)
     setTimeout(() => {
-      setResults({
+      const allResults: Record<string, { text: string; hashtags: string[] }> = {
         facebook: {
           text: `Am avut o realizare importantă astăzi: ${dump.slice(0, 80)}...\n\nCe am învățat? Că cei mai buni creatori nu sunt perfecți — sunt consistenți.\n\nVoi? Ce v-a învățat ultima lună despre conținut?`,
           hashtags: [
@@ -71,7 +81,15 @@ export default function BrainDumpPage() {
             "#Romania",
           ],
         },
-      });
+      };
+      // Filter to only selected platforms
+      const filtered: Record<string, { text: string; hashtags: string[] }> = {};
+      for (const [key, value] of Object.entries(allResults)) {
+        if (selectedPlatforms[key]) {
+          filtered[key] = value;
+        }
+      }
+      setResults(filtered);
       setIsProcessing(false);
     }, 2000);
   };
@@ -105,10 +123,24 @@ export default function BrainDumpPage() {
         <textarea
           value={dump}
           onChange={(e) => setDump(e.target.value)}
-          placeholder="Gânduri, idei, note, fragmente... nu contează formatul, AI-ul va organiza totul."
+          placeholder="Aruncă gândurile aici..."
           rows={6}
           className="w-full bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none"
         />
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.06]">
+          <span className="text-xs text-gray-500 mr-1">Platforme:</span>
+          {Object.entries(platformLabels).map(([key, label]) => (
+            <label key={key} className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedPlatforms[key]}
+                onChange={() => togglePlatform(key)}
+                className="w-3.5 h-3.5 rounded border-white/20 bg-white/[0.04] text-brand-600 focus:ring-brand-500/40 focus:ring-offset-0"
+              />
+              <span className="text-xs text-gray-400">{label}</span>
+            </label>
+          ))}
+        </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
           <span className="text-xs text-gray-500">
             {dump.length} caractere
@@ -137,7 +169,7 @@ export default function BrainDumpPage() {
                 </>
               ) : (
                 <>
-                  <Wand2 className="w-3.5 h-3.5" /> Transformă
+                  <Wand2 className="w-3.5 h-3.5" /> Procesează cu AI
                 </>
               )}
             </button>

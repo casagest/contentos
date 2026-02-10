@@ -7,7 +7,6 @@ import {
   Zap,
   PenTool,
   MessageSquareText,
-  BarChart3,
   Brain,
   Search,
   ArrowRight,
@@ -34,32 +33,32 @@ const platformMeta: Record<
 
 const quickActions = [
   {
-    href: "/compose",
-    label: "Creează postare",
-    desc: "Compune conținut optimizat pentru orice platformă",
-    icon: PenTool,
-    gradient: "from-brand-600 to-brand-700",
+    href: "/braindump",
+    label: "Start Brain Dump",
+    desc: "Transformă idei brute în postări optimizate",
+    icon: Brain,
+    gradient: "from-purple-600 to-purple-700",
   },
   {
     href: "/coach",
-    label: "Cere sfat AI",
+    label: "Open AI Coach",
     desc: "Întreabă coach-ul despre strategia ta de conținut",
     icon: MessageSquareText,
     gradient: "from-emerald-600 to-emerald-700",
   },
   {
-    href: "/analyze",
-    label: "Analizează conținut",
-    desc: "Obține scor algoritmic pe postare înainte de publicare",
-    icon: BarChart3,
-    gradient: "from-orange-600 to-orange-700",
+    href: "/compose",
+    label: "Compose Post",
+    desc: "Compune conținut optimizat pentru orice platformă",
+    icon: PenTool,
+    gradient: "from-brand-600 to-brand-700",
   },
   {
-    href: "/braindump",
-    label: "Brain Dump",
-    desc: "Transformă idei brute în postări optimizate",
-    icon: Brain,
-    gradient: "from-purple-600 to-purple-700",
+    href: "/research",
+    label: "Research Account",
+    desc: "Analizează ce funcționează la alți creatori",
+    icon: Search,
+    gradient: "from-cyan-600 to-cyan-700",
   },
 ];
 
@@ -109,22 +108,22 @@ export default async function DashboardPage() {
                 {
                   name: "Facebook",
                   color: "bg-blue-600 hover:bg-blue-500",
-                  href: "/api/auth/callback/facebook",
+                  href: "/settings",
                 },
                 {
                   name: "Instagram",
                   color: "bg-pink-600 hover:bg-pink-500",
-                  href: "/api/auth/callback/instagram",
+                  href: "/settings",
                 },
                 {
                   name: "TikTok",
                   color: "bg-gray-700 hover:bg-gray-600",
-                  href: "/api/auth/callback/tiktok",
+                  href: "/settings",
                 },
                 {
                   name: "YouTube",
                   color: "bg-red-600 hover:bg-red-500",
-                  href: "/api/auth/callback/youtube",
+                  href: "/settings",
                 },
               ].map((platform) => (
                 <a
@@ -223,9 +222,9 @@ export default async function DashboardPage() {
                   <Zap className="w-4 h-4 text-pink-400" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-white">0</div>
+              <div className="text-2xl font-bold text-white">--</div>
               <div className="text-xs text-gray-500 mt-1">
-                Drafturi create
+                AI Score
               </div>
             </div>
           </div>
@@ -338,7 +337,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* Activity Feed */}
+            {/* Activity Feed — empty state */}
             <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-white">
@@ -346,38 +345,14 @@ export default async function DashboardPage() {
                 </h3>
                 <Activity className="w-4 h-4 text-gray-500" />
               </div>
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-2 h-2 rounded-full bg-green-400 mt-1.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-300">
-                      Cont{accounts.length > 1 ? "uri" : ""} conectat
-                      {accounts.length > 1 ? "e" : ""}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {accounts.length} platforme active
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-2 h-2 rounded-full bg-brand-400 mt-1.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-300">
-                      ContentOS este gata
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Folosește Composer sau Coach pentru a începe
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-white/[0.06]">
-                  <Link
-                    href="/history"
-                    className="text-xs text-brand-400 hover:text-brand-300 transition flex items-center gap-1"
-                  >
-                    Vezi tot istoricul <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Activity className="w-8 h-8 text-gray-600 mb-3" />
+                <p className="text-sm text-gray-400 mb-1">
+                  Nicio activitate încă
+                </p>
+                <p className="text-xs text-gray-500">
+                  Activitatea ta va apărea aici pe măsură ce folosești platforma.
+                </p>
               </div>
             </div>
           </div>
