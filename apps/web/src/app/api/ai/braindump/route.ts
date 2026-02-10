@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
+import type { BusinessProfile } from "@contentos/database/schemas/types";
 
-const SYSTEM_PROMPT = `Ești un expert în social media marketing, specializat pe piața românească.
+const BASE_SYSTEM_PROMPT = `Ești un expert în social media marketing, specializat pe piața românească.
 Transformi gânduri brute și idei în postări virale, optimizate pentru algoritmi.
 
 REGULI STRICTE:
@@ -60,6 +62,72 @@ Structura exactă:
 
 Generează DOAR platformele cerute. Nu include platforme care nu sunt în lista cerută.`;
 
+function buildBusinessContextPrompt(bp: BusinessProfile): string {
+  const toneLabels: Record<string, string> = {
+    profesional: "Profesional",
+    prietenos: "Prietenos",
+    amuzant: "Amuzant",
+    educativ: "Educativ",
+    inspirational: "Inspirațional",
+    provocator: "Provocator",
+  };
+
+  const industryLabels: Record<string, string> = {
+    dental: "Dental",
+    medical: "Medical",
+    restaurant: "Restaurant",
+    fitness: "Fitness",
+    beauty: "Beauty",
+    fashion: "Fashion",
+    real_estate: "Real Estate",
+    education: "Educație",
+    tech: "Tech",
+    ecommerce: "E-commerce",
+    turism: "Turism",
+    altele: "Altele",
+  };
+
+  let prompt = `Ești un expert în social media marketing pentru "${bp.name}".
+
+CONTEXT AFACERE:
+- Afacere: ${bp.name}
+- Industrie: ${industryLabels[bp.industry] || bp.industry}
+- Descriere: ${bp.description}
+- Public țintă: ${bp.targetAudience}
+- Diferențiatori: ${bp.usps}
+- Ton comunicare: ${bp.tones.map((t) => toneLabels[t] || t).join(", ")}`;
+
+  if (bp.preferredPhrases) {
+    prompt += `\n- Expresii preferate (include-le natural în conținut): ${bp.preferredPhrases}`;
+  }
+
+  if (bp.avoidPhrases) {
+    prompt += `\n- Expresii de evitat (NU le folosi NICIODATĂ): ${bp.avoidPhrases}`;
+  }
+
+  if (bp.compliance.includes("cmsr_2025")) {
+    prompt += `
+
+REGULI CMSR 2025 (OBLIGATORIU):
+- ZERO superlative absolute ("cel mai bun", "singurul", "nr. 1")
+- ZERO rezultate garantate sau promisiuni de vindecare
+- Include disclaimer: "Rezultatele pot varia de la pacient la pacient"
+- ZERO comparații cu alte clinici sau medici
+- NU folosi "reducere" la acte medicale
+- Menționează consimțământul pacientului pentru imagini before/after`;
+  }
+
+  if (bp.compliance.includes("anaf")) {
+    prompt += `
+
+REGULI ANAF (OBLIGATORIU):
+- Include mențiuni de conformitate fiscală unde e cazul
+- Respectă reglementările privind publicitatea serviciilor financiare/fiscale`;
+  }
+
+  return prompt;
+}
+
 interface BrainDumpRequest {
   rawInput: string;
   platforms: string[];
@@ -102,6 +170,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch business profile from user's organization
+    let businessProfile: BusinessProfile | null = null;
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("organization_id")
+          .eq("id", user.id)
+          .single();
+
+        if (userData?.organization_id) {
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("settings")
+            .eq("id", userData.organization_id)
+            .single();
+
+          const settings = org?.settings as Record<string, unknown> | null;
+          if (settings?.businessProfile) {
+            businessProfile = settings.businessProfile as BusinessProfile;
+          }
+        }
+      }
+    } catch {
+      // If we can't fetch business profile, continue with generic prompt
+    }
+
+    // Build system prompt with or without business context
+    let systemPrompt: string;
+    if (businessProfile?.name) {
+      systemPrompt =
+        buildBusinessContextPrompt(businessProfile) +
+        "\n\n" +
+        BASE_SYSTEM_PROMPT;
+    } else {
+      systemPrompt = BASE_SYSTEM_PROMPT;
+    }
+
     const language = body.language === "en" ? "en" : "ro";
     const languageInstruction =
       language === "en"
@@ -128,7 +239,7 @@ IMPORTANT: Generează conținut EXCLUSIV pe baza textului de mai sus. Nu adăuga
           content: userMessage,
         },
       ],
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
     });
 
     const textBlock = message.content.find((block) => block.type === "text");

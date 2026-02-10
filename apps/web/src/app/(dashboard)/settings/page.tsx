@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import BusinessProfileForm from "./business-profile-form";
+import type { BusinessProfile } from "@contentos/database/schemas/types";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -22,6 +24,29 @@ export default async function SettingsPage() {
     .from("social_accounts")
     .select("*")
     .order("created_at", { ascending: false });
+
+  // Fetch organization business profile
+  let businessProfile: BusinessProfile | null = null;
+  if (user) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+
+    if (userData?.organization_id) {
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("settings")
+        .eq("id", userData.organization_id)
+        .single();
+
+      const settings = org?.settings as Record<string, unknown> | null;
+      if (settings?.businessProfile) {
+        businessProfile = settings.businessProfile as BusinessProfile;
+      }
+    }
+  }
 
   const platformMeta: Record<
     string,
@@ -101,6 +126,9 @@ export default async function SettingsPage() {
             </button>
           </div>
         </div>
+
+        {/* Business Profile */}
+        <BusinessProfileForm initialProfile={businessProfile} />
 
         {/* Connected accounts */}
         <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
