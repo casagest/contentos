@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@contentos/content-engine": ["./packages/content-engine/src"],
+      "@contentos/content-engine/*": ["./packages/content-engine/src/*"],
+      "@contentos/database": ["./packages/database/src"],
+      "@contentos/database/*": ["./packages/database/src/*"],
+      "@contentos/ui": ["./packages/ui/src"],
+      "@contentos/ui/*": ["./packages/ui/src/*"],
+      "@contentos/shared": ["./packages/shared/src"],
+      "@contentos/shared/*": ["./packages/shared/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next", ".turbo"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "contentos",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @contentos/web dev",
+    "build": "pnpm --filter @contentos/web build",
+    "lint": "pnpm --filter @contentos/web lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
