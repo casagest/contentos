@@ -47,12 +47,27 @@ export default async function RegisterPage({
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
         </div>
       )}
 
       <form action={register} className="space-y-4">
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1.5">
+            Nume
+          </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            required
+            autoComplete="name"
+            placeholder="Numele tău"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+          />
+        </div>
+
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
             Email
@@ -64,7 +79,7 @@ export default async function RegisterPage({
             required
             autoComplete="email"
             placeholder="tu@exemplu.ro"
-            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -80,13 +95,13 @@ export default async function RegisterPage({
             autoComplete="new-password"
             minLength={6}
             placeholder="Minimum 6 caractere"
-            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full rounded-lg bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
+          className="w-full rounded-xl bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
         >
           Creează cont
         </button>

@@ -8,7 +8,7 @@ export const metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; redirect?: string; success?: string }>;
+  searchParams: Promise<{ error?: string; redirect?: string }>;
 }) {
   const params = await searchParams;
   const error = params.error;
@@ -24,8 +24,10 @@ export default async function LoginPage({
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
+        <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error === "Invalid login credentials"
+            ? "Email sau parolă incorectă."
+            : error}
         </div>
       )}
 
@@ -43,14 +45,22 @@ export default async function LoginPage({
             required
             autoComplete="email"
             placeholder="tu@exemplu.ro"
-            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1.5">
-            Parolă
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+              Parolă
+            </label>
+            <Link
+              href="/reset-password"
+              className="text-xs text-brand-400 hover:text-brand-300 transition"
+            >
+              Ai uitat parola?
+            </Link>
+          </div>
           <input
             id="password"
             name="password"
@@ -58,13 +68,13 @@ export default async function LoginPage({
             required
             autoComplete="current-password"
             placeholder="••••••••"
-            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full rounded-lg bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
+          className="w-full rounded-xl bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
         >
           Conectare
         </button>

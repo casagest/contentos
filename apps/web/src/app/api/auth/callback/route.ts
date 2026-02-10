@@ -3,18 +3,11 @@ import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as
-    | "signup"
-    | "email"
-    | "recovery"
-    | "invite"
-    | null;
+  const code = searchParams.get("code");
   const next = searchParams.get("next") || "/dashboard";
 
-  if (token_hash && type) {
-    const redirectTo = new URL(next, request.url);
-    const supabaseResponse = NextResponse.redirect(redirectTo);
+  if (code) {
+    const supabaseResponse = NextResponse.redirect(new URL(next, request.url));
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,17 +26,15 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
       return supabaseResponse;
     }
   }
 
+  // If no code or exchange failed, redirect to login with error
   return NextResponse.redirect(
-    new URL("/login?error=confirmation_failed", request.url)
+    new URL("/login?error=auth_callback_failed", request.url)
   );
 }

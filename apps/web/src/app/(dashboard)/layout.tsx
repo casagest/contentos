@@ -20,7 +20,9 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/login");
@@ -36,7 +38,9 @@ export default async function DashboardLayout({
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
               C
             </div>
-            <span className="text-lg font-bold text-white tracking-tight">ContentOS</span>
+            <span className="text-lg font-bold text-white tracking-tight">
+              ContentOS
+            </span>
           </Link>
         </div>
 
