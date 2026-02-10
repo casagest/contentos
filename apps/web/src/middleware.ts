@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
-  const authPaths = ["/login", "/register"];
+  const authPaths = ["/login", "/register", "/reset-password"];
   const isAuthPage = authPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
