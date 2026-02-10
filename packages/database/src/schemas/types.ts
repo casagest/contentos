@@ -42,6 +42,49 @@ export type DentalCategory =
   | "technology";
 
 // ============================================================
+// Business Profile (stored in organizations.settings JSONB)
+// ============================================================
+
+export type Industry =
+  | "dental"
+  | "medical"
+  | "restaurant"
+  | "fitness"
+  | "beauty"
+  | "fashion"
+  | "real_estate"
+  | "education"
+  | "tech"
+  | "ecommerce"
+  | "turism"
+  | "altele";
+
+export type CommunicationTone =
+  | "profesional"
+  | "prietenos"
+  | "amuzant"
+  | "educativ"
+  | "inspirational"
+  | "provocator";
+
+export type BusinessLanguage = "ro" | "en" | "de";
+
+export type ComplianceRule = "cmsr_2025" | "anaf";
+
+export interface BusinessProfile {
+  name: string;
+  description: string;
+  industry: Industry;
+  tones: CommunicationTone[];
+  targetAudience: string;
+  usps: string;
+  avoidPhrases: string;
+  preferredPhrases: string;
+  language: BusinessLanguage;
+  compliance: ComplianceRule[];
+}
+
+// ============================================================
 // Table interfaces
 // ============================================================
 

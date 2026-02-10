@@ -21,7 +21,7 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/business", label: "Dashboard", icon: LayoutDashboard },
   { href: "/coach", label: "AI Coach", icon: MessageSquareText },
   { href: "/compose", label: "Composer", icon: PenTool },
   { href: "/analyze", label: "Scorer", icon: BarChart3 },
@@ -40,7 +40,8 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
+    if (href === "/dashboard/business")
+      return pathname === "/dashboard" || pathname.startsWith("/dashboard");
     return pathname.startsWith(href);
   };
 

@@ -213,11 +213,10 @@ STRUCTURĂ OPTIMĂ:
 - Timeline-ul tratamentului (ex: "De la edentație totală la zâmbet complet în 5 zile")
 - CTA: programare consultație gratuită
 
-SPECIFICUL ALL-ON-X (MedicalCor):
+SPECIFICUL ALL-ON-X:
 - Subliniază diferența: 5 zile vs 6 luni standard
-- "One Step All-on-X" ca brand differentiator  
 - Menționează materialele premium folosite
-- Target: pacienți din UK, DE, EU (conținut multi-limbă)`,
+- Adaptează conținutul pe baza informațiilor furnizate de utilizator`,
 
   patient_testimonial: `TESTIMONIAL PACIENT:
 

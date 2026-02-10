@@ -1,35 +1,118 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
+import type { BusinessProfile } from "@contentos/database/schemas/types";
 
-const SYSTEM_PROMPT = `Esti un expert in social media marketing, specializat pe piata romaneasca.
-Transformi ganduri brute si idei in postari virale, optimizate pentru algoritmi.
+const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
+const MAX_URLS = 3;
+const MAX_CHARS_PER_URL = 3000;
+const FETCH_TIMEOUT_MS = 10_000;
+
+function extractUrls(text: string): string[] {
+  const matches = text.match(URL_REGEX);
+  if (!matches) return [];
+  // Deduplicate and limit
+  return [...new Set(matches)].slice(0, MAX_URLS);
+}
+
+function stripHtmlToText(html: string): string {
+  // Remove script and style blocks entirely
+  let text = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, "");
+  // Remove nav and footer blocks
+  text = text.replace(/<nav[\s\S]*?<\/nav>/gi, "");
+  text = text.replace(/<footer[\s\S]*?<\/footer>/gi, "");
+  // Remove header blocks (site headers, not h1-h6)
+  text = text.replace(/<header[\s\S]*?<\/header>/gi, "");
+  // Remove all remaining HTML tags
+  text = text.replace(/<[^>]+>/g, " ");
+  // Decode common HTML entities
+  text = text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&nbsp;/g, " ");
+  // Collapse whitespace
+  text = text.replace(/\s+/g, " ").trim();
+  return text;
+}
+
+async function fetchUrlContent(
+  url: string
+): Promise<{ url: string; content: string } | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; ContentosBot/1.0; +https://contentos.app)",
+        Accept: "text/html, application/xhtml+xml, text/plain",
+      },
+      redirect: "follow",
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type") || "";
+    // Only process text/html or text/plain responses
+    if (
+      !contentType.includes("text/html") &&
+      !contentType.includes("text/plain")
+    ) {
+      return null;
+    }
+
+    const html = await response.text();
+    const text = stripHtmlToText(html);
+
+    if (text.length < 50) return null; // Skip pages with very little content
+
+    return {
+      url,
+      content: text.slice(0, MAX_CHARS_PER_URL),
+    };
+  } catch {
+    // Network error, timeout, or other issue — skip this URL
+    return null;
+  }
+}
+
+const BASE_SYSTEM_PROMPT = `Ești un expert în social media marketing, specializat pe piața românească.
+Transformi gânduri brute și idei în postări virale, optimizate pentru algoritmi.
 
 REGULI STRICTE:
-1. Genereaza continut EXCLUSIV pe baza textului primit de la utilizator - NU inventa informatii, NU presupune domeniul de activitate, NU adauga detalii care nu exista in text
-2. Daca utilizatorul mentioneaza un website sau un brand, NU presupune ce face acel brand - foloseste DOAR informatiile din textul primit
-3. Scrie NATIV in romana cu diacritice corecte (a, a, i, s, t)
-4. Adapteaza tonul si formatul per platforma:
-   - Facebook: conversational, informativ, 100-250 cuvinte, CTA clar
-   - Instagram: vizual, aspirational, caption + 25-30 hashtags relevante, emoji strategic, include alt text
-   - TikTok: hook puternic in primele 2 secunde, script 15-60s, trending sounds, Gen Z friendly
-   - YouTube: titlu SEO click-worthy, descriere 200+ cuvinte cu keywords, 15-20 tags, idee thumbnail
-5. Foloseste expresii si referinte culturale romanesti
-6. Include CTA-uri clare per platforma
-7. Emoji-uri: foloseste strategic, nu exagerat (max 5-7 per post)
-8. Pentru continut medical/dental (DOAR daca utilizatorul mentioneaza explicit):
+1. Generezi conținut EXCLUSIV pe baza textului primit de la utilizator - nu inventa informații
+2. Scrie NATIV în română cu diacritice corecte (ă, â, î, ș, ț)
+3. Adaptează tonul și formatul per platformă:
+   - Facebook: conversațional, informativ, 100-250 cuvinte, CTA clar
+   - Instagram: vizual, aspirațional, caption + 25-30 hashtags relevante, emoji strategic
+   - TikTok: hook puternic în primele 2 secunde, script 15-60s, trending sounds, Gen Z friendly
+   - YouTube: titlu SEO click-worthy, descriere 200+ cuvinte cu keywords, 15-20 tags
+4. Folosește expresii și referințe culturale românești
+5. Include CTA-uri clare per platformă
+6. Emoji-uri: folosește strategic, nu exagerat (max 5-7 per post)
+7. Pentru conținut medical/dental: respectă CMSR 2025:
    - ZERO superlative absolute (cel mai bun, nr. 1, unic)
    - ZERO rezultate garantate
-   - Include disclaimer: "Rezultatele pot varia. Consultati un specialist."
-   - ZERO comparatii cu alte clinici
-9. NU inventa statistici, testimoniale sau informatii pe care utilizatorul nu le-a furnizat
-10. Estimeaza engagement-ul potential (Low / Medium / High / Viral Potential)
-11. Ofera 2-3 tips specifice per platforma
+   - Include disclaimer: "Rezultatele pot varia. Consultați un specialist."
+   - ZERO comparații cu alte clinici
+   - ZERO reduceri la acte medicale
+8. NU inventa statistici, testimoniale sau informații pe care utilizatorul nu le-a furnizat
 
-FORMAT RASPUNS: Raspunde STRICT in JSON valid, fara markdown, fara backticks. Structura exacta:
+FORMAT RĂSPUNS: Răspunde STRICT în JSON valid conform structurii cerute. Fără markdown, fără backticks, fără text în afara JSON-ului.
+
+Structura exactă:
 {
   "platforms": {
     "facebook": {
-      "content": "textul complet al postarii",
+      "content": "textul complet al postării",
       "hashtags": ["#hashtag1", "#hashtag2"],
       "estimatedEngagement": "Medium",
       "tips": ["Tip 1", "Tip 2"]
@@ -38,11 +121,11 @@ FORMAT RASPUNS: Raspunde STRICT in JSON valid, fara markdown, fara backticks. St
       "caption": "caption-ul complet",
       "hashtags": ["#hashtag1", "#hashtag2", "...max 30"],
       "altText": "descriere imagine pentru accesibilitate",
-      "bestTimeToPost": "ora optima de postare",
+      "bestTimeToPost": "ora optimă de postare",
       "tips": ["Tip 1", "Tip 2"]
     },
     "tiktok": {
-      "hook": "primele 2 secunde - hook-ul care opreste scroll-ul",
+      "hook": "primele 2 secunde - hook-ul care oprește scroll-ul",
       "script": "scriptul complet 15-60s",
       "hashtags": ["#hashtag1", "#hashtag2"],
       "soundSuggestion": "sugestie de sunet/trend",
@@ -50,7 +133,7 @@ FORMAT RASPUNS: Raspunde STRICT in JSON valid, fara markdown, fara backticks. St
     },
     "youtube": {
       "title": "titlu SEO optimizat",
-      "description": "descriere completa cu timestamps",
+      "description": "descriere completă cu timestamps",
       "tags": ["tag1", "tag2"],
       "thumbnailIdea": "idee pentru thumbnail",
       "tips": ["Tip 1", "Tip 2"]
@@ -58,7 +141,73 @@ FORMAT RASPUNS: Raspunde STRICT in JSON valid, fara markdown, fara backticks. St
   }
 }
 
-Genereaza DOAR platformele cerute.`;
+Generează DOAR platformele cerute. Nu include platforme care nu sunt în lista cerută.`;
+
+function buildBusinessContextPrompt(bp: BusinessProfile): string {
+  const toneLabels: Record<string, string> = {
+    profesional: "Profesional",
+    prietenos: "Prietenos",
+    amuzant: "Amuzant",
+    educativ: "Educativ",
+    inspirational: "Inspirațional",
+    provocator: "Provocator",
+  };
+
+  const industryLabels: Record<string, string> = {
+    dental: "Dental",
+    medical: "Medical",
+    restaurant: "Restaurant",
+    fitness: "Fitness",
+    beauty: "Beauty",
+    fashion: "Fashion",
+    real_estate: "Real Estate",
+    education: "Educație",
+    tech: "Tech",
+    ecommerce: "E-commerce",
+    turism: "Turism",
+    altele: "Altele",
+  };
+
+  let prompt = `Ești un expert în social media marketing pentru "${bp.name}".
+
+CONTEXT AFACERE:
+- Afacere: ${bp.name}
+- Industrie: ${industryLabels[bp.industry] || bp.industry}
+- Descriere: ${bp.description}
+- Public țintă: ${bp.targetAudience}
+- Diferențiatori: ${bp.usps}
+- Ton comunicare: ${bp.tones.map((t) => toneLabels[t] || t).join(", ")}`;
+
+  if (bp.preferredPhrases) {
+    prompt += `\n- Expresii preferate (include-le natural în conținut): ${bp.preferredPhrases}`;
+  }
+
+  if (bp.avoidPhrases) {
+    prompt += `\n- Expresii de evitat (NU le folosi NICIODATĂ): ${bp.avoidPhrases}`;
+  }
+
+  if (bp.compliance.includes("cmsr_2025")) {
+    prompt += `
+
+REGULI CMSR 2025 (OBLIGATORIU):
+- ZERO superlative absolute ("cel mai bun", "singurul", "nr. 1")
+- ZERO rezultate garantate sau promisiuni de vindecare
+- Include disclaimer: "Rezultatele pot varia de la pacient la pacient"
+- ZERO comparații cu alte clinici sau medici
+- NU folosi "reducere" la acte medicale
+- Menționează consimțământul pacientului pentru imagini before/after`;
+  }
+
+  if (bp.compliance.includes("anaf")) {
+    prompt += `
+
+REGULI ANAF (OBLIGATORIU):
+- Include mențiuni de conformitate fiscală unde e cazul
+- Respectă reglementările privind publicitatea serviciilor financiare/fiscale`;
+  }
+
+  return prompt;
+}
 
 interface BrainDumpRequest {
   rawInput: string;
@@ -71,7 +220,7 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Configurare server incompleta. Cheia API lipseste." },
+        { error: "Configurare server incompletă. Cheia API lipsește." },
         { status: 500 }
       );
     }
@@ -87,7 +236,7 @@ export async function POST(request: NextRequest) {
 
     if (!body.platforms?.length) {
       return NextResponse.json(
-        { error: "Selecteaza cel putin o platforma." },
+        { error: "Selectează cel puțin o platformă." },
         { status: 400 }
       );
     }
@@ -97,70 +246,142 @@ export async function POST(request: NextRequest) {
 
     if (!platforms.length) {
       return NextResponse.json(
-        { error: "Nicio platforma valida selectata." },
+        { error: "Nicio platformă validă selectată." },
         { status: 400 }
       );
+    }
+
+    // Fetch business profile from user's organization
+    let businessProfile: BusinessProfile | null = null;
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("organization_id")
+          .eq("id", user.id)
+          .single();
+
+        if (userData?.organization_id) {
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("settings")
+            .eq("id", userData.organization_id)
+            .single();
+
+          const settings = org?.settings as Record<string, unknown> | null;
+          if (settings?.businessProfile) {
+            businessProfile = settings.businessProfile as BusinessProfile;
+          }
+        }
+      }
+    } catch {
+      // If we can't fetch business profile, continue with generic prompt
+    }
+
+    // Build system prompt with or without business context
+    let systemPrompt: string;
+    if (businessProfile?.name) {
+      systemPrompt =
+        buildBusinessContextPrompt(businessProfile) +
+        "\n\n" +
+        BASE_SYSTEM_PROMPT;
+    } else {
+      systemPrompt = BASE_SYSTEM_PROMPT;
+    }
+
+    // Extract and fetch URL content from user input
+    const urls = extractUrls(body.rawInput);
+    let urlContextBlock = "";
+    if (urls.length > 0) {
+      const results = await Promise.all(urls.map(fetchUrlContent));
+      const fetched = results.filter(
+        (r): r is { url: string; content: string } => r !== null
+      );
+      if (fetched.length > 0) {
+        const sections = fetched
+          .map((r) => `[Conținut extras de la ${r.url}]:\n${r.content}`)
+          .join("\n\n");
+        urlContextBlock = `\n\nCONȚINUT EXTRAS DIN URL-URILE MENȚIONATE:\n${sections}\n`;
+      }
     }
 
     const language = body.language === "en" ? "en" : "ro";
     const languageInstruction =
       language === "en"
-        ? "\n\nIMPORTANT: Write all content in ENGLISH."
+        ? "\n\nIMPORTANT: The user requested content in ENGLISH. Write all content in English, but keep the same quality and structure."
         : "";
 
-    const userMessage = `Genereaza continut optimizat pentru: ${platforms.join(", ")}.
+    const userMessage = `PLATFORME CERUTE: ${platforms.join(", ")}
 
-TEXTUL UTILIZATORULUI (foloseste DOAR aceste informatii, nu inventa nimic in plus):
+TEXTUL UTILIZATORULUI (transformă DOAR acest conținut în postări social media):
 """
 ${body.rawInput.slice(0, 4000)}
 """
-${languageInstruction}
-
-Raspunde STRICT in JSON valid. Genereaza DOAR pentru: ${platforms.join(", ")}.`;
+${urlContextBlock}${languageInstruction}
+IMPORTANT: Generează conținut EXCLUSIV pe baza textului de mai sus${urlContextBlock ? " și conținutului extras din URL-uri" : ""}. Nu adăuga informații, statistici sau detalii care nu sunt menționate în text. Răspunde STRICT în JSON valid. Generează DOAR pentru platformele: ${platforms.join(", ")}.`;
 
     const client = new Anthropic({ apiKey });
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
-      messages: [{ role: "user", content: userMessage }],
-      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: userMessage,
+        },
+      ],
+      system: systemPrompt,
     });
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
       return NextResponse.json(
-        { error: "Raspunsul AI nu contine text." },
+        { error: "Răspunsul AI nu conține text." },
         { status: 500 }
       );
     }
 
     let parsed;
     try {
+      // Try to extract JSON from the response - sometimes the model wraps it
       let jsonText = textBlock.text.trim();
+      // Remove potential markdown code fences
       if (jsonText.startsWith("```")) {
         jsonText = jsonText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
       }
       parsed = JSON.parse(jsonText);
     } catch {
       return NextResponse.json(
-        { error: "Eroare la procesarea raspunsului AI. Incearca din nou.", raw: textBlock.text },
+        {
+          error: "Eroare la procesarea răspunsului AI. Încearcă din nou.",
+          raw: textBlock.text,
+        },
         { status: 500 }
       );
     }
 
     return NextResponse.json(parsed);
   } catch (error: unknown) {
+    // Handle Anthropic-specific errors
     if (error instanceof Anthropic.APIError) {
       if (error.status === 429) {
         return NextResponse.json(
-          { error: "Prea multe cereri. Asteapta cateva secunde." },
+          {
+            error:
+              "Prea multe cereri. Te rugăm să aștepți câteva secunde și să încerci din nou.",
+          },
           { status: 429 }
         );
       }
       if (error.status === 401) {
         return NextResponse.json(
-          { error: "Cheie API invalida." },
+          { error: "Cheie API invalidă. Verifică configurarea." },
           { status: 401 }
         );
       }
@@ -172,7 +393,10 @@ Raspunde STRICT in JSON valid. Genereaza DOAR pentru: ${platforms.join(", ")}.`;
 
     console.error("Brain Dump AI Error:", error);
     return NextResponse.json(
-      { error: "Eroare neasteptata. Incearca din nou." },
+      {
+        error:
+          "A apărut o eroare neașteptată. Te rugăm să încerci din nou.",
+      },
       { status: 500 }
     );
   }

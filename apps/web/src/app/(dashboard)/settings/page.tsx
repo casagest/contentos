@@ -5,13 +5,18 @@ import {
   CreditCard,
   Bell,
   Shield,
-  Wifi,
-  Plus,
   CheckCircle2,
-  AlertCircle,
 } from "lucide-react";
+import BusinessProfileForm from "./business-profile-form";
+import ConnectedAccounts from "./connected-accounts";
+import type { BusinessProfile } from "@contentos/database/schemas/types";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -23,35 +28,30 @@ export default async function SettingsPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  const platformMeta: Record<
-    string,
-    { label: string; color: string; connectUrl: string }
-  > = {
-    facebook: {
-      label: "Facebook",
-      color: "bg-blue-600 hover:bg-blue-500",
-      connectUrl: "/api/auth/callback/facebook",
-    },
-    instagram: {
-      label: "Instagram",
-      color: "bg-pink-600 hover:bg-pink-500",
-      connectUrl: "/api/auth/callback/instagram",
-    },
-    tiktok: {
-      label: "TikTok",
-      color: "bg-gray-700 hover:bg-gray-600",
-      connectUrl: "/api/auth/callback/tiktok",
-    },
-    youtube: {
-      label: "YouTube",
-      color: "bg-red-600 hover:bg-red-500",
-      connectUrl: "/api/auth/callback/youtube",
-    },
-  };
+  // Fetch organization business profile
+  let businessProfile: BusinessProfile | null = null;
+  if (user) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
 
-  const connectedPlatforms = new Set(
-    (accounts || []).map((a: Record<string, unknown>) => a.platform)
-  );
+    if (userData?.organization_id) {
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("settings")
+        .eq("id", userData.organization_id)
+        .single();
+
+      const settings = org?.settings as Record<string, unknown> | null;
+      if (settings?.businessProfile) {
+        businessProfile = settings.businessProfile as BusinessProfile;
+      }
+    }
+  }
+
+  const showSuccess = params.connected === "facebook";
 
   return (
     <div>
@@ -102,86 +102,24 @@ export default async function SettingsPage() {
           </div>
         </div>
 
+        {/* Business Profile */}
+        <BusinessProfileForm initialProfile={businessProfile} />
+
         {/* Connected accounts */}
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Wifi className="w-4 h-4 text-gray-400" />
-            <h2 className="text-base font-semibold text-white">
-              Conturi conectate
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {(accounts || []).map((account: Record<string, unknown>) => {
-              const platform = account.platform as string;
-              const meta = platformMeta[platform];
-              return (
-                <div
-                  key={account.id as string}
-                  className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-xs font-bold text-white">
-                      {meta?.label[0] || "?"}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white">
-                        @{account.platform_username as string}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {meta?.label || platform}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {account.sync_status === "synced" ? (
-                      <span className="flex items-center gap-1 text-xs text-green-400">
-                        <CheckCircle2 className="w-3 h-3" /> Conectat
-                      </span>
-                    ) : account.sync_status === "error" ? (
-                      <span className="flex items-center gap-1 text-xs text-red-400">
-                        <AlertCircle className="w-3 h-3" /> Eroare
-                      </span>
-                    ) : (
-                      <span className="text-xs text-yellow-400">
-                        Se sincronizează...
-                      </span>
-                    )}
-                    <button className="text-xs text-gray-500 hover:text-red-400 transition ml-2">
-                      Deconectează
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Connect more platforms */}
-            <div className="pt-3 border-t border-white/[0.06]">
-              <p className="text-xs text-gray-500 mb-3">
-                Conectează mai multe platforme:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(platformMeta)
-                  .filter(([key]) => !connectedPlatforms.has(key))
-                  .map(([key, meta]) => (
-                    <a
-                      key={key}
-                      href={meta.connectUrl}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition ${meta.color}`}
-                    >
-                      <Plus className="w-3 h-3" /> {meta.label}
-                    </a>
-                  ))}
-                {connectedPlatforms.size >= 4 && (
-                  <span className="text-xs text-green-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Toate platformele
-                    conectate
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ConnectedAccounts
+          accounts={(accounts || []) as Array<{
+            id: string;
+            platform: string;
+            platform_username: string;
+            platform_name: string;
+            avatar_url: string | null;
+            followers_count: number;
+            sync_status: string;
+            sync_error: string | null;
+            is_active: boolean;
+          }>}
+          showSuccess={showSuccess}
+        />
 
         {/* Subscription */}
         <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
