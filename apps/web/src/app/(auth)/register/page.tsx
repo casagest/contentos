@@ -1,63 +1,35 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { register } from "../actions";
 
-export default function RegisterPage() {
-  const router = useRouter();
+export const metadata = {
+  title: "Înregistrare — ContentOS",
+};
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          display_name: name,
-        },
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-      },
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-
-    setSuccess(true);
-    setLoading(false);
-  }
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; success?: string }>;
+}) {
+  const params = await searchParams;
+  const error = params.error;
+  const success = params.success === "true";
 
   if (success) {
     return (
-      <div className="w-full max-w-sm text-center">
-        <div className="w-12 h-12 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-sm text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 border border-green-500/20">
+          <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Verifică-ți email-ul</h1>
-        <p className="text-sm text-gray-400 mb-6">
-          Am trimis un link de confirmare la <span className="text-white font-medium">{email}</span>.
-          Apasă pe link pentru a-ți activa contul.
+        <h1 className="text-2xl font-bold text-white">Verifică-ți emailul</h1>
+        <p className="mt-2 text-sm text-gray-400">
+          Am trimis un link de confirmare la adresa ta de email.
+          Verifică inbox-ul și folder-ul de spam.
         </p>
         <Link
           href="/login"
-          className="text-sm text-brand-400 hover:text-brand-300 font-medium transition"
+          className="mt-6 inline-block text-sm text-brand-400 hover:text-brand-300 font-medium transition"
         >
           Înapoi la conectare
         </Link>
@@ -66,35 +38,33 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">
-          Creează-ți contul
-        </h1>
-        <p className="text-sm text-gray-400">
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-sm">
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-bold text-white">Creează cont</h1>
+        <p className="mt-2 text-sm text-gray-400">
           Începe gratuit cu ContentOS
         </p>
       </div>
 
-      <form onSubmit={handleRegister} className="space-y-4">
-        {error && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
+      <form action={register} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1.5">
             Nume
           </label>
           <input
             id="name"
+            name="name"
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Numele tău"
             required
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
+            autoComplete="name"
+            placeholder="Numele tău"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -104,12 +74,12 @@ export default function RegisterPage() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@exemplu.ro"
             required
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
+            autoComplete="email"
+            placeholder="tu@exemplu.ro"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -119,40 +89,28 @@ export default function RegisterPage() {
           </label>
           <input
             id="password"
+            name="password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Minim 6 caractere"
             required
+            autoComplete="new-password"
             minLength={6}
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
+            placeholder="Minimum 6 caractere"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm transition"
+          className="w-full rounded-xl bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
         >
-          {loading ? "Se creează contul..." : "Creează cont"}
+          Creează cont
         </button>
-
-        <p className="text-xs text-gray-500 text-center">
-          Prin crearea contului, ești de acord cu{" "}
-          <Link href="/terms" className="text-gray-400 hover:text-white transition">
-            Termenii
-          </Link>{" "}
-          și{" "}
-          <Link href="/privacy" className="text-gray-400 hover:text-white transition">
-            Politica de confidențialitate
-          </Link>.
-        </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-400">
         Ai deja cont?{" "}
         <Link href="/login" className="text-brand-400 hover:text-brand-300 font-medium transition">
-          Conectează-te
+          Conectare
         </Link>
       </p>
     </div>

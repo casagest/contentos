@@ -6,19 +6,22 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
-      {/* Header */}
-      <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto w-full">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
-            C
-          </div>
-          <span className="text-lg font-bold text-white tracking-tight">ContentOS</span>
-        </Link>
-      </nav>
+    <div className="relative min-h-screen flex items-center justify-center bg-[#0A0A0F]">
+      {/* Gradient Background — matches landing page */}
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-950/50 via-transparent to-pink-950/30" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-brand-500/10 rounded-full blur-[120px]" />
 
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-4 pb-16">
+      <div className="relative z-10 w-full max-w-md px-6">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
+              C
+            </div>
+            <span className="text-xl font-bold text-white tracking-tight">ContentOS</span>
+          </Link>
+        </div>
+
         {children}
       </div>
     </div>

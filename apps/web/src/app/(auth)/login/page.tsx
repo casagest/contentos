@@ -1,62 +1,38 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { login } from "../actions";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/dashboard";
+export const metadata = {
+  title: "Conectare — ContentOS",
+};
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "Email sau parolă incorectă."
-          : error.message
-      );
-      setLoading(false);
-      return;
-    }
-
-    router.push(redirect);
-    router.refresh();
-  }
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; redirect?: string }>;
+}) {
+  const params = await searchParams;
+  const error = params.error;
+  const redirectTo = params.redirect || "";
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">
-          Bine ai revenit
-        </h1>
-        <p className="text-sm text-gray-400">
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-sm">
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-bold text-white">Bine ai revenit</h1>
+        <p className="mt-2 text-sm text-gray-400">
           Conectează-te la contul tău ContentOS
         </p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        {error && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error === "Invalid login credentials"
+            ? "Email sau parolă incorectă."
+            : error}
+        </div>
+      )}
+
+      <form action={login} className="space-y-4">
+        <input type="hidden" name="redirect" value={redirectTo} />
 
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
@@ -64,12 +40,12 @@ export default function LoginPage() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@exemplu.ro"
             required
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
+            autoComplete="email"
+            placeholder="tu@exemplu.ro"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -87,22 +63,20 @@ export default function LoginPage() {
           </div>
           <input
             id="password"
+            name="password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
             required
-            minLength={6}
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm transition"
+          className="w-full rounded-xl bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
         >
-          {loading ? "Se conectează..." : "Conectează-te"}
+          Conectare
         </button>
       </form>
 
