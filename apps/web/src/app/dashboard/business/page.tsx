@@ -67,6 +67,27 @@ import type { IndustryConfig, KpiConfig, FunnelStage } from "@/lib/dashboard/ind
 import type { BusinessProfile, Industry } from "@contentos/database/schemas/types";
 import { saveKpiValues, quickSetIndustry } from "./actions";
 
+interface SocialAccountSummary {
+  id: string;
+  platform: string;
+  platform_name: string;
+  platform_username: string;
+  avatar_url: string | null;
+  followers_count: number;
+  sync_status: string;
+}
+
+interface RecentPost {
+  id: string;
+  platform: string;
+  text_content: string;
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  published_at: string;
+  platform_url: string | null;
+}
+
 // Icon resolver - maps string names to lucide components
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   UserPlus, CalendarCheck, CheckCircle2, Euro, TrendingDown, Target,
@@ -408,6 +429,141 @@ function QuickActions() {
 }
 
 // ============================================================
+// Social Performance Section
+// ============================================================
+function SocialPerformance({
+  accounts,
+  recentPosts,
+}: {
+  accounts: SocialAccountSummary[];
+  recentPosts: RecentPost[];
+}) {
+  if (accounts.length === 0) {
+    return (
+      <div className="rounded-xl bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-pink-600/5 border border-blue-500/20 p-5">
+        <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+          <Share2 className="w-4 h-4 text-blue-400" />
+          Performanță Social Media
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Conectează-ți conturile de social media pentru a vedea performanța
+          reală a postărilor tale.
+        </p>
+        <Link
+          href="/api/auth/facebook"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition"
+        >
+          <Share2 className="w-4 h-4" />
+          Conectează Facebook
+        </Link>
+      </div>
+    );
+  }
+
+  const totalFollowers = accounts.reduce((sum, a) => sum + (a.followers_count || 0), 0);
+
+  return (
+    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          <Share2 className="w-4 h-4 text-blue-400" />
+          Performanță Social Media
+        </h2>
+        <Link
+          href="/settings"
+          className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1 transition"
+        >
+          Gestionează <ChevronRight className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* Connected accounts summary */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        {accounts.map((account) => (
+          <div
+            key={account.id}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]"
+          >
+            {account.avatar_url ? (
+              <img
+                src={account.avatar_url}
+                alt={account.platform_name}
+                className="w-6 h-6 rounded-md object-cover"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-md bg-blue-600/20 flex items-center justify-center text-[10px] font-bold text-blue-400">
+                {account.platform[0].toUpperCase()}
+              </div>
+            )}
+            <div>
+              <div className="text-xs font-medium text-white">{account.platform_name}</div>
+              <div className="text-[10px] text-gray-500">
+                {account.followers_count.toLocaleString("ro-RO")} urmăritori
+              </div>
+            </div>
+            <span className={`w-2 h-2 rounded-full ml-1 ${
+              account.sync_status === "synced" ? "bg-green-400" :
+              account.sync_status === "error" ? "bg-red-400" : "bg-yellow-400"
+            }`} />
+          </div>
+        ))}
+      </div>
+
+      {/* Total followers */}
+      <div className="flex items-center gap-4 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] mb-4">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-brand-400" />
+          <span className="text-sm text-gray-400">Total urmăritori:</span>
+        </div>
+        <span className="text-lg font-bold text-white">
+          {totalFollowers.toLocaleString("ro-RO")}
+        </span>
+      </div>
+
+      {/* Recent posts performance */}
+      {recentPosts.length > 0 ? (
+        <div className="space-y-2">
+          <div className="text-xs text-gray-500 mb-2">Ultimele postări:</div>
+          {recentPosts.slice(0, 5).map((post) => (
+            <div
+              key={post.id}
+              className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-gray-300 truncate">
+                  {post.text_content || "—"}
+                </div>
+                <div className="text-[10px] text-gray-600 mt-0.5">
+                  {new Date(post.published_at).toLocaleDateString("ro-RO")}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-shrink-0">
+                <span className="flex items-center gap-1">
+                  <ThumbsUp className="w-3 h-3" />
+                  {post.likes_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageSquare className="w-3 h-3" />
+                  {post.comments_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Share2 className="w-3 h-3" />
+                  {post.shares_count}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-600 text-center py-2">
+          Nicio postare sincronizată încă. Postările vor apărea automat.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // Empty Activity Feed
 // ============================================================
 function RecentActivityFeed() {
@@ -507,6 +663,8 @@ function OnboardingCard({
 export default function BusinessDashboardPage() {
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
   const [kpiValues, setKpiValues] = useState<Record<string, number>>({});
+  const [socialAccounts, setSocialAccounts] = useState<SocialAccountSummary[]>([]);
+  const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -548,6 +706,31 @@ export default function BusinessDashboardPage() {
       setBusinessProfile(bp);
     }
     setKpiValues(kpis);
+
+    // Fetch connected social accounts
+    const { data: accounts } = await supabase
+      .from("social_accounts")
+      .select("id, platform, platform_name, platform_username, avatar_url, followers_count, sync_status")
+      .eq("organization_id", userData.organization_id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (accounts) {
+      setSocialAccounts(accounts as SocialAccountSummary[]);
+    }
+
+    // Fetch recent posts
+    const { data: posts } = await supabase
+      .from("posts")
+      .select("id, platform, text_content, likes_count, comments_count, shares_count, published_at, platform_url")
+      .eq("organization_id", userData.organization_id)
+      .order("published_at", { ascending: false })
+      .limit(5);
+
+    if (posts) {
+      setRecentPosts(posts as RecentPost[]);
+    }
+
     setLoading(false);
   }, []);
 
@@ -679,6 +862,9 @@ export default function BusinessDashboardPage() {
           />
         ))}
       </div>
+
+      {/* Social Performance */}
+      <SocialPerformance accounts={socialAccounts} recentPosts={recentPosts} />
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
