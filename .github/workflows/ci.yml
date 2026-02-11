@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    name: Lint, Type-check & Build
+  gate-platinum:
+    name: Gate Platinum (production-ready)
     runs-on: ubuntu-latest
 
     steps:
@@ -33,14 +33,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
+      - name: Install Playwright browsers
+        run: cd apps/web && pnpm exec playwright install --with-deps chromium firefox
 
-      - name: Type-check
-        run: pnpm type-check
-
-      - name: Build
-        run: pnpm build
+      - name: Gate Platinum (lint + type-check + unit + build + e2e)
+        run: pnpm run gate:platinum
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder

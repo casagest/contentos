@@ -7,9 +7,22 @@
     "dev": "pnpm --filter @contentos/web dev",
     "build": "pnpm --filter @contentos/web build",
     "lint": "pnpm --filter @contentos/web lint",
-    "type-check": "pnpm --filter @contentos/web type-check"
+    "type-check": "pnpm --filter @contentos/web type-check",
+    "test": "pnpm --filter @contentos/web test",
+    "test:coverage": "pnpm --filter @contentos/web test:coverage",
+    "gate:platinum": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build && pnpm e2e",
+    "pre-merge": "pnpm gate:platinum",
+    "e2e": "pnpm --filter @contentos/web e2e",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx}": [
+      "pnpm --filter @contentos/web run lint -- --fix"
+    ]
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "typescript": "^5.7.0"
   }
 }

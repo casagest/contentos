@@ -64,7 +64,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { getIndustryConfig, INDUSTRY_CONFIGS } from "@/lib/dashboard/industry-config";
 import type { IndustryConfig, KpiConfig, FunnelStage } from "@/lib/dashboard/industry-config";
-import type { BusinessProfile, Industry } from "@contentos/database/schemas/types";
+import type { BusinessProfile, Industry } from "@contentos/database";
 import { saveKpiValues, quickSetIndustry } from "./actions";
 
 interface SocialAccountSummary {
@@ -89,7 +89,7 @@ interface RecentPost {
 }
 
 // Icon resolver - maps string names to lucide components
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   UserPlus, CalendarCheck, CheckCircle2, Euro, TrendingDown, Target,
   Stethoscope, ClipboardList, Activity, PhoneCall, Star, UtensilsCrossed,
   ShoppingBag, RefreshCw, Search, Globe, MapPin, Heart, Users, Gift,
@@ -101,6 +101,24 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 
 function getIcon(name: string) {
   return ICON_MAP[name] || Briefcase;
+}
+
+// Icon lookup by name - getIcon returns existing refs from ICON_MAP, not new components
+function DynamicIcon({
+  name,
+  className,
+  style,
+}: {
+  name: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const Icon = getIcon(name);
+  return (
+    <span className={className} style={style} aria-hidden>
+      <Icon className="w-full h-full" />
+    </span>
+  );
 }
 
 // Format values based on KPI format type
@@ -146,7 +164,7 @@ function AnimatedNumber({
 
   useEffect(() => {
     if (value === 0) {
-      setDisplay(0);
+      setDisplay(0); // eslint-disable-line react-hooks/set-state-in-effect -- reset animation
       return;
     }
     const start = performance.now();
@@ -187,7 +205,6 @@ function KpiCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState(String(value));
-  const Icon = getIcon(kpi.icon);
 
   function handleSave() {
     const num = parseFloat(inputVal) || 0;
@@ -205,7 +222,7 @@ function KpiCard({
           className="w-9 h-9 rounded-lg flex items-center justify-center"
           style={{ backgroundColor: `${kpi.color}15` }}
         >
-          <Icon className="w-4 h-4" style={{ color: kpi.color }} />
+          <DynamicIcon name={kpi.icon} className="w-4 h-4" style={{ color: kpi.color }} />
         </div>
         {!editing && (
           <span className="text-[10px] text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -485,6 +502,7 @@ function SocialPerformance({
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]"
           >
             {account.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={account.avatar_url}
                 alt={account.platform_name}
@@ -735,7 +753,7 @@ export default function BusinessDashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    loadData(); // eslint-disable-line react-hooks/set-state-in-effect -- intentional data fetch on mount
   }, [loadData]);
 
   // Update clock every minute
@@ -789,7 +807,6 @@ export default function BusinessDashboardPage() {
   }
 
   const config = getIndustryConfig(businessProfile.industry);
-  const IndustryIcon = getIcon(config.icon);
 
   const dateStr = currentTime.toLocaleDateString("ro-RO", {
     weekday: "long",
@@ -811,7 +828,8 @@ export default function BusinessDashboardPage() {
             className="w-11 h-11 rounded-xl flex items-center justify-center"
             style={{ backgroundColor: `${config.kpis[0]?.color || "#6366f1"}15` }}
           >
-            <IndustryIcon
+            <DynamicIcon
+              name={config.icon}
               className="w-5 h-5"
               style={{ color: config.kpis[0]?.color || "#6366f1" }}
             />

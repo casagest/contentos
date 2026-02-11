@@ -56,6 +56,7 @@ export type Industry =
   | "education"
   | "tech"
   | "ecommerce"
+  | "agency"
   | "turism"
   | "altele";
 

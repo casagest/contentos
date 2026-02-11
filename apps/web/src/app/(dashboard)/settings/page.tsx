@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import BusinessProfileForm from "./business-profile-form";
 import ConnectedAccounts from "./connected-accounts";
-import type { BusinessProfile } from "@contentos/database/schemas/types";
+import type { BusinessProfile } from "@contentos/database";
 
 export default async function SettingsPage({
   searchParams,

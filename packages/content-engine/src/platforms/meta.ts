@@ -28,7 +28,10 @@ export class FacebookAdapter implements PlatformAdapter {
   // ----------------------------------------------------------
 
   getAuthUrl(redirectUri: string, scopes: string[] = []): string {
-    const defaultScopes = ["public_profile"];
+    const defaultScopes = [
+      "public_profile",
+      "user_posts",
+    ];
 
     const allScopes = [...new Set([...defaultScopes, ...scopes])];
 
