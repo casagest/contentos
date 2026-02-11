@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUserWithOrg } from "@/lib/auth";
 import { safeFetch } from "@/lib/url-safety";
 import type { BusinessProfile } from "@contentos/database";
 
@@ -205,6 +205,9 @@ interface BrainDumpRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSessionUserWithOrg();
+    if (session instanceof NextResponse) return session;
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -241,34 +244,15 @@ export async function POST(request: NextRequest) {
 
     // Fetch business profile from user's organization
     let businessProfile: BusinessProfile | null = null;
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const { data: org } = await session.supabase
+      .from("organizations")
+      .select("settings")
+      .eq("id", session.organizationId)
+      .single();
 
-      if (user) {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("organization_id")
-          .eq("id", user.id)
-          .single();
-
-        if (userData?.organization_id) {
-          const { data: org } = await supabase
-            .from("organizations")
-            .select("settings")
-            .eq("id", userData.organization_id)
-            .single();
-
-          const settings = org?.settings as Record<string, unknown> | null;
-          if (settings?.businessProfile) {
-            businessProfile = settings.businessProfile as BusinessProfile;
-          }
-        }
-      }
-    } catch {
-      // If we can't fetch business profile, continue with generic prompt
+    const settings = org?.settings as Record<string, unknown> | null;
+    if (settings?.businessProfile) {
+      businessProfile = settings.businessProfile as BusinessProfile;
     }
 
     // Build system prompt with or without business context
@@ -316,7 +300,7 @@ IMPORTANT: Generează conținut EXCLUSIV pe baza textului de mai sus${urlContext
     const client = new Anthropic({ apiKey });
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 4096,
       messages: [
         {
