@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Rulează gate:platinum înainte de merge local; dacă eșuează, merge-ul e anulat.
+pnpm run gate:platinum

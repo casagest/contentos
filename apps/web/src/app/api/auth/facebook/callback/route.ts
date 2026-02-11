@@ -211,6 +211,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(settingsUrl("error=save_failed"));
     }
 
+    // --- Step 5: Auto-sync initial posts (non-blocking) ---
+    try {
+      for (const page of pagesData.data) {
+        await syncInitialPosts(supabase, page, userData.organization_id);
+      }
+    } catch (syncErr) {
+      // Don't block the redirect if initial sync fails
+      console.error("Initial post sync error (non-blocking):", syncErr);
+    }
+
     return NextResponse.redirect(
       new URL("/settings?connected=facebook", request.url)
     );
@@ -218,4 +228,173 @@ export async function GET(request: NextRequest) {
     console.error("Facebook OAuth callback error:", err);
     return NextResponse.redirect(settingsUrl("error=facebook_auth_failed"));
   }
+}
+
+// ============================================================
+// Initial post sync after OAuth connection
+// ============================================================
+
+async function syncInitialPosts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  page: {
+    id: string;
+    access_token: string;
+    instagram_business_account?: { id: string };
+  },
+  orgId: string
+) {
+  // Get the saved social account ID for this page
+  const { data: fbAccount } = await supabase
+    .from("social_accounts")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("platform", "facebook")
+    .eq("platform_user_id", page.id)
+    .single();
+
+  if (fbAccount) {
+    // Fetch Facebook posts
+    const fields = [
+      "id",
+      "message",
+      "created_time",
+      "full_picture",
+      "permalink_url",
+      "shares",
+      "likes.summary(true)",
+      "comments.summary(true)",
+    ].join(",");
+
+    const postsRes = await fetch(
+      `${META_GRAPH_API}/${page.id}/posts?` +
+        new URLSearchParams({
+          access_token: page.access_token,
+          fields,
+          limit: "25",
+        }).toString()
+    );
+    const postsData = await postsRes.json();
+
+    if (!postsData.error && postsData.data?.length) {
+      const posts = postsData.data.map(
+        (post: {
+          id: string;
+          message?: string;
+          created_time: string;
+          full_picture?: string;
+          permalink_url?: string;
+          shares?: { count: number };
+          likes?: { summary: { total_count: number } };
+          comments?: { summary: { total_count: number } };
+        }) => ({
+          social_account_id: fbAccount.id,
+          organization_id: orgId,
+          platform: "facebook",
+          platform_post_id: post.id,
+          platform_url: post.permalink_url,
+          content_type: post.full_picture ? "image" : "text",
+          text_content: post.message || "",
+          media_urls: post.full_picture ? [post.full_picture] : [],
+          hashtags: extractHashtags(post.message || ""),
+          mentions: extractMentions(post.message || ""),
+          likes_count: post.likes?.summary?.total_count || 0,
+          comments_count: post.comments?.summary?.total_count || 0,
+          shares_count: post.shares?.count || 0,
+          published_at: post.created_time,
+        })
+      );
+
+      await supabase.from("posts").upsert(posts, {
+        onConflict: "organization_id,platform,platform_post_id",
+      });
+    }
+  }
+
+  // Sync Instagram posts if connected
+  if (page.instagram_business_account?.id) {
+    const igId = page.instagram_business_account.id;
+
+    const { data: igAccount } = await supabase
+      .from("social_accounts")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("platform", "instagram")
+      .eq("platform_user_id", igId)
+      .single();
+
+    if (igAccount) {
+      const igFields = [
+        "id",
+        "caption",
+        "media_type",
+        "media_url",
+        "thumbnail_url",
+        "permalink",
+        "timestamp",
+        "like_count",
+        "comments_count",
+      ].join(",");
+
+      const igPostsRes = await fetch(
+        `${META_GRAPH_API}/${igId}/media?` +
+          new URLSearchParams({
+            access_token: page.access_token,
+            fields: igFields,
+            limit: "25",
+          }).toString()
+      );
+      const igPostsData = await igPostsRes.json();
+
+      if (!igPostsData.error && igPostsData.data?.length) {
+        const contentTypeMap: Record<string, string> = {
+          IMAGE: "image",
+          VIDEO: "reel",
+          CAROUSEL_ALBUM: "carousel",
+        };
+
+        const posts = igPostsData.data.map(
+          (post: {
+            id: string;
+            caption?: string;
+            media_type: string;
+            media_url?: string;
+            thumbnail_url?: string;
+            permalink: string;
+            timestamp: string;
+            like_count?: number;
+            comments_count?: number;
+          }) => ({
+            social_account_id: igAccount.id,
+            organization_id: orgId,
+            platform: "instagram",
+            platform_post_id: post.id,
+            platform_url: post.permalink,
+            content_type: contentTypeMap[post.media_type] || "image",
+            text_content: post.caption || "",
+            media_urls: [post.media_url || post.thumbnail_url].filter(Boolean),
+            hashtags: extractHashtags(post.caption || ""),
+            mentions: extractMentions(post.caption || ""),
+            likes_count: post.like_count || 0,
+            comments_count: post.comments_count || 0,
+            shares_count: 0,
+            published_at: post.timestamp,
+          })
+        );
+
+        await supabase.from("posts").upsert(posts, {
+          onConflict: "organization_id,platform,platform_post_id",
+        });
+      }
+    }
+  }
+}
+
+function extractHashtags(text: string): string[] {
+  const matches = text.match(/#[\w\u0103\u00e2\u00ee\u0219\u021b\u0102\u00c2\u00ce\u0218\u021a]+/g);
+  return matches ? matches.map((h) => h.toLowerCase()) : [];
+}
+
+function extractMentions(text: string): string[] {
+  const matches = text.match(/@[\w.]+/g);
+  return matches ? matches.map((m) => m.toLowerCase()) : [];
 }

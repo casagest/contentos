@@ -1,99 +1,186 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import {
   CalendarDays,
-  Filter,
   ArrowUpRight,
   Heart,
   MessageCircle,
   Share2,
   Eye,
   Plus,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 
-export default async function HistoryPage() {
-  const supabase = await createClient();
+interface Post {
+  id: string;
+  platform: string;
+  text_content: string;
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  views_count: number;
+  impressions_count: number;
+  reach_count: number;
+  content_type: string;
+  platform_url?: string;
+  published_at: string;
+}
 
-  const { data: accounts } = await supabase
-    .from("social_accounts")
-    .select("*")
-    .order("created_at", { ascending: false });
+interface PostsResponse {
+  posts: Post[];
+  total: number;
+  stats: {
+    avgEngagement: number;
+    bestDay: string;
+  };
+}
 
-  const hasAccounts = accounts && accounts.length > 0;
+interface SyncResult {
+  platform: string;
+  accountName: string;
+  synced: number;
+  error?: string;
+}
 
-  // Demo posts for when the feature is connected
-  const demoPosts = [
-    {
-      id: "1",
-      platform: "facebook",
-      text: "Cum am crescut engagement-ul cu 340% în 30 de zile...",
-      likes: 234,
-      comments: 45,
-      shares: 12,
-      views: 3200,
-      date: "2026-02-08",
-      score: 85,
-      grade: "A",
-    },
-    {
-      id: "2",
-      platform: "instagram",
-      text: "5 greșeli pe care le fac 90% din creatorii de conținut",
-      likes: 567,
-      comments: 89,
-      shares: 34,
-      views: 8900,
-      date: "2026-02-07",
-      score: 92,
-      grade: "S",
-    },
-    {
-      id: "3",
-      platform: "tiktok",
-      text: "POV: Când afli că AI-ul poate scrie mai bine decât tine...",
-      likes: 1200,
-      comments: 234,
-      shares: 89,
-      views: 45000,
-      date: "2026-02-06",
-      score: 78,
-      grade: "B",
-    },
-    {
-      id: "4",
-      platform: "facebook",
-      text: "De ce nu funcționează conținutul tău pe Facebook (și ce poți face)",
-      likes: 123,
-      comments: 23,
-      shares: 8,
-      views: 1800,
-      date: "2026-02-05",
-      score: 65,
-      grade: "C",
-    },
-  ];
+const platformTabs = [
+  { id: "all", label: "Toate" },
+  { id: "facebook", label: "Facebook", color: "bg-blue-500" },
+  { id: "instagram", label: "Instagram", color: "bg-pink-500" },
+  { id: "tiktok", label: "TikTok", color: "bg-gray-500" },
+  { id: "youtube", label: "YouTube", color: "bg-red-500" },
+];
 
-  const platformColors: Record<string, string> = {
-    facebook: "bg-blue-500/10 text-blue-400",
-    instagram: "bg-pink-500/10 text-pink-400",
-    tiktok: "bg-gray-500/10 text-gray-300",
-    youtube: "bg-red-500/10 text-red-400",
+const platformColors: Record<string, string> = {
+  facebook: "bg-blue-500/10 text-blue-400",
+  instagram: "bg-pink-500/10 text-pink-400",
+  tiktok: "bg-gray-500/10 text-gray-300",
+  youtube: "bg-red-500/10 text-red-400",
+};
+
+export default function HistoryPage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState({ avgEngagement: 0, bestDay: "--" });
+  const [activePlatform, setActivePlatform] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [hasAccounts, setHasAccounts] = useState<boolean | null>(null);
+
+  const loadPosts = useCallback(async (platform: string) => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: "50", offset: "0" });
+      if (platform !== "all") params.set("platform", platform);
+
+      const res = await fetch(`/api/posts?${params.toString()}`);
+      if (!res.ok) {
+        if (res.status === 401) {
+          setHasAccounts(false);
+          return;
+        }
+        throw new Error("Eroare la încărcarea postărilor");
+      }
+
+      const data: PostsResponse = await res.json();
+      setPosts(data.posts);
+      setTotal(data.total);
+      setStats(data.stats);
+      setHasAccounts(true);
+    } catch (err) {
+      console.error("Load posts error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function checkAccounts() {
+      try {
+        const res = await fetch("/api/social-accounts");
+        const data = await res.json();
+        const connected = data.accounts?.length > 0;
+        setHasAccounts(connected);
+        if (connected) {
+          loadPosts("all");
+        } else {
+          setIsLoading(false);
+        }
+      } catch {
+        setHasAccounts(false);
+        setIsLoading(false);
+      }
+    }
+    checkAccounts();
+  }, [loadPosts]);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+
+    try {
+      const res = await fetch("/api/ingestion/sync", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Eroare la sincronizare");
+      }
+
+      const data: { total: number; results: SyncResult[] } = await res.json();
+
+      const parts = data.results
+        .map((r) =>
+          r.error
+            ? `${r.accountName}: ${r.error}`
+            : `${r.accountName}: ${r.synced} postări`
+        )
+        .join(" | ");
+
+      setSyncMessage(`Sincronizat ${data.total} postări. ${parts}`);
+      await loadPosts(activePlatform);
+    } catch (err) {
+      setSyncMessage(
+        err instanceof Error ? err.message : "Eroare la sincronizare"
+      );
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const gradeColors: Record<string, string> = {
-    S: "bg-yellow-500/10 text-yellow-400",
-    A: "bg-green-500/10 text-green-400",
-    B: "bg-blue-500/10 text-blue-400",
-    C: "bg-amber-500/10 text-amber-400",
-    D: "bg-orange-500/10 text-orange-400",
-    F: "bg-red-500/10 text-red-400",
+  const handlePlatformChange = (platform: string) => {
+    setActivePlatform(platform);
+    loadPosts(platform);
   };
 
-  return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+  const formatNumber = (n: number) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return String(n);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("ro-RO", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  if (hasAccounts === null || (hasAccounts && isLoading && posts.length === 0)) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (hasAccounts === false) {
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
             <CalendarDays className="w-5 h-5 text-white" />
           </div>
@@ -104,12 +191,6 @@ export default async function HistoryPage() {
             </p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-gray-300 hover:bg-white/[0.06] transition">
-          <Filter className="w-4 h-4" /> Filtrează
-        </button>
-      </div>
-
-      {!hasAccounts ? (
         <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
           <CalendarDays className="w-10 h-10 text-gray-600 mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-white mb-2">
@@ -126,83 +207,181 @@ export default async function HistoryPage() {
             <Plus className="w-4 h-4" /> Conectează un cont
           </Link>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Stats summary */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
-              <div className="text-2xl font-bold text-white">0</div>
-              <div className="text-xs text-gray-500 mt-1">Total postări</div>
-            </div>
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
-              <div className="text-2xl font-bold text-white">--</div>
-              <div className="text-xs text-gray-500 mt-1">Engagement mediu</div>
-            </div>
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
-              <div className="text-2xl font-bold text-white">--</div>
-              <div className="text-xs text-gray-500 mt-1">Cea mai bună zi</div>
-            </div>
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
-              <div className="text-2xl font-bold text-white">--</div>
-              <div className="text-xs text-gray-500 mt-1">Scor mediu</div>
-            </div>
-          </div>
+      </div>
+    );
+  }
 
-          {/* Post list (demo data) */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
-            <div className="p-4 border-b border-white/[0.06]">
-              <h3 className="text-sm font-medium text-gray-300">
-                Postări recente{" "}
-                <span className="text-gray-500">(date demo)</span>
-              </h3>
-            </div>
-            <div className="divide-y divide-white/[0.04]">
-              {demoPosts.map((post) => (
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+            <CalendarDays className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Post History</h1>
+            <p className="text-gray-400 text-sm">
+              Analizează performanța postărilor tale
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleSync}
+          disabled={isSyncing}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-medium transition"
+        >
+          {isSyncing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          {isSyncing ? "Se sincronizează..." : "Sincronizează"}
+        </button>
+      </div>
+
+      {/* Sync message */}
+      {syncMessage && (
+        <div className="mb-4 rounded-xl bg-white/[0.03] border border-white/[0.08] p-3 text-sm text-gray-300">
+          {syncMessage}
+        </div>
+      )}
+
+      {/* Platform filter tabs */}
+      <div className="flex gap-2 mb-4 overflow-x-auto">
+        {platformTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => handlePlatformChange(tab.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+              activePlatform === tab.id
+                ? "bg-white/[0.1] text-white"
+                : "bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-gray-200"
+            }`}
+          >
+            {tab.color && (
+              <div className={`w-2 h-2 rounded-full ${tab.color}`} />
+            )}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Stats summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+          <div className="text-2xl font-bold text-white">{total}</div>
+          <div className="text-xs text-gray-500 mt-1">Total postări</div>
+        </div>
+        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+          <div className="text-2xl font-bold text-white">
+            {stats.avgEngagement > 0 ? formatNumber(stats.avgEngagement) : "--"}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Engagement mediu</div>
+        </div>
+        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+          <div className="text-2xl font-bold text-white">{stats.bestDay}</div>
+          <div className="text-xs text-gray-500 mt-1">Cea mai bună zi</div>
+        </div>
+        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+          <div className="text-2xl font-bold text-white">
+            {posts.length > 0
+              ? formatNumber(
+                  posts.reduce(
+                    (sum, p) =>
+                      sum + p.likes_count + p.comments_count + p.shares_count,
+                    0
+                  )
+                )
+              : "--"}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Total interacțiuni</div>
+        </div>
+      </div>
+
+      {/* Post list */}
+      {posts.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-white/[0.08] p-8 text-center">
+          <CalendarDays className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+          <p className="text-sm text-gray-400 mb-3">
+            {activePlatform !== "all"
+              ? `Nicio postare pe ${platformTabs.find((t) => t.id === activePlatform)?.label}.`
+              : "Nicio postare sincronizată încă."}
+          </p>
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="text-sm text-brand-400 hover:text-brand-300 transition"
+          >
+            Apasă &quot;Sincronizează&quot; pentru a importa postările
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
+          <div className="p-4 border-b border-white/[0.06]">
+            <h3 className="text-sm font-medium text-gray-300">
+              Postări recente
+            </h3>
+          </div>
+          <div className="divide-y divide-white/[0.04]">
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                className="flex items-center gap-4 p-4 hover:bg-white/[0.02] transition"
+              >
                 <div
-                  key={post.id}
-                  className="flex items-center gap-4 p-4 hover:bg-white/[0.02] transition"
+                  className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${platformColors[post.platform] || "bg-gray-500/10 text-gray-400"}`}
                 >
-                  <div
-                    className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${platformColors[post.platform]}`}
-                  >
-                    {post.platform}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white truncate">{post.text}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{post.date}</p>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-4 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" /> {post.likes}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3 h-3" /> {post.comments}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Share2 className="w-3 h-3" /> {post.shares}
-                    </span>
+                  {post.platform}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white truncate">
+                    {post.text_content || `[${post.content_type}]`}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {formatDate(post.published_at)}
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Heart className="w-3 h-3" />{" "}
+                    {formatNumber(post.likes_count)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MessageCircle className="w-3 h-3" />{" "}
+                    {formatNumber(post.comments_count)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Share2 className="w-3 h-3" />{" "}
+                    {formatNumber(post.shares_count)}
+                  </span>
+                  {(post.views_count > 0 || post.impressions_count > 0) && (
                     <span className="flex items-center gap-1">
                       <Eye className="w-3 h-3" />{" "}
-                      {post.views > 1000
-                        ? `${(post.views / 1000).toFixed(1)}K`
-                        : post.views}
+                      {formatNumber(post.impressions_count || post.views_count)}
                     </span>
-                  </div>
-                  <div
-                    className={`px-2 py-1 rounded text-xs font-bold ${gradeColors[post.grade]}`}
-                  >
-                    {post.grade} · {post.score}
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                  )}
                 </div>
-              ))}
-            </div>
+                {post.platform_url && (
+                  <a
+                    href={post.platform_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-600 hover:text-gray-400 transition"
+                  >
+                    <ArrowUpRight className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            ))}
           </div>
+        </div>
+      )}
 
-          <p className="text-xs text-gray-600 text-center">
-            Datele de mai sus sunt demo. Postările reale vor apărea după prima
-            sincronizare a conturilor.
-          </p>
+      {/* Loading indicator for filtering */}
+      {isLoading && posts.length > 0 && (
+        <div className="flex justify-center py-4">
+          <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
         </div>
       )}
     </div>
