@@ -120,10 +120,7 @@ export async function GET(request: NextRequest) {
     const pagesData = await pagesRes.json();
 
     if (pagesData.error || !pagesData.data?.length) {
-      console.error(
-        "Pages fetch error:",
-        pagesData.error || "No pages found"
-      );
+      console.error("Pages fetch error:", pagesData.error || "No pages found");
       return NextResponse.redirect(settingsUrl("error=no_pages_found"));
     }
 

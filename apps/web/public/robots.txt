@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /braindump/
+Disallow: /compose/
+Disallow: /calendar/
+Disallow: /scorer/
+Disallow: /settings/

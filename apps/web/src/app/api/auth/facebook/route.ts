@@ -3,13 +3,26 @@ import { cookies } from "next/headers";
 
 const META_AUTH_URL = "https://www.facebook.com/v21.0/dialog/oauth";
 
-const SCOPES = [
+// Base scopes (always requested)
+const BASE_SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
   "pages_read_user_content",
   "read_insights",
   "instagram_basic",
   "instagram_manage_insights",
+];
+
+// Publishing scopes — enable these in Facebook App settings first,
+// then set FACEBOOK_PUBLISH_SCOPES_ENABLED=true in .env
+const PUBLISH_SCOPES = [
+  "pages_manage_posts",
+  "instagram_content_publish",
+];
+
+const SCOPES = [
+  ...BASE_SCOPES,
+  ...(process.env.FACEBOOK_PUBLISH_SCOPES_ENABLED === "true" ? PUBLISH_SCOPES : []),
 ].join(",");
 
 export async function GET() {

@@ -319,6 +319,76 @@ export class FacebookAdapter implements PlatformAdapter {
     return matches ? matches.map((m) => m.toLowerCase()) : [];
   }
 
+  // ----------------------------------------------------------
+  // Publishing
+  // ----------------------------------------------------------
+
+  async publishPost(
+    accessToken: string,
+    content: { text: string; mediaUrls?: string[] }
+  ): Promise<{ platformPostId: string; platformUrl: string }> {
+    // accessToken here is the PAGE access token (stored in social_accounts)
+    // First, get the page ID from the token
+    const meResponse = await this.graphRequest("/me", accessToken, {
+      fields: "id",
+    });
+    const pageId = meResponse.id;
+
+    if (content.mediaUrls && content.mediaUrls.length > 0) {
+      // Photo post — use first image
+      const result = await this.graphPostRequest(
+        `/${pageId}/photos`,
+        accessToken,
+        {
+          message: content.text,
+          url: content.mediaUrls[0],
+        }
+      );
+      return {
+        platformPostId: result.id || result.post_id,
+        platformUrl: `https://www.facebook.com/${result.post_id || result.id}`,
+      };
+    }
+
+    // Text-only post
+    const result = await this.graphPostRequest(
+      `/${pageId}/feed`,
+      accessToken,
+      { message: content.text }
+    );
+
+    return {
+      platformPostId: result.id,
+      platformUrl: `https://www.facebook.com/${result.id}`,
+    };
+  }
+
+  // ----------------------------------------------------------
+  // Helper Methods
+  // ----------------------------------------------------------
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async graphPostRequest(
+    endpoint: string,
+    accessToken: string,
+    body: Record<string, string>
+  ): Promise<any> {
+    const url = `${META_GRAPH_API}${endpoint}`;
+    const formData = new URLSearchParams({ ...body, access_token: accessToken });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      throw new MetaAPIError(data.error.message, data.error);
+    }
+    return data;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async graphRequest(
     endpoint: string,
@@ -517,6 +587,79 @@ export class InstagramAdapter implements PlatformAdapter {
   private extractMentions(text: string): string[] {
     const matches = text.match(/@[\w.]+/g);
     return matches ? matches.map((m) => m.toLowerCase()) : [];
+  }
+
+  // ----------------------------------------------------------
+  // Publishing
+  // ----------------------------------------------------------
+
+  async publishPost(
+    accessToken: string,
+    content: { text: string; mediaUrls?: string[] }
+  ): Promise<{ platformPostId: string; platformUrl: string }> {
+    // Instagram requires media — text-only posts are not supported
+    if (!content.mediaUrls || content.mediaUrls.length === 0) {
+      throw new MetaAPIError("Instagram requires at least one image or video to publish.", {});
+    }
+
+    // Get the IG user ID from the page token
+    const pagesResponse = await this.graphRequest("/me/accounts", accessToken, {
+      fields: "instagram_business_account{id}",
+    });
+    const igAccountId = pagesResponse.data?.[0]?.instagram_business_account?.id;
+    if (!igAccountId) {
+      throw new MetaAPIError("No Instagram Business Account found.", {});
+    }
+
+    // Step 1: Create media container
+    const containerResult = await this.graphPostRequest(
+      `/${igAccountId}/media`,
+      accessToken,
+      {
+        caption: content.text,
+        image_url: content.mediaUrls[0],
+      }
+    );
+
+    const creationId = containerResult.id;
+
+    // Step 2: Publish the container
+    const publishResult = await this.graphPostRequest(
+      `/${igAccountId}/media_publish`,
+      accessToken,
+      { creation_id: creationId }
+    );
+
+    return {
+      platformPostId: publishResult.id,
+      platformUrl: `https://www.instagram.com/p/${publishResult.id}/`,
+    };
+  }
+
+  // ----------------------------------------------------------
+  // Helper Methods
+  // ----------------------------------------------------------
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async graphPostRequest(
+    endpoint: string,
+    accessToken: string,
+    body: Record<string, string>
+  ): Promise<any> {
+    const url = `${META_GRAPH_API}${endpoint}`;
+    const formData = new URLSearchParams({ ...body, access_token: accessToken });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      throw new MetaAPIError(data.error.message, data.error);
+    }
+    return data;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
