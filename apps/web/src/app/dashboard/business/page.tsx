@@ -88,6 +88,28 @@ interface RecentPost {
   platform_url: string | null;
 }
 
+interface AnalyticsData {
+  totalPosts: number;
+  totalEngagement: number;
+  avgEngagement: number;
+  totalImpressions: number;
+  bestDay: string;
+  platformBreakdown: { platform: string; posts: number; engagement: number }[];
+  weeklyTrend: { date: string; label: string; engagement: number }[];
+  topPosts: {
+    id: string;
+    platform: string;
+    text_content: string;
+    content_type: string;
+    platform_url: string | null;
+    published_at: string;
+    engagement: number;
+    likes: number;
+    comments: number;
+    shares: number;
+  }[];
+}
+
 // Icon resolver - maps string names to lucide components
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   UserPlus, CalendarCheck, CheckCircle2, Euro, TrendingDown, Target,
@@ -582,28 +604,151 @@ function SocialPerformance({
 }
 
 // ============================================================
-// Empty Activity Feed
+// Engagement Overview Section
 // ============================================================
-function RecentActivityFeed() {
+const platformColorMap: Record<string, { bg: string; text: string; bar: string }> = {
+  facebook: { bg: "bg-blue-500/10", text: "text-blue-400", bar: "bg-blue-500" },
+  instagram: { bg: "bg-pink-500/10", text: "text-pink-400", bar: "bg-pink-500" },
+  tiktok: { bg: "bg-gray-500/10", text: "text-gray-300", bar: "bg-gray-400" },
+  youtube: { bg: "bg-red-500/10", text: "text-red-400", bar: "bg-red-500" },
+};
+
+function formatEngNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function EngagementOverview({ data }: { data: AnalyticsData | null }) {
+  if (!data || data.totalPosts === 0) return null;
+
+  const maxTrend = Math.max(...data.weeklyTrend.map((d) => d.engagement), 1);
+  const maxPlatform = Math.max(...data.platformBreakdown.map((p) => p.engagement), 1);
+
   return (
-    <div className="space-y-2">
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-brand-400" />
+          Engagement Overview
+        </h2>
+        <Link
+          href="/history"
+          className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1 transition"
         >
-          <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
-            <FileText className="w-4 h-4 text-gray-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="h-3 w-2/3 bg-white/[0.04] rounded" />
-            <div className="h-2 w-1/3 bg-white/[0.03] rounded mt-1.5" />
+          Vezi istoric <ChevronRight className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* 4 stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+          <div className="text-xl font-bold text-white">{data.totalPosts}</div>
+          <div className="text-[10px] text-gray-500 mt-0.5">Total postări</div>
+        </div>
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+          <div className="text-xl font-bold text-white">{formatEngNumber(data.totalEngagement)}</div>
+          <div className="text-[10px] text-gray-500 mt-0.5">Total engagement</div>
+        </div>
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+          <div className="text-xl font-bold text-white">{formatEngNumber(data.avgEngagement)}</div>
+          <div className="text-[10px] text-gray-500 mt-0.5">Medie / postare</div>
+        </div>
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+          <div className="text-xl font-bold text-white">{data.bestDay}</div>
+          <div className="text-[10px] text-gray-500 mt-0.5">Cea mai bună zi</div>
+        </div>
+      </div>
+
+      {/* 7-day trend */}
+      <div className="mb-5">
+        <div className="text-xs text-gray-500 mb-2">Trend ultimele 7 zile</div>
+        <div className="space-y-1.5">
+          {data.weeklyTrend.map((day) => (
+            <div key={day.date} className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-500 w-8 text-right flex-shrink-0">{day.label}</span>
+              <div className="flex-1 h-5 bg-white/[0.03] rounded overflow-hidden">
+                <div
+                  className="h-full rounded bg-brand-500/60 transition-all duration-700"
+                  style={{ width: `${Math.max((day.engagement / maxTrend) * 100, 2)}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-gray-400 w-10 text-right flex-shrink-0">
+                {day.engagement > 0 ? formatEngNumber(day.engagement) : "—"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Platform breakdown */}
+      {data.platformBreakdown.length > 0 && (
+        <div className="mb-5">
+          <div className="text-xs text-gray-500 mb-2">Per platformă</div>
+          <div className="space-y-2">
+            {data.platformBreakdown.map((p) => {
+              const colors = platformColorMap[p.platform] || { bg: "bg-gray-500/10", text: "text-gray-400", bar: "bg-gray-500" };
+              return (
+                <div key={p.platform} className="flex items-center gap-2">
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${colors.bg} ${colors.text} w-16 text-center flex-shrink-0`}>
+                    {p.platform}
+                  </span>
+                  <div className="flex-1 h-4 bg-white/[0.03] rounded overflow-hidden">
+                    <div
+                      className={`h-full rounded ${colors.bar} opacity-50 transition-all duration-700`}
+                      style={{ width: `${(p.engagement / maxPlatform) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-gray-400 w-14 text-right flex-shrink-0">
+                    {formatEngNumber(p.engagement)} · {p.posts}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-      ))}
-      <p className="text-xs text-gray-600 text-center py-2">
-        Nicio activitate recentă. Creează primul tău post!
-      </p>
+      )}
+
+      {/* Top 3 posts */}
+      {data.topPosts.length > 0 && (
+        <div>
+          <div className="text-xs text-gray-500 mb-2">Top postări</div>
+          <div className="space-y-2">
+            {data.topPosts.map((post) => {
+              const colors = platformColorMap[post.platform] || { bg: "bg-gray-500/10", text: "text-gray-400", bar: "bg-gray-500" };
+              return (
+                <div
+                  key={post.id}
+                  className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+                >
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${colors.bg} ${colors.text} flex-shrink-0`}>
+                    {post.platform}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-300 truncate">
+                      {post.text_content || `[${post.content_type}]`}
+                    </p>
+                    <p className="text-[10px] text-gray-600 mt-0.5">
+                      {new Date(post.published_at).toLocaleDateString("ro-RO")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-500 flex-shrink-0">
+                    <span className="flex items-center gap-0.5">
+                      <ThumbsUp className="w-3 h-3" /> {post.likes}
+                    </span>
+                    <span className="flex items-center gap-0.5">
+                      <MessageSquare className="w-3 h-3" /> {post.comments}
+                    </span>
+                    <span className="flex items-center gap-0.5">
+                      <Share2 className="w-3 h-3" /> {post.shares}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -683,6 +828,7 @@ export default function BusinessDashboardPage() {
   const [kpiValues, setKpiValues] = useState<Record<string, number>>({});
   const [socialAccounts, setSocialAccounts] = useState<SocialAccountSummary[]>([]);
   const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -747,6 +893,17 @@ export default function BusinessDashboardPage() {
 
     if (posts) {
       setRecentPosts(posts as RecentPost[]);
+    }
+
+    // Fetch engagement analytics
+    try {
+      const analyticsRes = await fetch("/api/analytics/overview");
+      if (analyticsRes.ok) {
+        const analytics: AnalyticsData = await analyticsRes.json();
+        setAnalyticsData(analytics);
+      }
+    } catch {
+      // Non-blocking — dashboard still works without analytics
     }
 
     setLoading(false);
@@ -881,6 +1038,9 @@ export default function BusinessDashboardPage() {
         ))}
       </div>
 
+      {/* Engagement Overview */}
+      <EngagementOverview data={analyticsData} />
+
       {/* Social Performance */}
       <SocialPerformance accounts={socialAccounts} recentPosts={recentPosts} />
 
@@ -931,13 +1091,57 @@ export default function BusinessDashboardPage() {
 
         {/* Right Column (40%) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Recent Activity Feed */}
+          {/* Recent Activity */}
           <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
             <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400" />
               Activitate Recentă
             </h2>
-            <RecentActivityFeed />
+            {recentPosts.length > 0 ? (
+              <div className="space-y-2">
+                {recentPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                      <Send className="w-4 h-4 text-brand-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-gray-300 truncate">
+                        {post.text_content || "Postare publicată"}
+                      </div>
+                      <div className="text-[10px] text-gray-600 mt-0.5">
+                        {post.platform} · {new Date(post.published_at).toLocaleDateString("ro-RO")}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-gray-500 flex-shrink-0">
+                      {post.likes_count + post.comments_count + post.shares_count} eng.
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="h-3 w-2/3 bg-white/[0.04] rounded" />
+                      <div className="h-2 w-1/3 bg-white/[0.03] rounded mt-1.5" />
+                    </div>
+                  </div>
+                ))}
+                <p className="text-xs text-gray-600 text-center py-2">
+                  Nicio activitate recentă. Creează primul tău post!
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Industry Tips */}
