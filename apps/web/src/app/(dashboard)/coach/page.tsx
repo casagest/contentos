@@ -50,17 +50,41 @@ export default function CoachPage() {
     setInput("");
     setIsLoading(true);
 
-    // Simulated AI response (will connect to Claude API in production)
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/ai/coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text.trim() }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Eroare la AI Coach");
+      }
+
+      const data = await response.json();
+
+      let answerText = data.answer;
+      if (data.actionItems?.length) {
+        answerText += "\n\nPași de acțiune:\n" + data.actionItems.map((item: string) => `- ${item}`).join("\n");
+      }
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          "Mulțumesc pentru întrebare! Aceasta este o versiune demo a AI Coach-ului. În versiunea completă, voi analiza datele conturilor tale și voi oferi recomandări personalizate bazate pe performanța reală a conținutului tău.\n\nPentru moment, poți explora celelalte funcționalități din ContentOS: Composer pentru crearea de conținut, Scorer pentru analiza algoritmică, sau Brain Dump pentru transformarea ideilor în postări.",
+        content: answerText,
       };
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (err) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `Eroare: ${err instanceof Error ? err.message : "Nu am putut procesa întrebarea. Încearcă din nou."}`,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

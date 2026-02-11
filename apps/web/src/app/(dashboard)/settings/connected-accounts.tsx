@@ -27,7 +27,7 @@ const platformMeta: Record<
   facebook: {
     label: "Facebook",
     color: "bg-blue-600 hover:bg-blue-500",
-    connectUrl: "/api/auth/callback/facebook",
+    connectUrl: "/api/auth/facebook",
     icon: "F",
   },
   instagram: {
@@ -108,13 +108,10 @@ export default function ConnectedAccounts({
 
   // Auto-dismiss success banner after 5 seconds
   useEffect(() => {
-    if (showSuccess) {
-      setShowSuccessBanner(true);
-      const timer = setTimeout(() => {
-        setShowSuccessBanner(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
+    if (!showSuccess) return;
+    setShowSuccessBanner(true); // eslint-disable-line react-hooks/set-state-in-effect -- sync from URL param
+    const timer = setTimeout(() => setShowSuccessBanner(false), 5000);
+    return () => clearTimeout(timer);
   }, [showSuccess]);
 
   const connectedPlatforms = new Set(accounts.map((a) => a.platform));
@@ -174,6 +171,7 @@ export default function ConnectedAccounts({
             >
               <div className="flex items-center gap-3">
                 {account.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- external avatars from CDNs
                   <img
                     src={account.avatar_url}
                     alt={account.platform_name}

@@ -9,7 +9,7 @@ import type {
   CommunicationTone,
   BusinessLanguage,
   ComplianceRule,
-} from "@contentos/database/schemas/types";
+} from "@contentos/database";
 
 const INDUSTRIES: { value: Industry; label: string }[] = [
   { value: "dental", label: "Dental" },

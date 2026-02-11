@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { Industry } from "@contentos/database/schemas/types";
+import type { Industry } from "@contentos/database";
 
 export async function saveKpiValues(kpis: Record<string, number>) {
   const supabase = await createClient();

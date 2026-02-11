@@ -8,7 +8,7 @@ import {
   Hash,
   AtSign,
   Smile,
-  Image,
+  Image as ImageIcon,
   ChevronDown,
   Wand2,
   RotateCcw,
@@ -38,10 +38,11 @@ export default function ComposePage() {
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmoji, setIncludeEmoji] = useState(true);
   const [generatedContent, setGeneratedContent] = useState<
-    Record<string, string>
+    Record<string, { text: string; hashtags: string[]; algorithmScore?: { overallScore: number; grade: string }; alternativeVersions: string[] }>
   >({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const togglePlatform = (id: string) => {
     setSelectedPlatforms((prev) =>
@@ -49,25 +50,36 @@ export default function ComposePage() {
     );
   };
 
-  const generate = () => {
+  const generate = async () => {
     if (!content.trim() || selectedPlatforms.length === 0) return;
     setIsGenerating(true);
+    setError(null);
 
-    // Simulated generation (will connect to Claude API in production)
-    setTimeout(() => {
-      const results: Record<string, string> = {};
-      selectedPlatforms.forEach((platform) => {
-        results[platform] = `${content}\n\n${
-          includeEmoji ? "✨ " : ""
-        }Aceasta este o versiune demo. În producție, conținutul va fi optimizat automat pentru ${platform} cu AI-ul ContentOS.${
-          includeHashtags
-            ? `\n\n#ContentOS #${platform} #ContentMarketing #Romania`
-            : ""
-        }`;
+    try {
+      const response = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: content,
+          platforms: selectedPlatforms,
+          tone,
+          includeHashtags,
+          includeEmoji,
+        }),
       });
-      setGeneratedContent(results);
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Eroare la generare");
+      }
+
+      const data = await response.json();
+      setGeneratedContent(data.platformVersions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Eroare necunoscută");
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const copyToClipboard = async (text: string, platform: string) => {
@@ -118,7 +130,7 @@ export default function ComposePage() {
                   <Smile className="w-4 h-4" />
                 </button>
                 <button className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.04] transition">
-                  <Image className="w-4 h-4" />
+                  <ImageIcon className="w-4 h-4" />
                 </button>
               </div>
               <span className="text-xs text-gray-500">
@@ -229,6 +241,12 @@ export default function ComposePage() {
               </>
             )}
           </button>
+
+          {error && (
+            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
         </div>
 
         {/* Output side */}
@@ -246,8 +264,8 @@ export default function ComposePage() {
           ) : (
             selectedPlatforms.map((platformId) => {
               const platform = platforms.find((p) => p.id === platformId);
-              const text = generatedContent[platformId];
-              if (!platform || !text) return null;
+              const result = generatedContent[platformId];
+              if (!platform || !result) return null;
               return (
                 <div
                   key={platformId}
@@ -261,9 +279,14 @@ export default function ComposePage() {
                       <span className="text-sm font-medium text-white">
                         {platform.label}
                       </span>
+                      {result.algorithmScore && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/[0.06] text-gray-300">
+                          {result.algorithmScore.grade} ({result.algorithmScore.overallScore})
+                        </span>
+                      )}
                     </div>
                     <button
-                      onClick={() => copyToClipboard(text, platformId)}
+                      onClick={() => copyToClipboard(result.text, platformId)}
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition"
                     >
                       {copiedPlatform === platformId ? (
@@ -278,8 +301,15 @@ export default function ComposePage() {
                     </button>
                   </div>
                   <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
-                    {text}
+                    {result.text}
                   </div>
+                  {result.hashtags?.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                      <p className="text-xs text-brand-400">
+                        {result.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })

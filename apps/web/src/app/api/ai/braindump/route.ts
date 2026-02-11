@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
-import type { BusinessProfile } from "@contentos/database/schemas/types";
+import type { BusinessProfile } from "@contentos/database";
 
 const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
 const MAX_URLS = 3;

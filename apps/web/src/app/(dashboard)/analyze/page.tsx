@@ -21,7 +21,8 @@ const platforms = [
 interface ScoreResult {
   overallScore: number;
   grade: string;
-  metrics: { name: string; score: number; status: "good" | "warning" | "bad" }[];
+  metrics: { name: string; score: number; weight: number; explanation: string; suggestion?: string; status: "good" | "warning" | "bad" }[];
+  summary: string;
   improvements: string[];
 }
 
@@ -30,36 +31,42 @@ export default function AnalyzePage() {
   const [platform, setPlatform] = useState("facebook");
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const analyze = () => {
+  const analyze = async () => {
     if (!content.trim()) return;
     setIsAnalyzing(true);
+    setError(null);
 
-    // Simulated scoring (will connect to Claude API in production)
-    setTimeout(() => {
-      setResult({
-        overallScore: 72,
-        grade: "B",
-        metrics: [
-          { name: "Hook / captare atenție", score: 85, status: "good" },
-          { name: "Optimizare text", score: 70, status: "warning" },
-          { name: "Relevanță hashtag-uri", score: 65, status: "warning" },
-          { name: "Probabilitate share", score: 78, status: "good" },
-          { name: "Profunzime comentarii", score: 60, status: "warning" },
-          { name: "Calitate vizuală", score: 50, status: "bad" },
-          { name: "Timing publicare", score: 80, status: "good" },
-          { name: "Freshness conținut", score: 75, status: "good" },
-          { name: "Interacțiune comunitate", score: 68, status: "warning" },
-        ],
-        improvements: [
-          "Adaugă o imagine sau video pentru a crește engagement-ul cu 40%",
-          "Reformulează primele 2 rânduri cu un hook mai puternic",
-          "Folosește 3-5 hashtag-uri relevante pentru nișa ta",
-          "Adaugă un CTA clar la final (întrebare, sondaj, sau call-to-action)",
-        ],
+    try {
+      const response = await fetch("/api/ai/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, platform }),
       });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Eroare la analiză");
+      }
+
+      const data = await response.json();
+
+      setResult({
+        overallScore: data.overallScore,
+        grade: data.grade,
+        summary: data.summary,
+        metrics: data.metrics.map((m: { name: string; score: number; weight: number; explanation: string; suggestion?: string }) => ({
+          ...m,
+          status: m.score >= 70 ? "good" as const : m.score >= 50 ? "warning" as const : "bad" as const,
+        })),
+        improvements: data.improvements,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Eroare necunoscută");
+    } finally {
       setIsAnalyzing(false);
-    }, 2500);
+    }
   };
 
   const gradeColors: Record<string, string> = {
@@ -133,6 +140,12 @@ export default function AnalyzePage() {
               </>
             )}
           </button>
+
+          {error && (
+            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
         </div>
 
         {/* Results */}
@@ -171,6 +184,13 @@ export default function AnalyzePage() {
                 </p>
               </div>
 
+              {/* Summary */}
+              {result.summary && (
+                <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+                  <p className="text-sm text-gray-300">{result.summary}</p>
+                </div>
+              )}
+
               {/* Metrics */}
               <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
                 <h3 className="text-sm font-medium text-gray-300 mb-4">
@@ -208,6 +228,9 @@ export default function AnalyzePage() {
                           style={{ width: `${metric.score}%` }}
                         />
                       </div>
+                      {metric.explanation && (
+                        <p className="text-[11px] text-gray-500 mt-1">{metric.explanation}</p>
+                      )}
                     </div>
                   ))}
                 </div>

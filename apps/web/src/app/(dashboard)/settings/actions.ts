@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { BusinessProfile } from "@contentos/database/schemas/types";
+import type { BusinessProfile } from "@contentos/database";
 
 export async function saveBusinessProfile(profile: BusinessProfile) {
   const supabase = await createClient();
