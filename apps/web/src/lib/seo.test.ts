@@ -15,7 +15,7 @@ describe("SEO artifacts", () => {
     expect(result.sitemap).toMatch(/\/sitemap\.xml$/);
   });
 
-  it("sitemap includes homepage and legal pages", () => {
+  it("sitemap includes homepage and legal pages, excludes auth", () => {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
     const result = sitemap();
     const urls = result.map((e) => e.url);
@@ -23,5 +23,7 @@ describe("SEO artifacts", () => {
     expect(urls).toContain(`${baseUrl}/terms`);
     expect(urls).toContain(`${baseUrl}/privacy`);
     expect(urls).toContain(`${baseUrl}/gdpr`);
+    expect(urls).not.toContain(`${baseUrl}/login`);
+    expect(urls).not.toContain(`${baseUrl}/register`);
   });
 });

@@ -1,9 +1,13 @@
 import Link from "next/link";
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
+
 export const metadata = {
   title: "GDPR și Drepturile Tale",
   description:
     "Informații despre conformitatea GDPR și exercitarea drepturilor tale (access, rectification, erasure, portability) în cadrul ContentOS.",
+  alternates: { canonical: "/gdpr" },
+  openGraph: { url: `${baseUrl}/gdpr` },
 };
 
 export default function GdprPage() {
