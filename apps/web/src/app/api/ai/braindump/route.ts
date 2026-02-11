@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { FirecrawlService } from "@contentos/content-engine";
 import type { BusinessProfile } from "@contentos/database/schemas/types";
 
 const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
 const MAX_URLS = 3;
-const MAX_CHARS_PER_URL = 3000;
+const MAX_CHARS_PER_URL = 5000;
 const FETCH_TIMEOUT_MS = 10_000;
 
 function extractUrls(text: string): string[] {
@@ -15,18 +16,41 @@ function extractUrls(text: string): string[] {
   return [...new Set(matches)].slice(0, MAX_URLS);
 }
 
+// ---- Firecrawl-powered URL fetching ----
+
+async function fetchUrlWithFirecrawl(
+  firecrawl: FirecrawlService,
+  url: string
+): Promise<{ url: string; content: string; title?: string } | null> {
+  try {
+    const result = await firecrawl.scrapeUrl(url, {
+      formats: ["markdown"],
+      onlyMainContent: true,
+      timeout: FETCH_TIMEOUT_MS,
+    });
+
+    const markdown = result.data.markdown;
+    if (!markdown || markdown.length < 50) return null;
+
+    return {
+      url,
+      content: markdown.slice(0, MAX_CHARS_PER_URL),
+      title: result.data.metadata?.title,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ---- Fallback: basic fetch + HTML strip ----
+
 function stripHtmlToText(html: string): string {
-  // Remove script and style blocks entirely
   let text = html.replace(/<script[\s\S]*?<\/script>/gi, "");
   text = text.replace(/<style[\s\S]*?<\/style>/gi, "");
-  // Remove nav and footer blocks
   text = text.replace(/<nav[\s\S]*?<\/nav>/gi, "");
   text = text.replace(/<footer[\s\S]*?<\/footer>/gi, "");
-  // Remove header blocks (site headers, not h1-h6)
   text = text.replace(/<header[\s\S]*?<\/header>/gi, "");
-  // Remove all remaining HTML tags
   text = text.replace(/<[^>]+>/g, " ");
-  // Decode common HTML entities
   text = text
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -34,12 +58,11 @@ function stripHtmlToText(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
     .replace(/&nbsp;/g, " ");
-  // Collapse whitespace
   text = text.replace(/\s+/g, " ").trim();
   return text;
 }
 
-async function fetchUrlContent(
+async function fetchUrlFallback(
   url: string
 ): Promise<{ url: string; content: string } | null> {
   try {
@@ -61,7 +84,6 @@ async function fetchUrlContent(
     if (!response.ok) return null;
 
     const contentType = response.headers.get("content-type") || "";
-    // Only process text/html or text/plain responses
     if (
       !contentType.includes("text/html") &&
       !contentType.includes("text/plain")
@@ -72,16 +94,25 @@ async function fetchUrlContent(
     const html = await response.text();
     const text = stripHtmlToText(html);
 
-    if (text.length < 50) return null; // Skip pages with very little content
+    if (text.length < 50) return null;
 
     return {
       url,
       content: text.slice(0, MAX_CHARS_PER_URL),
     };
   } catch {
-    // Network error, timeout, or other issue — skip this URL
     return null;
   }
+}
+
+async function fetchUrlContent(
+  url: string,
+  firecrawl: FirecrawlService | null
+): Promise<{ url: string; content: string; title?: string } | null> {
+  if (firecrawl) {
+    return fetchUrlWithFirecrawl(firecrawl, url);
+  }
+  return fetchUrlFallback(url);
 }
 
 const BASE_SYSTEM_PROMPT = `Ești un expert în social media marketing, specializat pe piața românească.
@@ -294,17 +325,30 @@ export async function POST(request: NextRequest) {
       systemPrompt = BASE_SYSTEM_PROMPT;
     }
 
-    // Extract and fetch URL content from user input
+    // Extract and fetch URL content from user input (Firecrawl or fallback)
+    const firecrawlApiKey = process.env.FIRECRAWL_API_KEY;
+    const firecrawl = firecrawlApiKey
+      ? new FirecrawlService({ apiKey: firecrawlApiKey })
+      : null;
+
     const urls = extractUrls(body.rawInput);
     let urlContextBlock = "";
     if (urls.length > 0) {
-      const results = await Promise.all(urls.map(fetchUrlContent));
+      const results = await Promise.all(
+        urls.map((url) => fetchUrlContent(url, firecrawl))
+      );
       const fetched = results.filter(
-        (r): r is { url: string; content: string } => r !== null
+        (r): r is { url: string; content: string; title?: string } =>
+          r !== null
       );
       if (fetched.length > 0) {
         const sections = fetched
-          .map((r) => `[Conținut extras de la ${r.url}]:\n${r.content}`)
+          .map((r) => {
+            const header = r.title
+              ? `[${r.title}](${r.url})`
+              : `[Conținut extras de la ${r.url}]`;
+            return `${header}:\n${r.content}`;
+          })
           .join("\n\n");
         urlContextBlock = `\n\nCONȚINUT EXTRAS DIN URL-URILE MENȚIONATE:\n${sections}\n`;
       }

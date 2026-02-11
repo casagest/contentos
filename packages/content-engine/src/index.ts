@@ -55,3 +55,11 @@ export {
   buildScoringPrompt,
   CMSR_COMPLIANCE_PROMPT,
 } from "./ai/prompts/system";
+
+// Scraping (Firecrawl)
+export { FirecrawlService, FirecrawlError } from "./scraping/firecrawl";
+export type {
+  FirecrawlScrapeOptions,
+  FirecrawlScrapeResult,
+  FirecrawlMetadata,
+} from "./scraping/firecrawl";
