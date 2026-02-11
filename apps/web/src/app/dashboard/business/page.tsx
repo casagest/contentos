@@ -865,82 +865,103 @@ export default function BusinessDashboardPage() {
 
   // Load data from Supabase
   const loadData = useCallback(async () => {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: userData } = await supabase
-      .from("users")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userData?.organization_id) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("settings")
-      .eq("id", userData.organization_id)
-      .single();
-
-    const settings = (org?.settings as Record<string, unknown>) || {};
-    const bp = settings.businessProfile as BusinessProfile | undefined;
-    const kpis = (settings.dashboardKpis as Record<string, number>) || {};
-
-    if (bp?.name || bp?.industry) {
-      setBusinessProfile(bp);
-    }
-    setKpiValues(kpis);
-
-    // Fetch connected social accounts
-    const { data: accounts } = await supabase
-      .from("social_accounts")
-      .select("id, platform, platform_name, platform_username, avatar_url, followers_count, sync_status")
-      .eq("organization_id", userData.organization_id)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
-
-    if (accounts) {
-      setSocialAccounts(accounts as SocialAccountSummary[]);
-    }
-
-    // Fetch recent posts
-    const { data: posts } = await supabase
-      .from("posts")
-      .select("id, platform, text_content, likes_count, comments_count, shares_count, published_at, platform_url")
-      .eq("organization_id", userData.organization_id)
-      .order("published_at", { ascending: false })
-      .limit(5);
-
-    if (posts) {
-      setRecentPosts(posts as RecentPost[]);
-    }
-
-    // Fetch engagement analytics
+    setLoading(true);
     try {
-      const analyticsRes = await fetch("/api/analytics/overview");
-      if (analyticsRes.ok) {
-        const analytics: AnalyticsData = await analyticsRes.json();
-        setAnalyticsData(analytics);
-      }
-    } catch {
-      // Non-blocking — dashboard still works without analytics
-    }
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    setLoading(false);
+      if (!user) {
+        setBusinessProfile(null);
+        setKpiValues({});
+        setSocialAccounts([]);
+        setRecentPosts([]);
+        setAnalyticsData(null);
+        return;
+      }
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("organization_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!userData?.organization_id) {
+        setBusinessProfile(null);
+        setKpiValues({});
+        setSocialAccounts([]);
+        setRecentPosts([]);
+        setAnalyticsData(null);
+        return;
+      }
+
+      const orgId = userData.organization_id;
+
+      const [
+        { data: org, error: orgError },
+        { data: accounts, error: accountsError },
+        { data: posts, error: postsError },
+        analyticsDataResult,
+      ] = await Promise.all([
+        supabase
+          .from("organizations")
+          .select("settings")
+          .eq("id", orgId)
+          .single(),
+        supabase
+          .from("social_accounts")
+          .select("id, platform, platform_name, platform_username, avatar_url, followers_count, sync_status")
+          .eq("organization_id", orgId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("posts")
+          .select("id, platform, text_content, likes_count, comments_count, shares_count, published_at, platform_url")
+          .eq("organization_id", orgId)
+          .order("published_at", { ascending: false })
+          .limit(5),
+        fetch("/api/analytics/overview", { cache: "no-store" })
+          .then(async (res) => {
+            if (!res.ok) return null;
+            return (await res.json()) as AnalyticsData;
+          })
+          .catch(() => null),
+      ]);
+
+      if (orgError) {
+        console.error("Business profile query error:", orgError);
+      }
+      if (accountsError) {
+        console.error("Social accounts query error:", accountsError);
+      }
+      if (postsError) {
+        console.error("Recent posts query error:", postsError);
+      }
+
+      const settings = (org?.settings as Record<string, unknown>) || {};
+      const bp = settings.businessProfile as BusinessProfile | undefined;
+      const kpis = (settings.dashboardKpis as Record<string, number>) || {};
+
+      if (bp?.name || bp?.industry) {
+        setBusinessProfile(bp);
+      } else {
+        setBusinessProfile(null);
+      }
+      setKpiValues(kpis);
+      setSocialAccounts((accounts as SocialAccountSummary[]) || []);
+      setRecentPosts((posts as RecentPost[]) || []);
+      setAnalyticsData(analyticsDataResult);
+    } catch (err) {
+      console.error("Dashboard business load error:", err);
+      setAnalyticsData(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    loadData(); // eslint-disable-line react-hooks/set-state-in-effect -- intentional data fetch on mount
+    loadData();
   }, [loadData]);
 
   // Update clock every minute
@@ -1196,3 +1217,4 @@ export default function BusinessDashboardPage() {
     </div>
   );
 }
+
