@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { getSessionUserWithOrg } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 const META_GRAPH_API = "https://graph.facebook.com/v21.0";
 
@@ -12,29 +15,10 @@ interface SyncResult {
 
 export async function POST() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const session = await getSessionUserWithOrg();
+    if (session instanceof NextResponse) return session;
 
-    if (!user) {
-      return NextResponse.json({ error: "Neautentificat." }, { status: 401 });
-    }
-
-    const { data: userData } = await supabase
-      .from("users")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userData?.organization_id) {
-      return NextResponse.json(
-        { error: "Nu s-a găsit organizația." },
-        { status: 400 }
-      );
-    }
-
-    const orgId = userData.organization_id;
+    const { organizationId: orgId, supabase } = session;
 
     // Get all active social accounts
     const { data: accounts } = await supabase
@@ -156,7 +140,7 @@ export async function POST() {
 // ============================================================
 
 async function syncFacebook(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   account: Record<string, unknown>,
   orgId: string
 ): Promise<number> {
@@ -252,7 +236,7 @@ async function syncFacebook(
 // ============================================================
 
 async function syncInstagram(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   account: Record<string, unknown>,
   orgId: string
 ): Promise<number> {

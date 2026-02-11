@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, Language } from "@contentos/content-engine";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUserWithOrg } from "@/lib/auth";
 
 const VALID_PLATFORMS = ["facebook", "instagram", "tiktok", "youtube"];
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSessionUserWithOrg();
+    if (session instanceof NextResponse) return session;
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -42,41 +45,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Load business profile for personalized generation
-    let organizationId = "anonymous";
+    const { organizationId, supabase } = session;
+
     let userVoiceDescription: string | undefined;
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("settings")
+      .eq("id", organizationId)
+      .single();
 
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("organization_id")
-          .eq("id", user.id)
-          .single();
-
-        if (userData?.organization_id) {
-          organizationId = userData.organization_id;
-
-          const { data: org } = await supabase
-            .from("organizations")
-            .select("settings")
-            .eq("id", userData.organization_id)
-            .single();
-
-          const settings = org?.settings as Record<string, unknown> | null;
-          if (settings?.businessProfile) {
-            const bp = settings.businessProfile as { description?: string };
-            userVoiceDescription = bp.description;
-          }
-        }
-      }
-    } catch {
-      // Continue without business context
+    const settings = org?.settings as Record<string, unknown> | null;
+    if (settings?.businessProfile) {
+      const bp = settings.businessProfile as { description?: string };
+      userVoiceDescription = bp.description;
     }
 
     const service = new ContentAIService({ apiKey });
