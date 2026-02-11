@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, ContentType, Language } from "@contentos/content-engine";
+import { getSessionUser } from "@/lib/auth";
 
 const VALID_PLATFORMS = ["facebook", "instagram", "tiktok", "youtube"];
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSessionUser();
+    if (session instanceof NextResponse) return session;
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(

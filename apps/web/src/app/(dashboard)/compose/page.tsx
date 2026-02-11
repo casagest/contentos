@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Wand2,
   RotateCcw,
+  Save,
 } from "lucide-react";
 
 const platforms = [
@@ -43,6 +44,8 @@ export default function ComposePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaved, setDraftSaved] = useState<string | null>(null);
 
   const togglePlatform = (id: string) => {
     setSelectedPlatforms((prev) =>
@@ -86,6 +89,52 @@ export default function ComposePage() {
     await navigator.clipboard.writeText(text);
     setCopiedPlatform(platform);
     setTimeout(() => setCopiedPlatform(null), 2000);
+  };
+
+  const saveDraft = async () => {
+    if (Object.keys(generatedContent).length === 0) return;
+    setSavingDraft(true);
+    setDraftSaved(null);
+    try {
+      const firstPlatform = selectedPlatforms[0];
+      const firstResult = generatedContent[firstPlatform];
+      const body = firstResult?.text || content;
+      const hashtags = firstResult?.hashtags || [];
+
+      const platformVersions: Record<string, unknown> = {};
+      const algorithmScores: Record<string, unknown> = {};
+      for (const p of selectedPlatforms) {
+        if (generatedContent[p]) {
+          platformVersions[p] = { text: generatedContent[p].text, hashtags: generatedContent[p].hashtags };
+          if (generatedContent[p].algorithmScore) {
+            algorithmScores[p] = generatedContent[p].algorithmScore;
+          }
+        }
+      }
+
+      const res = await fetch("/api/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: body.slice(0, 60).split("\n")[0],
+          body,
+          hashtags,
+          target_platforms: selectedPlatforms,
+          platform_versions: platformVersions,
+          algorithm_scores: algorithmScores,
+          source: "ai_generated",
+        }),
+      });
+
+      if (res.ok) {
+        setDraftSaved("Draft salvat! Mergi la Calendar pentru a programa.");
+        setTimeout(() => setDraftSaved(null), 4000);
+      }
+    } catch {
+      // silent
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   return (
@@ -262,57 +311,74 @@ export default function ComposePage() {
               </div>
             </div>
           ) : (
-            selectedPlatforms.map((platformId) => {
-              const platform = platforms.find((p) => p.id === platformId);
-              const result = generatedContent[platformId];
-              if (!platform || !result) return null;
-              return (
-                <div
-                  key={platformId}
-                  className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-2.5 h-2.5 rounded-full ${platform.color}`}
-                      />
-                      <span className="text-sm font-medium text-white">
-                        {platform.label}
-                      </span>
-                      {result.algorithmScore && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/[0.06] text-gray-300">
-                          {result.algorithmScore.grade} ({result.algorithmScore.overallScore})
+            <>
+              {selectedPlatforms.map((platformId) => {
+                const platform = platforms.find((p) => p.id === platformId);
+                const result = generatedContent[platformId];
+                if (!platform || !result) return null;
+                return (
+                  <div
+                    key={platformId}
+                    className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full ${platform.color}`}
+                        />
+                        <span className="text-sm font-medium text-white">
+                          {platform.label}
                         </span>
-                      )}
+                        {result.algorithmScore && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/[0.06] text-gray-300">
+                            {result.algorithmScore.grade} ({result.algorithmScore.overallScore})
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(result.text, platformId)}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition"
+                      >
+                        {copiedPlatform === platformId ? (
+                          <>
+                            <Check className="w-3 h-3 text-green-400" /> Copiat
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" /> Copiază
+                          </>
+                        )}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(result.text, platformId)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition"
-                    >
-                      {copiedPlatform === platformId ? (
-                        <>
-                          <Check className="w-3 h-3 text-green-400" /> Copiat
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" /> Copiază
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
-                    {result.text}
-                  </div>
-                  {result.hashtags?.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-white/[0.06]">
-                      <p className="text-xs text-brand-400">
-                        {result.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
-                      </p>
+                    <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
+                      {result.text}
                     </div>
-                  )}
+                    {result.hashtags?.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                        <p className="text-xs text-brand-400">
+                          {result.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Save draft */}
+              {draftSaved && (
+                <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-sm text-green-400">
+                  {draftSaved}
                 </div>
-              );
-            })
+              )}
+              <button
+                onClick={saveDraft}
+                disabled={savingDraft}
+                className="w-full py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-gray-300 hover:text-white font-medium transition flex items-center justify-center gap-2 text-sm"
+              >
+                <Save className="w-4 h-4" />
+                {savingDraft ? "Se salvează..." : "Salvează ca Draft"}
+              </button>
+            </>
           )}
         </div>
       </div>
