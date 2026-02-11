@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, Post } from "@contentos/content-engine";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUserWithOrg } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSessionUserWithOrg();
+    if (session instanceof NextResponse) return session;
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -23,54 +26,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Load user context and posts
-    let organizationId = "anonymous";
+    const { organizationId, supabase } = session;
+
+    // Fetch recent and top-performing posts
     let recentPosts: Post[] = [];
     let topPerformingPosts: Post[] = [];
 
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const { data: recentRows } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("published_at", { ascending: false })
+      .limit(10);
 
-      if (user) {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("organization_id")
-          .eq("id", user.id)
-          .single();
+    if (recentRows?.length) {
+      recentPosts = recentRows.map(dbPostToEnginePost);
+    }
 
-        if (userData?.organization_id) {
-          organizationId = userData.organization_id;
+    const { data: topRows } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("engagement_rate", { ascending: false })
+      .limit(5);
 
-          // Fetch recent posts
-          const { data: recentRows } = await supabase
-            .from("posts")
-            .select("*")
-            .eq("organization_id", userData.organization_id)
-            .order("published_at", { ascending: false })
-            .limit(10);
-
-          if (recentRows?.length) {
-            recentPosts = recentRows.map(dbPostToEnginePost);
-          }
-
-          // Fetch top-performing posts
-          const { data: topRows } = await supabase
-            .from("posts")
-            .select("*")
-            .eq("organization_id", userData.organization_id)
-            .order("engagement_rate", { ascending: false })
-            .limit(5);
-
-          if (topRows?.length) {
-            topPerformingPosts = topRows.map(dbPostToEnginePost);
-          }
-        }
-      }
-    } catch {
-      // Continue without posts — coach will still respond
+    if (topRows?.length) {
+      topPerformingPosts = topRows.map(dbPostToEnginePost);
     }
 
     const service = new ContentAIService({ apiKey });
