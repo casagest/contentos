@@ -335,39 +335,69 @@ function FunnelVisualization({ stages }: { stages: FunnelStage[] }) {
 // Content Calendar Preview (Next 7 Days)
 // ============================================================
 function ContentCalendarPreview() {
-  const days: { label: string; date: string }[] = [];
+  const [draftCounts, setDraftCounts] = useState<Record<string, number>>({});
   const now = new Date();
   const dayNames = ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"];
 
+  const days: { label: string; date: string; dateStr: string }[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(now);
     d.setDate(d.getDate() + i);
     days.push({
       label: i === 0 ? "Azi" : i === 1 ? "Mâine" : dayNames[d.getDay()],
       date: `${d.getDate()}.${String(d.getMonth() + 1).padStart(2, "0")}`,
+      dateStr: d.toISOString().split("T")[0],
     });
   }
 
+  useEffect(() => {
+    const startDate = new Date();
+    const start = startDate.toISOString().split("T")[0];
+    const end = new Date(startDate);
+    end.setDate(end.getDate() + 6);
+    const endStr = end.toISOString().split("T")[0];
+
+    fetch(`/api/drafts?status=scheduled&start=${start}&end=${endStr}&limit=200`)
+      .then((r) => r.json())
+      .then((data) => {
+        const counts: Record<string, number> = {};
+        for (const draft of data.drafts || []) {
+          if (!draft.scheduled_at) continue;
+          const ds = new Date(draft.scheduled_at).toISOString().split("T")[0];
+          counts[ds] = (counts[ds] || 0) + 1;
+        }
+        setDraftCounts(counts);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="grid grid-cols-7 gap-1.5">
-      {days.map((day) => (
-        <div
-          key={day.date}
-          className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2 text-center hover:border-brand-500/30 transition group"
-        >
-          <div className="text-[10px] text-gray-500 font-medium">{day.label}</div>
-          <div className="text-xs text-gray-400 mb-2">{day.date}</div>
-          <div className="h-8 flex items-center justify-center">
-            <span className="text-gray-700 text-[10px]">—</span>
-          </div>
-          <Link
-            href="/braindump"
-            className="mt-1 block text-[9px] text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity"
+      {days.map((day) => {
+        const count = draftCounts[day.dateStr] || 0;
+        return (
+          <div
+            key={day.date}
+            className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2 text-center hover:border-brand-500/30 transition group"
           >
-            + Creează
-          </Link>
-        </div>
-      ))}
+            <div className="text-[10px] text-gray-500 font-medium">{day.label}</div>
+            <div className="text-xs text-gray-400 mb-2">{day.date}</div>
+            <div className="h-8 flex items-center justify-center">
+              {count > 0 ? (
+                <span className="text-brand-400 text-sm font-bold">{count}</span>
+              ) : (
+                <span className="text-gray-700 text-[10px]">—</span>
+              )}
+            </div>
+            <Link
+              href="/calendar"
+              className="mt-1 block text-[9px] text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              + Creează
+            </Link>
+          </div>
+        );
+      })}
     </div>
   );
 }

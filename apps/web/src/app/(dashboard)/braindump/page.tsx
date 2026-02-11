@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Brain,
   Wand2,
@@ -511,12 +512,17 @@ function TipsList({ tips }: { tips: string[] }) {
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function BrainDumpPage() {
+  const router = useRouter();
   const [dump, setDump] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<AIResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PlatformKey>("facebook");
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaved, setDraftSaved] = useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<
     Record<PlatformKey, boolean>
   >({
@@ -543,6 +549,54 @@ export default function BrainDumpPage() {
       setTimeout(() => setCopiedKey(null), 2000);
     }
   }, []);
+
+  const saveDraft = async (scheduled: boolean) => {
+    if (!results) return;
+    setSavingDraft(true);
+    setDraftSaved(null);
+    try {
+      const platformData = results.platforms[activeTab];
+      const body = getContentText(activeTab, platformData);
+      const hashtags = getHashtags(activeTab, platformData);
+
+      const activePlatforms = getSelectedPlatforms();
+      const platformVersions: Record<string, unknown> = {};
+      for (const p of activePlatforms) {
+        if (results.platforms[p]) {
+          platformVersions[p] = results.platforms[p];
+        }
+      }
+
+      const res = await fetch("/api/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: body.slice(0, 60).split("\n")[0],
+          body,
+          hashtags,
+          target_platforms: activePlatforms,
+          platform_versions: platformVersions,
+          source: "braindump",
+          scheduled_at: scheduled && scheduleDate ? new Date(scheduleDate).toISOString() : null,
+        }),
+      });
+
+      if (res.ok) {
+        if (scheduled) {
+          setDraftSaved("Postare programată cu succes!");
+          setTimeout(() => router.push("/calendar"), 1500);
+        } else {
+          setDraftSaved("Draft salvat cu succes!");
+          setTimeout(() => setDraftSaved(null), 3000);
+        }
+      }
+    } catch {
+      setDraftSaved(null);
+    } finally {
+      setSavingDraft(false);
+      setShowSchedulePicker(false);
+    }
+  };
 
   const processDump = async () => {
     const selected = getSelectedPlatforms();
@@ -885,13 +939,54 @@ export default function BrainDumpPage() {
             )}
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.06]">
-              <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium transition">
-                <CalendarPlus className="w-4 h-4" /> Programează
-              </button>
-              <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white transition">
-                <Pencil className="w-4 h-4" /> Editează
-              </button>
+            <div className="mt-5 pt-4 border-t border-white/[0.06]">
+              {draftSaved && (
+                <div className="mb-3 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-sm text-green-400">
+                  {draftSaved}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                {showSchedulePicker ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="datetime-local"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 [color-scheme:dark]"
+                    />
+                    <button
+                      onClick={() => saveDraft(true)}
+                      disabled={savingDraft || !scheduleDate}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 disabled:opacity-50 text-white font-medium transition"
+                    >
+                      <CalendarPlus className="w-4 h-4" /> Confirmă
+                    </button>
+                    <button
+                      onClick={() => setShowSchedulePicker(false)}
+                      className="px-3 py-2 rounded-lg text-sm bg-white/[0.04] hover:bg-white/[0.08] text-gray-400 transition"
+                    >
+                      Anulează
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowSchedulePicker(true)}
+                      disabled={savingDraft}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium transition"
+                    >
+                      <CalendarPlus className="w-4 h-4" /> Programează
+                    </button>
+                    <button
+                      onClick={() => saveDraft(false)}
+                      disabled={savingDraft}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white transition"
+                    >
+                      <Pencil className="w-4 h-4" /> Salvează Draft
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
