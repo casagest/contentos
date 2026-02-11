@@ -1,9 +1,13 @@
 import Link from "next/link";
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
+
 export const metadata = {
   title: "Termeni și Condiții",
   description:
     "Termenii și condițiile de utilizare a platformei ContentOS. AI Content Intelligence pentru România.",
+  alternates: { canonical: "/terms" },
+  openGraph: { url: `${baseUrl}/terms` },
 };
 
 export default function TermsPage() {

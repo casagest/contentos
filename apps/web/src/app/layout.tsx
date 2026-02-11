@@ -22,9 +22,6 @@ export const metadata: Metadata = {
     "YouTube",
     "marketing digital",
   ],
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     title: "ContentOS — AI Content Intelligence",
     description: "Creează conținut viral cu AI optimizat pentru piața românească",
@@ -48,31 +45,6 @@ export const metadata: Metadata = {
   },
 };
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      "@id": `${process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro"}/#organization`,
-      name: "ContentOS",
-      url: process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro",
-      logo: {
-        "@type": "ImageObject",
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro"}/logo.png`,
-      },
-    },
-    {
-      "@type": "WebSite",
-      "@id": `${process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro"}/#website`,
-      url: process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro",
-      name: "ContentOS",
-      description: "Platformă AI de creare și optimizare conținut social media pentru România",
-      publisher: { "@id": `${process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro"}/#organization` },
-      inLanguage: "ro-RO",
-    },
-  ],
-};
-
 export default function RootLayout({
   children,
 }: {
@@ -80,13 +52,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ro" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen font-sans">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        {children}
-      </body>
+      <body className="min-h-screen font-sans">{children}</body>
     </html>
   );
 }
