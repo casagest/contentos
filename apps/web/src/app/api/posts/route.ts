@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
     const orgId = userData.organization_id;
     const { searchParams } = request.nextUrl;
     const platform = searchParams.get("platform");
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
@@ -41,6 +43,14 @@ export async function GET(request: NextRequest) {
 
     if (platform && platform !== "all") {
       query = query.eq("platform", platform);
+    }
+
+    if (start) {
+      query = query.gte("published_at", start);
+    }
+
+    if (end) {
+      query = query.lte("published_at", end);
     }
 
     const { data: posts, count, error } = await query;
