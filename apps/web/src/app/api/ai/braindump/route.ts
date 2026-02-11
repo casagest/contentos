@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { safeFetch } from "@/lib/url-safety";
 import type { BusinessProfile } from "@contentos/database";
 
 const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
@@ -43,20 +44,7 @@ async function fetchUrlContent(
   url: string
 ): Promise<{ url: string; content: string } | null> {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; ContentosBot/1.0; +https://contentos.app)",
-        Accept: "text/html, application/xhtml+xml, text/plain",
-      },
-      redirect: "follow",
-    });
-
-    clearTimeout(timeout);
+    const response = await safeFetch(url, { timeoutMs: FETCH_TIMEOUT_MS });
 
     if (!response.ok) return null;
 
