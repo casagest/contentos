@@ -1,7 +1,7 @@
 -- ============================================================
 -- ContentOS Migration 003: Granular RLS Policies
--- Replaces basic FOR ALL policies from 001 with per-operation
--- policies, and adds RLS for new tables from 002.
+-- Replaces basic FOR ALL policies from 002 with per-operation
+-- policies, and adds RLS for new tables from 003.
 -- ============================================================
 
 -- ============================================================
@@ -30,7 +30,7 @@ RETURNS BOOLEAN AS $$
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- ============================================================
--- DROP old blanket FOR ALL policies from 001
+-- DROP old blanket FOR ALL policies from 002
 -- ============================================================
 
 DROP POLICY IF EXISTS "Users can view own org" ON contentos.organizations;
@@ -43,7 +43,7 @@ DROP POLICY IF EXISTS "Users can view own coach conversations" ON contentos.coac
 DROP POLICY IF EXISTS "Users can view own org analytics" ON contentos.analytics_daily;
 
 -- ============================================================
--- ENABLE RLS on new tables from 002
+-- ENABLE RLS on new tables from 003
 -- ============================================================
 
 ALTER TABLE contentos.inspirations ENABLE ROW LEVEL SECURITY;
