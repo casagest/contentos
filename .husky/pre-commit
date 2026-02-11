@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Pre-commit: lint-staged + lint + type-check + test
+# NOT ALLOWED: git commit --no-verify (bypasses quality gates; CI will block PRs)
+
+pnpm exec lint-staged
+pnpm lint
+pnpm type-check
+pnpm test

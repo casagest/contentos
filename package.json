@@ -16,7 +16,7 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "apps/web/**/*.{ts,tsx}": "pnpm --filter @contentos/web exec eslint --max-warnings 0 --fix"
+    "apps/web/src/**/*.{ts,tsx}": "pnpm --filter @contentos/web exec eslint --max-warnings 0 --fix"
   },
   "devDependencies": {
     "husky": "^9.1.7",
