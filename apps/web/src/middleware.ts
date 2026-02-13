@@ -38,6 +38,7 @@ export async function middleware(request: NextRequest) {
     "/braindump",
     "/inspiration",
     "/settings",
+    "/onboarding",
   ];
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)

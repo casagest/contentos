@@ -98,6 +98,8 @@ export interface Organization {
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   medicalcor_clinic_id?: string;
+  onboarding_step: number;
+  onboarding_completed_at?: string;
   settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;
