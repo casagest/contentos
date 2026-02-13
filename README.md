@@ -56,6 +56,7 @@ All variables must be set in the Vercel dashboard (or in `.env.local` for develo
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Yes | Stripe publishable key |
 | `STRIPE_WEBHOOK_SECRET` | Yes | No | Stripe webhook signing secret |
 | `OPENAI_API_KEY` | No | No | OpenAI key (embeddings) |
+| `MONITORING_API_KEY` | No | No | Secret for `/api/health?deep=1` readiness checks |
 | `NEXT_PUBLIC_APP_URL` | Yes | Yes | Canonical app URL |
 | `NEXT_PUBLIC_APP_NAME` | No | Yes | Display name (default: ContentOS) |
 
@@ -95,3 +96,11 @@ contentos/
 | `pnpm build` | Production build |
 | `pnpm lint` | Run ESLint |
 | `pnpm type-check` | Run TypeScript compiler check |
+| `pnpm monitor:synthetic` | Run synthetic uptime + latency checks |
+
+## Monitoring
+
+- Health endpoint: `GET /api/health`
+- Deep readiness endpoint: `GET /api/health?deep=1` (requires `MONITORING_API_KEY`)
+- Synthetic monitor workflow: `.github/workflows/synthetic-monitoring.yml`
+- Full thresholds + alert policy + runbook: `docs/monitoring-playbook.md`

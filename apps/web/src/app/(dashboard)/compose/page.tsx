@@ -30,16 +30,35 @@ const tones = [
   { id: "inspirational", label: "Inspirațional" },
 ];
 
+type Objective = "engagement" | "reach" | "leads" | "saves";
+
+const objectives: { id: Objective; label: string }[] = [
+  { id: "engagement", label: "Engagement" },
+  { id: "reach", label: "Reach" },
+  { id: "leads", label: "Leads" },
+  { id: "saves", label: "Saves" },
+];
+
 export default function ComposePage() {
   const [content, setContent] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
     "facebook",
   ]);
   const [tone, setTone] = useState("casual");
+  const [objective, setObjective] = useState<Objective>("engagement");
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmoji, setIncludeEmoji] = useState(true);
   const [generatedContent, setGeneratedContent] = useState<
-    Record<string, { text: string; hashtags: string[]; algorithmScore?: { overallScore: number; grade: string }; alternativeVersions: string[] }>
+    Record<
+      string,
+      {
+        text: string;
+        hashtags: string[];
+        algorithmScore?: { overallScore: number; grade: string };
+        alternativeVersions: string[];
+        selectedVariant?: number;
+      }
+    >
   >({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
@@ -65,6 +84,7 @@ export default function ComposePage() {
         body: JSON.stringify({
           input: content,
           platforms: selectedPlatforms,
+          objective,
           tone,
           includeHashtags,
           includeEmoji,
@@ -105,7 +125,15 @@ export default function ComposePage() {
       const algorithmScores: Record<string, unknown> = {};
       for (const p of selectedPlatforms) {
         if (generatedContent[p]) {
-          platformVersions[p] = { text: generatedContent[p].text, hashtags: generatedContent[p].hashtags };
+          platformVersions[p] = {
+            text: generatedContent[p].text,
+            hashtags: generatedContent[p].hashtags,
+            alternativeVersions: generatedContent[p].alternativeVersions || [],
+            selectedVariant:
+              typeof generatedContent[p].selectedVariant === "number"
+                ? generatedContent[p].selectedVariant
+                : 0,
+          };
           if (generatedContent[p].algorithmScore) {
             algorithmScores[p] = generatedContent[p].algorithmScore;
           }
@@ -236,6 +264,25 @@ export default function ComposePage() {
                 </div>
               </div>
 
+              <div className="space-y-1.5">
+                <span className="text-sm text-gray-400 block">Obiectiv</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {objectives.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setObjective(item.id)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs border transition ${
+                        objective === item.id
+                          ? "bg-brand-600/20 text-brand-300 border-brand-500/40"
+                          : "bg-white/[0.03] text-gray-400 border-white/[0.08] hover:text-gray-300"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Hashtags toggle */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-400">Include hashtag-uri</span>
@@ -331,10 +378,15 @@ export default function ComposePage() {
                         </span>
                         {result.algorithmScore && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/[0.06] text-gray-300">
-                            {result.algorithmScore.grade} ({result.algorithmScore.overallScore})
-                          </span>
-                        )}
-                      </div>
+                        {result.algorithmScore.grade} ({result.algorithmScore.overallScore})
+                      </span>
+                    )}
+                    {typeof result.selectedVariant === "number" && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-brand-600/15 text-brand-300 border border-brand-500/25">
+                        Varianta v{result.selectedVariant}
+                      </span>
+                    )}
+                  </div>
                       <button
                         onClick={() => copyToClipboard(result.text, platformId)}
                         className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition"

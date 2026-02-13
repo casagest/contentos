@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Brain,
@@ -65,9 +65,28 @@ interface AIResponse {
     tiktok?: TikTokResult;
     youtube?: YouTubeResult;
   };
+  meta?: {
+    mode?: "ai" | "deterministic";
+    provider?: string;
+    model?: string;
+    maxTokens?: number;
+    qualityMode?: "economy" | "balanced" | "premium";
+    objective?: Objective;
+    escalated?: boolean;
+    escalationCandidate?: boolean;
+    roiGate?: {
+      shouldEscalate?: boolean;
+      reason?: string;
+      roiMultiple?: number;
+    };
+    urlContextCount?: number;
+    warning?: string;
+  };
 }
 
 type PlatformKey = "facebook" | "instagram" | "tiktok" | "youtube";
+type QualityMode = "economy" | "balanced" | "premium";
+type Objective = "engagement" | "reach" | "leads" | "saves";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -107,6 +126,13 @@ const ENGAGEMENT_COLORS: Record<string, string> = {
   High: "text-green-400 bg-green-500/10",
   "Viral Potential": "text-purple-400 bg-purple-500/10",
 };
+
+const OBJECTIVE_OPTIONS: { id: Objective; label: string }[] = [
+  { id: "engagement", label: "Engagement" },
+  { id: "reach", label: "Reach" },
+  { id: "leads", label: "Leads" },
+  { id: "saves", label: "Saves" },
+];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -194,7 +220,7 @@ function FacebookCard({
           onClick={() =>
             onCopy(`${data.content}\n\n${data.hashtags.join(" ")}`)
           }
-          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition opacity-0 group-hover:opacity-100"
+          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition md:opacity-0 md:group-hover:opacity-100"
         >
           {copied ? (
             <>
@@ -254,7 +280,7 @@ function InstagramCard({
           onClick={() =>
             onCopy(`${data.caption}\n\n${data.hashtags.join(" ")}`)
           }
-          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition opacity-0 group-hover:opacity-100"
+          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition md:opacity-0 md:group-hover:opacity-100"
         >
           {copied ? (
             <>
@@ -332,7 +358,7 @@ function TikTokCard({
         </p>
         <button
           onClick={() => onCopy(fullText)}
-          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition opacity-0 group-hover:opacity-100"
+          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition md:opacity-0 md:group-hover:opacity-100"
         >
           {copied ? (
             <>
@@ -403,7 +429,7 @@ function YouTubeCard({
         </p>
         <button
           onClick={() => onCopy(fullText)}
-          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition opacity-0 group-hover:opacity-100"
+          className="absolute top-0 right-0 flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition md:opacity-0 md:group-hover:opacity-100"
         >
           {copied ? (
             <>
@@ -514,6 +540,8 @@ function TipsList({ tips }: { tips: string[] }) {
 export default function BrainDumpPage() {
   const router = useRouter();
   const [dump, setDump] = useState("");
+  const [qualityMode, setQualityMode] = useState<QualityMode>("economy");
+  const [objective, setObjective] = useState<Objective>("engagement");
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<AIResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -531,6 +559,13 @@ export default function BrainDumpPage() {
     tiktok: true,
     youtube: true,
   });
+
+  useEffect(() => {
+    const seed = sessionStorage.getItem("braindumpSeed");
+    if (!seed) return;
+    setDump((current) => current || seed);
+    sessionStorage.removeItem("braindumpSeed");
+  }, []);
 
   const togglePlatform = (platform: PlatformKey) => {
     setSelectedPlatforms((prev) => ({ ...prev, [platform]: !prev[platform] }));
@@ -614,6 +649,8 @@ export default function BrainDumpPage() {
           rawInput: dump,
           platforms: selected,
           language: "ro" as const,
+          qualityMode,
+          objective,
         }),
       });
 
@@ -653,6 +690,8 @@ export default function BrainDumpPage() {
           rawInput: dump,
           platforms: [platform],
           language: "ro" as const,
+          qualityMode,
+          objective,
         }),
       });
 
@@ -709,6 +748,12 @@ export default function BrainDumpPage() {
         <textarea
           value={dump}
           onChange={(e) => setDump(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault();
+              void processDump();
+            }
+          }}
           placeholder="Aruncă gândurile aici... De exemplu: Am făcut azi o procedură de albire dentară la un pacient care nu mai zâmbea de 5 ani. Rezultatul a fost incredibil. Vreau să postez despre asta."
           rows={6}
           className="w-full bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none"
@@ -736,8 +781,42 @@ export default function BrainDumpPage() {
             }
           )}
         </div>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-xs text-gray-500 mr-1">Mod:</span>
+          {(["economy", "balanced", "premium"] as QualityMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setQualityMode(mode)}
+              className={`px-2.5 py-1 rounded-lg text-xs transition ${
+                qualityMode === mode
+                  ? "bg-brand-600/20 text-brand-300 border border-brand-500/40"
+                  : "bg-white/[0.03] text-gray-400 border border-white/[0.08] hover:text-gray-300"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs text-gray-500 mr-1">Obiectiv:</span>
+          {OBJECTIVE_OPTIONS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setObjective(item.id)}
+              className={`px-2.5 py-1 rounded-lg text-xs transition ${
+                objective === item.id
+                  ? "bg-brand-600/20 text-brand-300 border border-brand-500/40"
+                  : "bg-white/[0.03] text-gray-400 border border-white/[0.08] hover:text-gray-300"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
-          <span className="text-xs text-gray-500">{dump.length} caractere</span>
+          <span className="text-xs text-gray-500">
+            {dump.length} caractere · Ctrl/Cmd+Enter pentru procesare
+          </span>
           <div className="flex gap-2">
             {dump.trim() && (
               <button
@@ -786,6 +865,49 @@ export default function BrainDumpPage() {
               Încearcă din nou
             </button>
           </div>
+        </div>
+      )}
+
+      {results?.meta && (
+        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 mb-4 text-xs text-gray-400">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2 py-0.5 rounded bg-white/[0.04] text-gray-300 uppercase">
+              {results.meta.mode || "ai"}
+            </span>
+            {results.meta.provider && (
+              <span className="px-2 py-0.5 rounded bg-white/[0.04] text-gray-300">
+                provider: {results.meta.provider}
+              </span>
+            )}
+            {results.meta.model && (
+              <span className="px-2 py-0.5 rounded bg-white/[0.04] text-gray-300">
+                model: {results.meta.model}
+              </span>
+            )}
+            {typeof results.meta.maxTokens === "number" && (
+              <span className="px-2 py-0.5 rounded bg-white/[0.04] text-gray-300">
+                max tokens: {results.meta.maxTokens}
+              </span>
+            )}
+            {results.meta.objective && (
+              <span className="px-2 py-0.5 rounded bg-white/[0.04] text-gray-300">
+                objective: {results.meta.objective}
+              </span>
+            )}
+            {results.meta.escalated === true && (
+              <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300">
+                premium escalated
+              </span>
+            )}
+            {typeof results.meta.roiGate?.roiMultiple === "number" && (
+              <span className="px-2 py-0.5 rounded bg-white/[0.04] text-gray-300">
+                ROI x{results.meta.roiGate.roiMultiple.toFixed(2)}
+              </span>
+            )}
+          </div>
+          {results.meta.warning && (
+            <p className="mt-2 text-amber-300">{results.meta.warning}</p>
+          )}
         </div>
       )}
 

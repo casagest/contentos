@@ -29,12 +29,38 @@ import {
 // ============================================================
 
 export class ContentAIService {
-  private client: Anthropic;
+  private anthropicClient?: Anthropic;
+  private provider: "anthropic" | "openrouter";
+  private apiKey: string;
+  private baseUrl: string;
   private model: string;
+  private lastResolvedModel?: string;
 
-  constructor(config: { apiKey: string; model?: string }) {
-    this.client = new Anthropic({ apiKey: config.apiKey });
-    this.model = config.model || "claude-sonnet-4-5-20250929";
+  constructor(config: {
+    apiKey: string;
+    model?: string;
+    provider?: "anthropic" | "openrouter";
+    baseUrl?: string;
+  }) {
+    const inferredProvider =
+      config.provider ||
+      (config.apiKey.startsWith("sk-or-") ? "openrouter" : "anthropic");
+
+    this.provider = inferredProvider;
+    this.apiKey = config.apiKey;
+    this.baseUrl =
+      config.baseUrl ||
+      process.env.OPENROUTER_BASE_URL?.trim() ||
+      "https://openrouter.ai/api/v1/chat/completions";
+    this.model =
+      config.model ||
+      (this.provider === "openrouter"
+        ? "openrouter/auto"
+        : "claude-sonnet-4-5-20250929");
+
+    if (this.provider === "anthropic") {
+      this.anthropicClient = new Anthropic({ apiKey: config.apiKey });
+    }
   }
 
   // ----------------------------------------------------------
@@ -49,19 +75,11 @@ export class ContentAIService {
   }): Promise<AlgorithmScore> {
     const prompt = buildScoringPrompt(params);
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 4096,
+    const text = await this.completeText({
       system: prompt,
-      messages: [
-        {
-          role: "user",
-          content: `Evaluează acest conținut pentru ${params.platform}:\n\n"""${params.content}"""`,
-        },
-      ],
+      user: `Evaluează acest conținut pentru ${params.platform}:\n\n"""${params.content}"""`,
+      maxTokens: 4096,
     });
-
-    const text = this.extractText(response);
     const parsed = this.parseJSON<RawScoreResponse>(text);
 
     return {
@@ -110,19 +128,11 @@ export class ContentAIService {
         userVoiceDescription: request.userVoiceDescription,
       });
 
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 4096,
+      const text = await this.completeText({
         system: prompt,
-        messages: [
-          {
-            role: "user",
-            content: `Generează conținut optimizat pentru ${platform} bazat pe acest input:\n\n"""${request.input}"""`,
-          },
-        ],
+        user: `Generează conținut optimizat pentru ${platform} bazat pe acest input:\n\n"""${request.input}"""`,
+        maxTokens: 4096,
       });
-
-      const text = this.extractText(response);
       const parsed = this.parseJSON<RawGenerationResponse>(text);
 
       // Score the generated content
@@ -203,19 +213,11 @@ export class ContentAIService {
       accountMetrics,
     });
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 4096,
+    const text = await this.completeText({
       system: systemPrompt,
-      messages: [
-        {
-          role: "user",
-          content: context.question,
-        },
-      ],
+      user: context.question,
+      maxTokens: 4096,
     });
-
-    const text = this.extractText(response);
 
     // Try to parse structured response, fall back to plain text
     try {
@@ -241,19 +243,11 @@ export class ContentAIService {
   // ----------------------------------------------------------
 
   async checkCMSRCompliance(content: string): Promise<CMSRComplianceResult> {
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 2048,
+    const text = await this.completeText({
       system: CMSR_COMPLIANCE_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Verifică conformitatea CMSR 2025 pentru acest conținut:\n\n"""${content}"""`,
-        },
-      ],
+      user: `Verifică conformitatea CMSR 2025 pentru acest conținut:\n\n"""${content}"""`,
+      maxTokens: 2048,
     });
-
-    const text = this.extractText(response);
     const parsed = this.parseJSON<CMSRComplianceResult>(text);
 
     return parsed;
@@ -302,19 +296,11 @@ FORMAT RĂSPUNS (JSON):
   }
 }`;
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 8192,
+    const text = await this.completeText({
       system: systemPrompt,
-      messages: [
-        {
-          role: "user",
-          content: `Brain dump:\n\n"""${params.input}"""`,
-        },
-      ],
+      user: `Brain dump:\n\n"""${params.input}"""`,
+      maxTokens: 8192,
     });
-
-    const text = this.extractText(response);
     return this.parseJSON(text);
   }
 
@@ -348,9 +334,7 @@ FORMAT RĂSPUNS (JSON):
       )
       .join("\n\n");
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 4096,
+    const text = await this.completeText({
       system: `Ești expert în analiza conturilor de social media. 
 Analizezi contul @${params.username} pe ${params.platform}.
 Oferă o analiză detaliată a strategiei lor de conținut.
@@ -366,15 +350,9 @@ FORMAT RĂSPUNS (JSON):
   "recommendations": ["Ce poți învăța de la ei 1", "..."],
   "whatToLearn": ["Tactică specifică de aplicat 1", "..."]
 }`,
-      messages: [
-        {
-          role: "user",
-          content: `Analizează contul @${params.username} bazat pe aceste postări:\n\n${postsSummary}`,
-        },
-      ],
+      user: `Analizează contul @${params.username} bazat pe aceste postări:\n\n${postsSummary}`,
+      maxTokens: 4096,
     });
-
-    const text = this.extractText(response);
     return this.parseJSON(text);
   }
 
@@ -382,12 +360,151 @@ FORMAT RĂSPUNS (JSON):
   // UTILITY METHODS
   // ----------------------------------------------------------
 
-  private extractText(response: Anthropic.Messages.Message): string {
+  private async completeText(params: {
+    system: string;
+    user: string;
+    maxTokens: number;
+  }): Promise<string> {
+    if (this.provider === "openrouter") {
+      return this.completeWithOpenRouter(params);
+    }
+
+    if (!this.anthropicClient) {
+      throw new Error("Anthropic client is not initialized.");
+    }
+
+    const response = await this.anthropicClient.messages.create({
+      model: this.model,
+      max_tokens: params.maxTokens,
+      system: params.system,
+      messages: [{ role: "user", content: params.user }],
+    });
+
+    this.lastResolvedModel = this.model;
+    return this.extractAnthropicText(response);
+  }
+
+  private extractAnthropicText(response: Anthropic.Messages.Message): string {
     const block = response.content.find((b) => b.type === "text");
     if (!block || block.type !== "text") {
       throw new Error("No text content in AI response");
     }
     return block.text;
+  }
+
+  private async completeWithOpenRouter(params: {
+    system: string;
+    user: string;
+    maxTokens: number;
+  }): Promise<string> {
+    const models = this.parseModelChain(this.model);
+    let lastError: (Error & { status?: number }) | null = null;
+
+    for (const model of models) {
+      try {
+        const response = await fetch(this.baseUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer":
+              process.env.OPENROUTER_SITE_URL?.trim() ||
+              "https://contentos-project.vercel.app",
+            "X-Title": process.env.OPENROUTER_APP_NAME?.trim() || "ContentOS",
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: params.maxTokens,
+            messages: [
+              { role: "system", content: params.system },
+              { role: "user", content: params.user },
+            ],
+          }),
+        });
+
+        const payload = (await response.json().catch(() => ({}))) as {
+          error?: { message?: string };
+          choices?: Array<{
+            message?: { content?: string | Array<{ type?: string; text?: string }> };
+          }>;
+        };
+
+        if (!response.ok) {
+          const message =
+            payload.error?.message ||
+            `OpenRouter request failed with status ${response.status}`;
+          throw this.toProviderError(response.status, message);
+        }
+
+        const content = payload.choices?.[0]?.message?.content;
+        if (typeof content === "string" && content.trim()) {
+          this.lastResolvedModel = model;
+          return content;
+        }
+
+        if (Array.isArray(content)) {
+          const text = content
+            .map((part) => (part && typeof part.text === "string" ? part.text : ""))
+            .join("\n")
+            .trim();
+          if (text) {
+            this.lastResolvedModel = model;
+            return text;
+          }
+        }
+
+        throw this.toProviderError(502, "OpenRouter response missing text content.");
+      } catch (error) {
+        const providerError =
+          error instanceof Error
+            ? (error as Error & { status?: number })
+            : this.toProviderError(500, "Unknown OpenRouter error.");
+        lastError = providerError;
+
+        const status = typeof providerError.status === "number" ? providerError.status : 500;
+        const message = providerError.message || "";
+        const hasNextModel = model !== models[models.length - 1];
+        const shouldFallback = hasNextModel && this.shouldFallbackToNextOpenRouterModel(status, message);
+
+        if (shouldFallback) continue;
+        throw providerError;
+      }
+    }
+
+    if (lastError) throw lastError;
+    throw this.toProviderError(500, "OpenRouter fallback chain exhausted.");
+  }
+
+  private toProviderError(status: number, message: string): Error & { status: number } {
+    const error = new Error(message) as Error & { status: number };
+    error.status = status;
+    return error;
+  }
+
+  getLastResolvedModel(): string | undefined {
+    return this.lastResolvedModel;
+  }
+
+  private parseModelChain(raw: string): string[] {
+    const models = raw
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (!models.length) return ["openrouter/auto"];
+    return [...new Set(models)];
+  }
+
+  private shouldFallbackToNextOpenRouterModel(status: number, message: string): boolean {
+    const retryableStatus = new Set([400, 401, 402, 403, 404, 408, 409, 425, 429, 500, 502, 503, 504]);
+    if (retryableStatus.has(status)) return true;
+    const lowerMessage = message.toLowerCase();
+    return (
+      lowerMessage.includes("model") ||
+      lowerMessage.includes("rate limit") ||
+      lowerMessage.includes("quota") ||
+      lowerMessage.includes("capacity")
+    );
   }
 
   private parseJSON<T>(text: string): T {

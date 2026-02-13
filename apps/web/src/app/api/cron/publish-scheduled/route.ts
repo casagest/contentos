@@ -1,6 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { FacebookAdapter, InstagramAdapter } from "@contentos/content-engine/platforms/meta";
+import {
+  deriveCreativeSignals,
+  logDecisionForPublishedPost,
+  logOutcomeForPost,
+  refreshCreativeMemoryFromPost,
+} from "@/lib/ai/outcome-learning";
+
+function resolveDraftTextForPlatform(draft: Record<string, any>, platform: string): string {
+  const platformVersions =
+    typeof draft.platform_versions === "object" && draft.platform_versions !== null
+      ? (draft.platform_versions as Record<string, unknown>)
+      : {};
+  const row =
+    typeof platformVersions[platform] === "object" && platformVersions[platform] !== null
+      ? (platformVersions[platform] as Record<string, unknown>)
+      : {};
+  const baseText =
+    typeof row.text === "string" && row.text.trim().length > 0
+      ? row.text.trim()
+      : typeof draft.body === "string"
+        ? draft.body
+        : "";
+  const alternatives = Array.isArray(row.alternativeVersions)
+    ? row.alternativeVersions.filter(
+        (item): item is string => typeof item === "string" && item.trim().length > 0
+      )
+    : [];
+  const selectedVariant =
+    typeof row.selectedVariant === "number" && Number.isFinite(row.selectedVariant)
+      ? Math.max(0, Math.floor(row.selectedVariant))
+      : 0;
+  const candidates = [baseText, ...alternatives];
+  return candidates[selectedVariant] || baseText;
+}
 
 export async function GET(request: NextRequest) {
   // Verify cron secret
@@ -63,8 +97,7 @@ export async function GET(request: NextRequest) {
       let anySuccess = false;
 
       for (const account of socialAccounts) {
-        const platformVersions = draft.platform_versions || {};
-        const versionText = platformVersions[account.platform]?.text || draft.body || "";
+        const versionText = resolveDraftTextForPlatform(draft, account.platform);
         const content = {
           text: versionText,
           mediaUrls: draft.media_urls || [],
@@ -87,18 +120,71 @@ export async function GET(request: NextRequest) {
           }
 
           // Insert post record
-          await supabase.from("posts").insert({
-            social_account_id: account.id,
-            organization_id: draft.organization_id,
-            platform: account.platform,
-            platform_post_id: result.platformPostId,
-            platform_url: result.platformUrl,
-            content_type: "text",
-            text_content: draft.body,
-            media_urls: draft.media_urls || [],
-            hashtags: draft.hashtags || [],
-            published_at: new Date().toISOString(),
-          });
+          const signals = deriveCreativeSignals({ text: content.text });
+          const { data: insertedPost } = await supabase
+            .from("posts")
+            .insert({
+              social_account_id: account.id,
+              organization_id: draft.organization_id,
+              platform: account.platform,
+              platform_post_id: result.platformPostId,
+              platform_url: result.platformUrl,
+              content_type: "text",
+              text_content: content.text,
+              media_urls: draft.media_urls || [],
+              hashtags: draft.hashtags || [],
+              hook_type: signals.hookType,
+              cta_type: signals.ctaType,
+              published_at: new Date().toISOString(),
+            })
+            .select(
+              "id,organization_id,social_account_id,platform,text_content,hook_type,cta_type,likes_count,comments_count,shares_count,saves_count,views_count,reach_count,impressions_count,engagement_rate,published_at"
+            )
+            .single();
+
+          if (insertedPost?.id) {
+            await logDecisionForPublishedPost({
+              supabase,
+              organizationId: draft.organization_id,
+              userId: draft.created_by || null,
+              routeKey: "cron:publish-scheduled",
+              platform: account.platform,
+              postId: insertedPost.id,
+              draft: {
+                id: draft.id,
+                source: draft.source,
+                algorithm_scores: draft.algorithm_scores,
+                platform_versions: draft.platform_versions,
+                ai_suggestions: draft.ai_suggestions,
+              },
+              decisionContext: {
+                publishType: "scheduled",
+                scheduledAt: draft.scheduled_at || null,
+              },
+            });
+
+            const outcomeLogged = await logOutcomeForPost({
+              supabase,
+              post: insertedPost,
+              source: "publish",
+              eventType: "published",
+              metadata: {
+                publishType: "scheduled",
+                platformPostId: result.platformPostId,
+              },
+            });
+
+            if (outcomeLogged) {
+              await refreshCreativeMemoryFromPost({
+                supabase,
+                post: insertedPost,
+                metadata: {
+                  source: "publish",
+                  publishType: "scheduled",
+                },
+              });
+            }
+          }
 
           anySuccess = true;
         } catch (err) {

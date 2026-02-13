@@ -604,8 +604,7 @@ export default function CalendarPage() {
                 </div>
                 <button
                   onClick={() => openCreate(day.dateStr)}
-                  className="p-1 rounded-md hover:bg-white/[0.06] text-gray-600 hover:text-brand-400 transition opacity-0 group-hover:opacity-100"
-                  style={{ opacity: 1 }}
+                  className="p-1 rounded-md hover:bg-white/[0.06] text-gray-600 hover:text-brand-400 transition md:opacity-0 md:group-hover:opacity-100"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

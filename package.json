@@ -8,6 +8,7 @@
     "build": "pnpm --filter @contentos/web build",
     "lint": "pnpm --filter @contentos/web lint",
     "type-check": "pnpm --filter @contentos/web type-check",
+    "monitor:synthetic": "node scripts/synthetic-monitoring.mjs",
     "test": "pnpm --filter @contentos/web test",
     "test:coverage": "pnpm --filter @contentos/web test:coverage",
     "gate:platinum": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build && pnpm e2e",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "next": "latest",
     "typescript": "^5.7.0"
   }
 }

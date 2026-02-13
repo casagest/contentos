@@ -1,0 +1,46 @@
+name: Synthetic Monitoring
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  synthetic-monitoring:
+    name: Endpoint Uptime + Latency SLO
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MONITOR_BASE_URL: ${{ vars.MONITOR_BASE_URL }}
+      MONITOR_TIMEOUT_MS: ${{ vars.MONITOR_TIMEOUT_MS }}
+      MONITORING_API_KEY: ${{ secrets.MONITORING_API_KEY }}
+      MONITOR_ALERT_WEBHOOK: ${{ secrets.MONITOR_ALERT_WEBHOOK }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run synthetic endpoint checks
+        run: node scripts/synthetic-monitoring.mjs
+
+      - name: Notify alert webhook on failure
+        if: failure() && env.MONITOR_ALERT_WEBHOOK != ''
+        run: |
+          payload=$(cat <<'JSON'
+          {
+            "text": "ContentOS synthetic monitoring failed",
+            "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "workflow": "${{ github.workflow }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          JSON
+          )
+          curl -sS -X POST "$MONITOR_ALERT_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
+
