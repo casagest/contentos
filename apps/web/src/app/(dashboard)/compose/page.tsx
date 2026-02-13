@@ -420,7 +420,7 @@ export default function ComposePage() {
             {/* Media Upload */}
             {organizationId && (
               <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" />
                   Media
                 </label>
