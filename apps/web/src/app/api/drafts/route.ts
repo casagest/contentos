@@ -1,5 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { buildDeterministicScore } from "@/lib/ai/deterministic";
+import type { Platform } from "@contentos/content-engine";
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function isPlatform(value: unknown): value is Platform {
+  return (
+    value === "facebook" ||
+    value === "instagram" ||
+    value === "tiktok" ||
+    value === "youtube" ||
+    value === "twitter"
+  );
+}
+
+function extractTextForPlatform(params: {
+  platform: Platform;
+  draftBody: string;
+  platformVersions: Record<string, unknown>;
+}): string {
+  const row = asRecord(params.platformVersions[params.platform]);
+
+  const direct = typeof row.text === "string" ? row.text : undefined;
+  if (direct && direct.trim()) return direct.trim();
+
+  if (params.platform === "facebook") {
+    const content = typeof row.content === "string" ? row.content : undefined;
+    if (content && content.trim()) return content.trim();
+  }
+
+  if (params.platform === "instagram") {
+    const caption = typeof row.caption === "string" ? row.caption : undefined;
+    const content = typeof row.content === "string" ? row.content : undefined;
+    const best = (caption || content || "").trim();
+    if (best) return best;
+  }
+
+  if (params.platform === "tiktok") {
+    const script = typeof row.script === "string" ? row.script : undefined;
+    const content = typeof row.content === "string" ? row.content : undefined;
+    const best = (script || content || "").trim();
+    if (best) return best;
+  }
+
+  if (params.platform === "youtube") {
+    const title = typeof row.title === "string" ? row.title : undefined;
+    const description = typeof row.description === "string" ? row.description : undefined;
+    const content = typeof row.content === "string" ? row.content : undefined;
+    const parts = [title, description || content].filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0
+    );
+    if (parts.length) return parts.join("\n\n").trim();
+  }
+
+  return params.draftBody.trim();
+}
 
 function toStartOfDayIso(input: string): string {
   if (input.includes("T")) return input;
@@ -193,14 +252,17 @@ export async function POST(request: NextRequest) {
 
     const {
       title,
-      body: draftBody,
+      body: draftBodyRaw,
       hashtags,
       target_platforms,
       platform_versions,
       algorithm_scores,
+      ai_suggestions,
       scheduled_at,
       source,
     } = body;
+
+    const draftBody = typeof draftBodyRaw === "string" ? draftBodyRaw.trim() : "";
 
     if (!draftBody || !target_platforms?.length) {
       return NextResponse.json(
@@ -209,20 +271,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const platformVersions = asRecord(platform_versions);
+    const normalizedAiSuggestions = asRecord(ai_suggestions);
+    const normalizedAlgorithmScores = asRecord(algorithm_scores);
+    const targetPlatforms = Array.isArray(target_platforms)
+      ? target_platforms.filter(isPlatform)
+      : [];
+
+    if (targetPlatforms.length === 0) {
+      return NextResponse.json(
+        { error: "Selecteaza cel putin o platforma valida." },
+        { status: 400 }
+      );
+    }
+
+    const resolvedAlgorithmScores =
+      Object.keys(normalizedAlgorithmScores).length > 0
+        ? normalizedAlgorithmScores
+        : targetPlatforms.reduce<Record<string, unknown>>((acc, platform) => {
+            const text = extractTextForPlatform({
+              platform,
+              draftBody,
+              platformVersions,
+            });
+            acc[platform] = buildDeterministicScore({
+              content: text,
+              platform,
+              contentType: "text",
+            });
+            return acc;
+          }, {});
+
     const draftData = {
       organization_id: userData.organization_id,
       created_by: user.id,
       title: title || null,
       body: draftBody,
-      hashtags: hashtags || [],
-      target_platforms,
-      platform_versions: platform_versions || {},
-      algorithm_scores: algorithm_scores || {},
+      hashtags: Array.isArray(hashtags) ? hashtags : [],
+      target_platforms: targetPlatforms,
+      platform_versions: platformVersions,
+      algorithm_scores: resolvedAlgorithmScores,
       status: scheduled_at ? "scheduled" : "draft",
       scheduled_at: scheduled_at || null,
       source: source || "manual",
       media_urls: [],
-      ai_suggestions: {},
+      ai_suggestions:
+        JSON.stringify(normalizedAiSuggestions).length <= 50_000 ? normalizedAiSuggestions : {},
       requires_patient_consent: false,
     };
 

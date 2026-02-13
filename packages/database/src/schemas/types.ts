@@ -225,6 +225,146 @@ export interface Inspiration {
   created_at: string;
 }
 
+export interface ScrapeCache {
+  id: string;
+  organization_id: string;
+  created_by?: string;
+  url: string;
+  url_hash: string;
+  source: "firecrawl" | "fallback";
+  title?: string;
+  description?: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  fetched_at: string;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResearchAnalysis {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  url: string;
+  url_hash: string;
+  platform: Platform;
+  username?: string;
+  mode: "ai" | "deterministic";
+  scrape_source: "firecrawl" | "fallback";
+  summary: string;
+  content_strategy: string;
+  top_topics: string[];
+  best_posting_times: string[];
+  recommendations: string[];
+  raw_result: Record<string, unknown>;
+  cached_from_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIUsageEvent {
+  id: string;
+  organization_id: string;
+  user_id?: string;
+  route_key: string;
+  intent_hash?: string;
+  provider: string;
+  model: string;
+  mode: "ai" | "deterministic";
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost_usd: number;
+  latency_ms: number;
+  success: boolean;
+  cache_hit: boolean;
+  budget_fallback: boolean;
+  error_code?: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface AIRequestCache {
+  id: string;
+  organization_id: string;
+  created_by?: string;
+  route_key: string;
+  intent_hash: string;
+  provider: string;
+  model: string;
+  response_json: Record<string, unknown>;
+  estimated_cost_usd: number;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+}
+
+export interface DecisionLog {
+  id: string;
+  organization_id: string;
+  user_id?: string;
+  draft_id?: string;
+  post_id?: string;
+  route_key: string;
+  decision_type: string;
+  objective: "engagement" | "reach" | "leads" | "saves";
+  provider: string;
+  model: string;
+  mode: "ai" | "deterministic";
+  platform?: Platform;
+  selected_variant?: string;
+  expected_score?: number;
+  projected_uplift?: number;
+  estimated_cost_usd: number;
+  roi_multiple?: number;
+  decision_context: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface OutcomeEvent {
+  id: string;
+  organization_id: string;
+  social_account_id?: string;
+  post_id: string;
+  platform: Platform;
+  objective: "engagement" | "reach" | "leads" | "saves";
+  event_type: "published" | "snapshot" | "manual";
+  source: "publish" | "sync" | "manual";
+  recorded_at: string;
+  published_at?: string;
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  saves_count: number;
+  views_count: number;
+  reach_count: number;
+  impressions_count: number;
+  engagement_rate?: number;
+  metrics_hash?: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface CreativeMemory {
+  id: string;
+  organization_id: string;
+  platform: Platform;
+  objective: "engagement" | "reach" | "leads" | "saves";
+  memory_key: string;
+  hook_type?: string;
+  framework?: string;
+  cta_type?: string;
+  sample_size: number;
+  success_count: number;
+  total_engagement: number;
+  avg_engagement: number;
+  last_post_id?: string;
+  last_outcome_at?: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BrainDump {
   id: string;
   organization_id: string;
@@ -329,6 +469,13 @@ export type SocialAccountInsert = Insertable<SocialAccount>;
 export type PostInsert = Insertable<Post>;
 export type DraftInsert = Insertable<Draft>;
 export type InspirationInsert = Omit<Inspiration, "id" | "created_at">;
+export type ScrapeCacheInsert = Omit<ScrapeCache, "id" | "created_at" | "updated_at">;
+export type ResearchAnalysisInsert = Omit<ResearchAnalysis, "id" | "created_at" | "updated_at">;
+export type AIUsageEventInsert = Omit<AIUsageEvent, "id" | "created_at">;
+export type AIRequestCacheInsert = Omit<AIRequestCache, "id" | "created_at" | "updated_at">;
+export type DecisionLogInsert = Omit<DecisionLog, "id" | "created_at">;
+export type OutcomeEventInsert = Omit<OutcomeEvent, "id" | "created_at">;
+export type CreativeMemoryInsert = Omit<CreativeMemory, "id" | "created_at" | "updated_at">;
 export type BrainDumpInsert = Omit<BrainDump, "id" | "created_at">;
 export type CoachConversationInsert = Omit<CoachConversation, "id" | "created_at" | "updated_at">;
 export type TemplateInsert = Omit<Template, "id" | "created_at">;

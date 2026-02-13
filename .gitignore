@@ -16,3 +16,9 @@ playwright/.cache/
 supabase/.temp/
 *.tsbuildinfo
 .firecrawl/
+.vercel
+.env*.local
+.pnpm-store/
+.claude/settings.local.json
+supabase/supabase/.temp/
+**/.tmp/

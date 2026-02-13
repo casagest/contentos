@@ -1,128 +1,453 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, Post } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
+import { buildOpenRouterModelChain, resolveAIProvider } from "@/lib/ai/provider";
+import { buildDeterministicCoach } from "@/lib/ai/deterministic";
+import {
+  buildIntentCacheKey,
+  decidePaidAIAccess,
+  estimateAnthropicCostUsd,
+  estimateTokensFromText,
+  getIntentCache,
+  logAIUsageEvent,
+  setIntentCache,
+  withCacheMeta,
+} from "@/lib/ai/governor";
+
+const ROUTE_KEY = "coach:v3";
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+
+interface CoachBody {
+  question?: string;
+  platform?: Platform;
+}
+
+function averageEngagement(posts: Post[]): number {
+  if (!posts.length) return 0;
+  return (
+    posts.reduce((sum, post) => sum + Math.max(0, Number(post.engagementRate || 0)), 0) /
+    posts.length
+  );
+}
+
+function buildContextFingerprint(recentPosts: Post[], topPerformingPosts: Post[]): Record<string, unknown> {
+  return {
+    recentPosts: recentPosts.slice(0, 8).map((post) => ({
+      id: post.id,
+      p: post.platform,
+      e: Number((post.engagementRate || 0).toFixed(2)),
+      d: post.publishedAt.toISOString().slice(0, 10),
+    })),
+    topPosts: topPerformingPosts.slice(0, 5).map((post) => ({
+      id: post.id,
+      p: post.platform,
+      e: Number((post.engagementRate || 0).toFixed(2)),
+      d: post.publishedAt.toISOString().slice(0, 10),
+    })),
+  };
+}
+
+function shouldEscalateCoachModel(params: {
+  question: string;
+  recentPosts: Post[];
+  threshold: number;
+}): boolean {
+  const strategicKeywords =
+    /(strategie|plan|roadmap|audit|campanie|funnel|conversion|lead|competitor|positionare|retentie|growth)/i;
+  const isStrategic = strategicKeywords.test(params.question);
+  const isLongQuestion = params.question.length > 220;
+  const engagement = averageEngagement(params.recentPosts);
+
+  return isStrategic || isLongQuestion || engagement < params.threshold;
+}
 
 export async function POST(request: NextRequest) {
+  const session = await getSessionUserWithOrg();
+  if (session instanceof NextResponse) return session;
+
+  let body: CoachBody;
   try {
-    const session = await getSessionUserWithOrg();
-    if (session instanceof NextResponse) return session;
+    body = (await request.json()) as CoachBody;
+  } catch {
+    return NextResponse.json({ error: "Body invalid. Trimite JSON valid." }, { status: 400 });
+  }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Configurare server incompletă. Cheia API lipsește." },
-        { status: 500 }
-      );
-    }
+  const question = body.question?.trim() || "";
+  if (!question) {
+    return NextResponse.json({ error: "Intrebarea nu poate fi goala." }, { status: 400 });
+  }
 
-    const body = await request.json();
+  let recentPosts: Post[] = [];
+  let topPerformingPosts: Post[] = [];
 
-    if (!body.question?.trim()) {
-      return NextResponse.json(
-        { error: "Întrebarea nu poate fi goală." },
-        { status: 400 }
-      );
-    }
+  const { data: recentRows } = await session.supabase
+    .from("posts")
+    .select("*")
+    .eq("organization_id", session.organizationId)
+    .order("published_at", { ascending: false })
+    .limit(20);
 
-    const { organizationId, supabase } = session;
+  if (recentRows?.length) {
+    recentPosts = recentRows.map(dbPostToEnginePost);
+  }
 
-    // Fetch recent and top-performing posts
-    let recentPosts: Post[] = [];
-    let topPerformingPosts: Post[] = [];
+  const { data: topRows } = await session.supabase
+    .from("posts")
+    .select("*")
+    .eq("organization_id", session.organizationId)
+    .order("engagement_rate", { ascending: false })
+    .limit(8);
 
-    const { data: recentRows } = await supabase
-      .from("posts")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .order("published_at", { ascending: false })
-      .limit(10);
+  if (topRows?.length) {
+    topPerformingPosts = topRows.map(dbPostToEnginePost);
+  }
 
-    if (recentRows?.length) {
-      recentPosts = recentRows.map(dbPostToEnginePost);
-    }
+  const deterministic = buildDeterministicCoach({
+    question,
+    platform: body.platform,
+    recentPosts,
+    topPosts: topPerformingPosts,
+  });
 
-    const { data: topRows } = await supabase
-      .from("posts")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .order("engagement_rate", { ascending: false })
-      .limit(5);
+  const provider = resolveAIProvider();
+  const contextFingerprint = buildContextFingerprint(recentPosts, topPerformingPosts);
+  const intentHash = buildIntentCacheKey(ROUTE_KEY, {
+    question,
+    platform: body.platform || null,
+    context: contextFingerprint,
+    version: 3,
+  });
 
-    if (topRows?.length) {
-      topPerformingPosts = topRows.map(dbPostToEnginePost);
-    }
+  const cached = await getIntentCache({
+    supabase: session.supabase,
+    organizationId: session.organizationId,
+    routeKey: ROUTE_KEY,
+    intentHash,
+  });
 
-    const service = new ContentAIService({ apiKey });
+  if (cached) {
+    await logAIUsageEvent({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: "cache",
+      model: "intent-cache",
+      mode: "deterministic",
+      cacheHit: true,
+      success: true,
+      metadata: { source: "ai_request_cache" },
+    });
 
-    const result = await service.chat({
-      organizationId,
-      platform: body.platform as Platform | undefined,
-      question: body.question,
+    return NextResponse.json(withCacheMeta(cached.response, { createdAt: cached.createdAt }));
+  }
+
+  const deterministicPayload = {
+    ...deterministic,
+    meta: {
+      mode: "deterministic",
+      provider: "template",
+      warning: "AI indisponibil sau dezactivat. Recomandarile sunt generate local.",
+    },
+  };
+
+  if (provider.mode === "template" || !provider.apiKey) {
+    await setIntentCache({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: "template",
+      model: "template",
+      response: deterministicPayload,
+      estimatedCostUsd: 0,
+      ttlMs: CACHE_TTL_MS,
+    });
+
+    await logAIUsageEvent({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: "template",
+      model: "template",
+      mode: "deterministic",
+      success: true,
+      metadata: { reason: "provider_template_mode" },
+    });
+
+    return NextResponse.json(deterministicPayload);
+  }
+
+  const escalationThreshold = Number(process.env.AI_COACH_ESCALATE_BELOW_ENGAGEMENT || 2);
+  const shouldEscalate = shouldEscalateCoachModel({
+    question,
+    recentPosts,
+    threshold: escalationThreshold,
+  });
+
+  const economyModel =
+    provider.mode === "openrouter"
+      ? buildOpenRouterModelChain({
+          quality: "economy",
+          preferred:
+            process.env.AI_MODEL_COACH_ECONOMY?.trim() ||
+            process.env.AI_MODEL_COACH?.trim() ||
+            provider.model,
+        })
+      : process.env.AI_MODEL_COACH_ECONOMY?.trim() ||
+        process.env.AI_MODEL_COACH?.trim() ||
+        "claude-3-5-haiku-latest";
+  const premiumModel =
+    provider.mode === "openrouter"
+      ? buildOpenRouterModelChain({
+          quality: "premium",
+          preferred:
+            process.env.AI_MODEL_COACH_PREMIUM?.trim() ||
+            process.env.AI_MODEL_COACH?.trim() ||
+            provider.model,
+        })
+      : process.env.AI_MODEL_COACH_PREMIUM?.trim() ||
+        provider.model ||
+        "claude-sonnet-4-5-20250929";
+  const model = shouldEscalate ? premiumModel : economyModel;
+
+  const recentPostsContext = recentPosts
+    .slice(0, 8)
+    .map((post) => `${post.platform}|${post.engagementRate}|${(post.textContent || "").slice(0, 180)}`)
+    .join("\n");
+  const topPostsContext = topPerformingPosts
+    .slice(0, 5)
+    .map((post) => `${post.platform}|${post.engagementRate}|${(post.textContent || "").slice(0, 180)}`)
+    .join("\n");
+
+  const estimatedInputTokens =
+    estimateTokensFromText(question) +
+    estimateTokensFromText(recentPostsContext) +
+    estimateTokensFromText(topPostsContext) +
+    380;
+  const estimatedOutputTokens = 900;
+  const estimatedCostUsd = estimateAnthropicCostUsd(
+    model,
+    estimatedInputTokens,
+    estimatedOutputTokens
+  );
+
+  const budget = await decidePaidAIAccess({
+    supabase: session.supabase,
+    organizationId: session.organizationId,
+    estimatedAdditionalCostUsd: estimatedCostUsd,
+  });
+
+  if (!budget.allowed) {
+    const payload = {
+      ...deterministic,
+      meta: {
+        mode: "deterministic",
+        provider: "template",
+        warning: `${budget.reason} Fallback deterministic activat.`,
+      },
+    };
+
+    await setIntentCache({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: "template",
+      model: "template",
+      response: payload,
+      estimatedCostUsd: 0,
+      ttlMs: CACHE_TTL_MS,
+    });
+
+    await logAIUsageEvent({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: "template",
+      model: "template",
+      mode: "deterministic",
+      success: true,
+      budgetFallback: true,
+      metadata: {
+        reason: budget.reason,
+        dailySpentUsd: budget.usage.dailySpentUsd,
+        monthlySpentUsd: budget.usage.monthlySpentUsd,
+      },
+    });
+
+    return NextResponse.json(payload);
+  }
+
+  const startedAt = Date.now();
+
+  try {
+    const service = new ContentAIService({
+      apiKey: provider.apiKey,
+      model,
+      provider: provider.mode === "openrouter" ? "openrouter" : "anthropic",
+      baseUrl: provider.baseUrl,
+    });
+
+    const aiResult = await service.chat({
+      organizationId: session.organizationId,
+      platform: body.platform,
+      question,
       recentPosts,
       topPerformingPosts,
     });
+    const resolvedModel = service.getLastResolvedModel() || model;
 
-    return NextResponse.json(result);
-  } catch (error: unknown) {
-    if (error instanceof Anthropic.APIError) {
-      if (error.status === 429) {
-        return NextResponse.json(
-          { error: "Prea multe cereri. Te rugăm să aștepți câteva secunde." },
-          { status: 429 }
-        );
-      }
-      if (error.status === 401) {
-        return NextResponse.json(
-          { error: "Cheie API invalidă. Verifică configurarea." },
-          { status: 401 }
-        );
-      }
-      return NextResponse.json(
-        { error: `Eroare API: ${error.message}` },
-        { status: error.status || 500 }
-      );
-    }
+    const responsePayload = {
+      ...aiResult,
+      meta: {
+        mode: "ai",
+        provider: provider.mode,
+        model: resolvedModel,
+        modelChain: provider.mode === "openrouter" ? model : undefined,
+        escalated: shouldEscalate,
+      },
+    };
 
-    console.error("Coach AI Error:", error);
-    return NextResponse.json(
-      { error: "A apărut o eroare neașteptată. Te rugăm să încerci din nou." },
-      { status: 500 }
-    );
+    await setIntentCache({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: provider.mode,
+      model: resolvedModel,
+      response: responsePayload,
+      estimatedCostUsd,
+      ttlMs: CACHE_TTL_MS,
+    });
+
+    await logAIUsageEvent({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: provider.mode,
+      model: resolvedModel,
+      mode: "ai",
+      inputTokens: estimatedInputTokens,
+      outputTokens: estimatedOutputTokens,
+      estimatedCostUsd,
+      latencyMs: Date.now() - startedAt,
+      success: true,
+      metadata: {
+        escalated: shouldEscalate,
+        avgEngagement: averageEngagement(recentPosts),
+        modelChain: provider.mode === "openrouter" ? model : undefined,
+      },
+    });
+
+    return NextResponse.json(responsePayload);
+  } catch (error) {
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? (error as { status: number }).status
+        : null;
+    const payload = {
+      ...deterministic,
+      meta: {
+        mode: "deterministic",
+        provider: "template",
+        warning: status
+          ? `AI indisponibil temporar (${status}). Am livrat fallback deterministic.`
+          : "AI indisponibil temporar. Am livrat fallback deterministic.",
+      },
+    };
+
+    await setIntentCache({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: "template",
+      model: "template",
+      response: payload,
+      estimatedCostUsd: 0,
+      ttlMs: CACHE_TTL_MS,
+    });
+
+    await logAIUsageEvent({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: provider.mode,
+      model,
+      mode: "ai",
+      inputTokens: estimatedInputTokens,
+      outputTokens: 0,
+      estimatedCostUsd: 0,
+      latencyMs: Date.now() - startedAt,
+      success: false,
+      errorCode: status ? `http_${status}` : "unknown",
+      metadata: { fallback: "deterministic" },
+    });
+
+    return NextResponse.json(payload);
   }
 }
 
-// Map Supabase snake_case columns to engine camelCase Post type
+function toNumber(value: unknown): number {
+  if (typeof value !== "number") return 0;
+  if (!Number.isFinite(value)) return 0;
+  return value;
+}
+
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
 function dbPostToEnginePost(row: Record<string, unknown>): Post {
-  const r = row as Record<string, string | number | string[] | undefined>;
+  const publishedAtValue = typeof row.published_at === "string" ? row.published_at : undefined;
+  const publishedAt = publishedAtValue ? new Date(publishedAtValue) : new Date();
+
   return {
-    id: String(r.id ?? ""),
-    socialAccountId: String(r.social_account_id ?? ""),
-    organizationId: String(r.organization_id ?? ""),
-    platform: (r.platform ?? "") as Post["platform"],
-    platformPostId: String(r.platform_post_id ?? ""),
-    platformUrl: String(r.platform_url ?? ""),
-    contentType: (r.content_type ?? "text") as Post["contentType"],
-    textContent: String(r.text_content ?? ""),
-    mediaUrls: Array.isArray(r.media_urls) ? r.media_urls : [],
-    hashtags: Array.isArray(r.hashtags) ? r.hashtags : [],
-    mentions: Array.isArray(r.mentions) ? r.mentions : [],
-    language: (r.language ?? "ro") as Post["language"],
-    likesCount: Number(r.likes_count ?? 0),
-    commentsCount: Number(r.comments_count ?? 0),
-    sharesCount: Number(r.shares_count ?? 0),
-    savesCount: Number(r.saves_count ?? 0),
-    viewsCount: Number(r.views_count ?? 0),
-    reachCount: Number(r.reach_count ?? 0),
-    impressionsCount: Number(r.impressions_count ?? 0),
-    engagementRate: Number(r.engagement_rate ?? 0),
-    viralityScore: Number(r.virality_score ?? 0),
-    topicTags: Array.isArray(r.topic_tags) ? r.topic_tags : [],
-    sentiment: (r.sentiment ?? "neutral") as Post["sentiment"],
-    hookType: r.hook_type as string | undefined,
-    ctaType: r.cta_type as string | undefined,
-    publishedAt: r.published_at ? new Date(r.published_at as string) : new Date(),
-    dentalCategory: r.dental_category as Post["dentalCategory"],
+    id: String(row.id ?? ""),
+    socialAccountId: String(row.social_account_id ?? ""),
+    organizationId: String(row.organization_id ?? ""),
+    platform: (row.platform ?? "facebook") as Post["platform"],
+    platformPostId: String(row.platform_post_id ?? ""),
+    platformUrl: typeof row.platform_url === "string" ? row.platform_url : undefined,
+    contentType: (row.content_type ?? "text") as Post["contentType"],
+    textContent: typeof row.text_content === "string" ? row.text_content : undefined,
+    mediaUrls: toStringArray(row.media_urls),
+    hashtags: toStringArray(row.hashtags),
+    mentions: toStringArray(row.mentions),
+    language: (row.language ?? "ro") as Post["language"],
+    likesCount: toNumber(row.likes_count),
+    commentsCount: toNumber(row.comments_count),
+    sharesCount: toNumber(row.shares_count),
+    savesCount: toNumber(row.saves_count),
+    viewsCount: toNumber(row.views_count),
+    reachCount: toNumber(row.reach_count),
+    impressionsCount: toNumber(row.impressions_count),
+    engagementRate: toNumber(row.engagement_rate),
+    viralityScore: toNumber(row.virality_score),
+    topicTags: toStringArray(row.topic_tags),
+    sentiment: (row.sentiment ?? "neutral") as Post["sentiment"],
+    hookType: typeof row.hook_type === "string" ? row.hook_type : undefined,
+    ctaType: typeof row.cta_type === "string" ? row.cta_type : undefined,
+    publishedAt: Number.isNaN(publishedAt.getTime()) ? new Date() : publishedAt,
+    dentalCategory: row.dental_category as Post["dentalCategory"],
   };
 }

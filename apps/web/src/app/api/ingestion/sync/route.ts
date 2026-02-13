@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import {
+  deriveCreativeSignals,
+  logOutcomeForPost,
+  refreshCreativeMemoryFromPost,
+  type AIObjective,
+} from "@/lib/ai/outcome-learning";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -194,6 +200,8 @@ async function syncFacebook(
       const insights = post.insights?.data || [];
       const getInsight = (name: string) =>
         insights.find((i) => i.name === name)?.values?.[0]?.value || 0;
+      const textContent = post.message || "";
+      const signals = deriveCreativeSignals({ text: textContent });
 
       return {
         social_account_id: accountId,
@@ -202,10 +210,12 @@ async function syncFacebook(
         platform_post_id: post.id,
         platform_url: post.permalink_url,
         content_type: post.full_picture ? "image" : "text",
-        text_content: post.message || "",
+        text_content: textContent,
         media_urls: post.full_picture ? [post.full_picture] : [],
-        hashtags: extractHashtags(post.message || ""),
-        mentions: extractMentions(post.message || ""),
+        hashtags: extractHashtags(textContent),
+        mentions: extractMentions(textContent),
+        hook_type: signals.hookType,
+        cta_type: signals.ctaType,
         likes_count: post.likes?.summary?.total_count || 0,
         comments_count: post.comments?.summary?.total_count || 0,
         shares_count: post.shares?.count || 0,
@@ -221,6 +231,16 @@ async function syncFacebook(
     const { error: upsertError } = await supabase.from("posts").upsert(posts, {
       onConflict: "organization_id,platform,platform_post_id",
     });
+
+    if (!upsertError) {
+      await recordSyncedOutcomes({
+        supabase,
+        organizationId: orgId,
+        socialAccountId: accountId,
+        platform: "facebook",
+        platformPostIds: posts.map((post: { platform_post_id: string }) => post.platform_post_id),
+      });
+    }
 
     if (upsertError) {
       console.error("Facebook upsert error:", upsertError);
@@ -290,6 +310,8 @@ async function syncInstagram(
         VIDEO: "reel",
         CAROUSEL_ALBUM: "carousel",
       };
+      const textContent = post.caption || "";
+      const signals = deriveCreativeSignals({ text: textContent });
 
       return {
         social_account_id: accountId,
@@ -298,10 +320,12 @@ async function syncInstagram(
         platform_post_id: post.id,
         platform_url: post.permalink,
         content_type: contentTypeMap[post.media_type] || "image",
-        text_content: post.caption || "",
+        text_content: textContent,
         media_urls: [post.media_url || post.thumbnail_url].filter(Boolean),
-        hashtags: extractHashtags(post.caption || ""),
-        mentions: extractMentions(post.caption || ""),
+        hashtags: extractHashtags(textContent),
+        mentions: extractMentions(textContent),
+        hook_type: signals.hookType,
+        cta_type: signals.ctaType,
         likes_count: post.like_count || 0,
         comments_count: post.comments_count || 0,
         shares_count: 0,
@@ -317,6 +341,16 @@ async function syncInstagram(
     const { error: upsertError } = await supabase.from("posts").upsert(posts, {
       onConflict: "organization_id,platform,platform_post_id",
     });
+
+    if (!upsertError) {
+      await recordSyncedOutcomes({
+        supabase,
+        organizationId: orgId,
+        socialAccountId: accountId,
+        platform: "instagram",
+        platformPostIds: posts.map((post: { platform_post_id: string }) => post.platform_post_id),
+      });
+    }
 
     if (upsertError) {
       console.error("Instagram upsert error:", upsertError);
@@ -339,4 +373,84 @@ function extractHashtags(text: string): string[] {
 function extractMentions(text: string): string[] {
   const matches = text.match(/@[\w.]+/g);
   return matches ? matches.map((m) => m.toLowerCase()) : [];
+}
+
+async function recordSyncedOutcomes(params: {
+  supabase: SupabaseClient;
+  organizationId: string;
+  socialAccountId: string;
+  platform: "facebook" | "instagram";
+  platformPostIds: string[];
+}) {
+  if (!params.platformPostIds.length) return;
+
+  const { data: rows } = await params.supabase
+    .from("posts")
+    .select(
+      "id,organization_id,social_account_id,platform,text_content,hook_type,cta_type,likes_count,comments_count,shares_count,saves_count,views_count,reach_count,impressions_count,engagement_rate,published_at,platform_post_id"
+    )
+    .eq("organization_id", params.organizationId)
+    .eq("social_account_id", params.socialAccountId)
+    .eq("platform", params.platform)
+    .in("platform_post_id", params.platformPostIds);
+
+  if (!rows || !rows.length) return;
+
+  const postIds = rows
+    .map((post) => (typeof post?.id === "string" ? post.id : ""))
+    .filter(Boolean);
+  const objectivesByPostId = new Map<string, AIObjective>();
+
+  if (postIds.length) {
+    const { data: decisionRows } = await params.supabase
+      .from("decision_logs")
+      .select("post_id,objective,created_at")
+      .eq("organization_id", params.organizationId)
+      .in("post_id", postIds)
+      .order("created_at", { ascending: false })
+      .limit(Math.min(500, postIds.length * 3));
+
+    if (Array.isArray(decisionRows)) {
+      for (const row of decisionRows as Array<{
+        post_id?: unknown;
+        objective?: unknown;
+      }>) {
+        const postId = typeof row.post_id === "string" ? row.post_id : null;
+        if (!postId || objectivesByPostId.has(postId)) continue;
+        const objective = typeof row.objective === "string" ? row.objective : "";
+        if (objective === "reach" || objective === "leads" || objective === "saves") {
+          objectivesByPostId.set(postId, objective as AIObjective);
+        } else {
+          objectivesByPostId.set(postId, "engagement");
+        }
+      }
+    }
+  }
+
+  for (const post of rows) {
+    const objective = objectivesByPostId.get(post.id) || "engagement";
+    const outcomeLogged = await logOutcomeForPost({
+      supabase: params.supabase,
+      post,
+      source: "sync",
+      eventType: "snapshot",
+      objective,
+      metadata: {
+        syncType: "ingestion",
+        platformPostId: post.platform_post_id,
+      },
+    });
+
+    if (outcomeLogged) {
+      await refreshCreativeMemoryFromPost({
+        supabase: params.supabase,
+        post,
+        objective,
+        metadata: {
+          source: "sync",
+          syncType: "ingestion",
+        },
+      });
+    }
+  }
 }
