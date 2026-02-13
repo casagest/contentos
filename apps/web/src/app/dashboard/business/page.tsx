@@ -1106,7 +1106,7 @@ export default function BusinessDashboardPage() {
                 <Target className="w-4 h-4 text-brand-400" />
                 Funnel de Conversie
               </h2>
-              <span className="text-[10px] text-gray-600">Date placeholder</span>
+              <span className="text-[10px] text-gray-600">Estimare</span>
             </div>
             <FunnelVisualization stages={config.funnelStages} />
           </div>

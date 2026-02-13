@@ -1,14 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import {
-  Settings,
-  User,
-  Bell,
-  Shield,
-  CheckCircle2,
-} from "lucide-react";
+import { Settings } from "lucide-react";
 import BusinessProfileForm from "./business-profile-form";
 import ConnectedAccounts from "./connected-accounts";
 import BillingSection from "./billing-section";
+import ProfileSection from "./profile-section";
+import NotificationSettings from "./notification-settings";
+import SecuritySection from "./security-section";
 import type { BusinessProfile, Plan } from "@contentos/database";
 
 export default async function SettingsPage({
@@ -26,6 +23,7 @@ export default async function SettingsPage({
   let businessProfile: BusinessProfile | null = null;
   let currentPlan: Plan = "free";
   let hasStripeCustomer = false;
+  let notificationPrefs: Record<string, boolean> | null = null;
 
   if (user) {
     const { data: userData } = await supabase
@@ -48,11 +46,15 @@ export default async function SettingsPage({
         if (settings?.businessProfile) {
           businessProfile = settings.businessProfile as BusinessProfile;
         }
+        if (settings?.notifications) {
+          notificationPrefs = settings.notifications as Record<string, boolean>;
+        }
       }
     }
   }
 
-  const showSuccess = !!params.connected;
+  const connectedPlatform = typeof params.connected === "string" ? params.connected : undefined;
+  const showSuccess = !!connectedPlatform;
 
   return (
     <div>
@@ -71,101 +73,25 @@ export default async function SettingsPage({
 
       <div className="space-y-6 max-w-3xl">
         {/* Profile section */}
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="w-4 h-4 text-gray-400" />
-            <h2 className="text-base font-semibold text-white">Profil</h2>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Email</label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-gray-300">
-                  {user?.email || "—"}
-                </div>
-                <span className="flex items-center gap-1 text-xs text-green-400">
-                  <CheckCircle2 className="w-3 h-3" /> Verificat
-                </span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Nume</label>
-              <input
-                type="text"
-                defaultValue={user?.user_metadata?.full_name || ""}
-                placeholder="Numele tau"
-                className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
-              />
-            </div>
-            <button className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium transition">
-              Salveaza modificarile
-            </button>
-          </div>
-        </div>
+        <ProfileSection
+          email={user?.email || ""}
+          initialName={user?.user_metadata?.full_name || ""}
+        />
 
         {/* Business Profile */}
         <BusinessProfileForm initialProfile={businessProfile} />
 
         {/* Connected accounts - fetched client-side */}
-        <ConnectedAccounts showSuccess={showSuccess} />
+        <ConnectedAccounts showSuccess={showSuccess} connectedPlatform={connectedPlatform} />
 
         {/* Billing */}
         <BillingSection currentPlan={currentPlan} hasStripeCustomer={hasStripeCustomer} />
 
         {/* Notifications */}
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-4 h-4 text-gray-400" />
-            <h2 className="text-base font-semibold text-white">Notificari</h2>
-          </div>
-          <div className="space-y-3">
-            {[
-              { label: "Raport saptamanal de performanta", defaultOn: true },
-              { label: "Alerte de engagement scazut", defaultOn: true },
-              { label: "Sugestii AI de continut", defaultOn: false },
-              { label: "Newsletter si noutati", defaultOn: false },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-between"
-              >
-                <span className="text-sm text-gray-300">{item.label}</span>
-                <button
-                  className={`w-9 h-5 rounded-full transition ${
-                    item.defaultOn ? "bg-brand-600" : "bg-white/[0.1]"
-                  }`}
-                >
-                  <div
-                    className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                      item.defaultOn
-                        ? "translate-x-[18px]"
-                        : "translate-x-[3px]"
-                    }`}
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <NotificationSettings initialPrefs={notificationPrefs} />
 
         {/* Security */}
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Shield className="w-4 h-4 text-gray-400" />
-            <h2 className="text-base font-semibold text-white">Securitate</h2>
-          </div>
-          <div className="space-y-3">
-            <button className="w-full text-left p-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition text-sm text-gray-300">
-              Schimba parola
-            </button>
-            <button className="w-full text-left p-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition text-sm text-gray-300">
-              Exporta datele mele (GDPR)
-            </button>
-            <button className="w-full text-left p-3 rounded-lg bg-white/[0.02] hover:bg-red-500/5 transition text-sm text-red-400">
-              Sterge contul
-            </button>
-          </div>
-        </div>
+        <SecuritySection email={user?.email || ""} />
       </div>
     </div>
   );

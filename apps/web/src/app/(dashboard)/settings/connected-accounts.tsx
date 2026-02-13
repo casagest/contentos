@@ -22,7 +22,7 @@ interface SocialAccount {
 
 const platformMeta: Record<
   string,
-  { label: string; color: string; connectUrl: string; icon: string }
+  { label: string; color: string; connectUrl: string; icon: string; comingSoon?: boolean }
 > = {
   facebook: {
     label: "Facebook",
@@ -47,6 +47,7 @@ const platformMeta: Record<
     color: "bg-red-600 hover:bg-red-500",
     connectUrl: "#",
     icon: "Y",
+    comingSoon: true,
   },
   linkedin: {
     label: "LinkedIn",
@@ -92,8 +93,10 @@ async function disconnectSocialAccount(accountId: string): Promise<{ success: bo
 
 export default function ConnectedAccounts({
   showSuccess,
+  connectedPlatform,
 }: {
   showSuccess: boolean;
+  connectedPlatform?: string;
 }) {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,7 +165,7 @@ export default function ConnectedAccounts({
         <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-green-400" />
           <span className="text-sm text-green-300">
-            ✓ Contul tau Facebook a fost conectat cu succes!
+            Contul tau {platformMeta[connectedPlatform || ""]?.label || "social"} a fost conectat cu succes!
           </span>
         </div>
       )}
@@ -252,15 +255,24 @@ export default function ConnectedAccounts({
           <div className="flex flex-wrap gap-2">
             {Object.entries(platformMeta)
               .filter(([key]) => !connectedPlatforms.has(key))
-              .map(([key, meta]) => (
-                <a
-                  key={key}
-                  href={meta.connectUrl}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition ${meta.color}`}
-                >
-                  <Plus className="w-3 h-3" /> {meta.label}
-                </a>
-              ))}
+              .map(([key, meta]) =>
+                meta.comingSoon ? (
+                  <span
+                    key={key}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-500 text-xs font-medium bg-white/[0.04] border border-white/[0.06] cursor-default"
+                  >
+                    {meta.label} &middot; In curand
+                  </span>
+                ) : (
+                  <a
+                    key={key}
+                    href={meta.connectUrl}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition ${meta.color}`}
+                  >
+                    <Plus className="w-3 h-3" /> {meta.label}
+                  </a>
+                )
+              )}
             {connectedPlatforms.size >= 4 && (
               <span className="text-xs text-green-400 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" /> Toate platformele
