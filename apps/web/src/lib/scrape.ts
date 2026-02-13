@@ -257,6 +257,147 @@ async function scrapeWithFirecrawl(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Facebook Graph API fallback (for facebook.com URLs that block scrapers)
+// ---------------------------------------------------------------------------
+
+const META_GRAPH_API = "https://graph.facebook.com/v21.0";
+
+function parseFacebookPageId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "").replace(/^m\./, "").replace(/^web\./, "");
+    if (host !== "facebook.com" && host !== "fb.com") return null;
+
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    if (!segments.length) return null;
+
+    // Skip known non-page paths
+    const skip = new Set(["watch", "marketplace", "groups", "events", "stories", "reels", "gaming", "live", "search", "login", "recover", "help"]);
+    if (skip.has(segments[0])) return null;
+
+    // Handle /pages/Name/123456 format
+    if (segments[0] === "pages" && segments.length >= 3) return segments[2];
+    // Handle /profile.php?id=123
+    if (segments[0] === "profile.php") {
+      return parsed.searchParams.get("id") || null;
+    }
+
+    return segments[0];
+  } catch {
+    return null;
+  }
+}
+
+async function scrapeWithFacebookAPI(
+  url: string,
+  pageId: string,
+  maxChars: number,
+  minChars: number
+): Promise<ScrapeResult | null> {
+  const appId = process.env.FACEBOOK_APP_ID || process.env.META_APP_ID;
+  const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.META_APP_SECRET;
+  if (!appId || !appSecret) return null;
+
+  const accessToken = `${appId}|${appSecret}`;
+
+  try {
+    // 1. Fetch page basic info
+    const pageRes = await fetch(
+      `${META_GRAPH_API}/${pageId}?` +
+        new URLSearchParams({
+          access_token: accessToken,
+          fields: "name,about,description,category,fan_count,talking_about_count,website,general_info,emails,phone",
+        }),
+      { signal: AbortSignal.timeout(8000) }
+    );
+    const pageInfo = (await pageRes.json()) as Record<string, unknown>;
+
+    if (pageInfo.error) return null;
+
+    // 2. Try to fetch page feed (public posts)
+    let postsContent = "";
+    try {
+      const feedRes = await fetch(
+        `${META_GRAPH_API}/${pageId}/feed?` +
+          new URLSearchParams({
+            access_token: accessToken,
+            fields: "message,created_time,shares,likes.summary(true),comments.summary(true)",
+            limit: "25",
+          }),
+        { signal: AbortSignal.timeout(8000) }
+      );
+      const feedData = (await feedRes.json()) as {
+        data?: Array<{
+          message?: string;
+          created_time?: string;
+          shares?: { count: number };
+          likes?: { summary?: { total_count: number } };
+          comments?: { summary?: { total_count: number } };
+        }>;
+        error?: unknown;
+      };
+
+      if (feedData.data && Array.isArray(feedData.data)) {
+        postsContent = feedData.data
+          .filter((post) => post.message)
+          .map((post) => {
+            const likes = post.likes?.summary?.total_count || 0;
+            const comments = post.comments?.summary?.total_count || 0;
+            const shares = post.shares?.count || 0;
+            const date = post.created_time ? post.created_time.slice(0, 10) : "";
+            return `[${date}] ${post.message}\n(${likes} likes, ${comments} comments, ${shares} shares)`;
+          })
+          .join("\n\n");
+      }
+    } catch {
+      // Feed might require additional permissions, continue with page info only
+    }
+
+    // 3. Build content from page info + posts
+    const parts: string[] = [];
+    const name = typeof pageInfo.name === "string" ? pageInfo.name : "";
+    const about = typeof pageInfo.about === "string" ? pageInfo.about : "";
+    const description = typeof pageInfo.description === "string" ? pageInfo.description : "";
+    const category = typeof pageInfo.category === "string" ? pageInfo.category : "";
+    const fanCount = typeof pageInfo.fan_count === "number" ? pageInfo.fan_count : 0;
+    const talkingAbout = typeof pageInfo.talking_about_count === "number" ? pageInfo.talking_about_count : 0;
+    const website = typeof pageInfo.website === "string" ? pageInfo.website : "";
+    const generalInfo = typeof pageInfo.general_info === "string" ? pageInfo.general_info : "";
+
+    if (name) parts.push(`# ${name}`);
+    if (category) parts.push(`Categorie: ${category}`);
+    if (about) parts.push(`Despre: ${about}`);
+    if (description) parts.push(`Descriere: ${description}`);
+    if (generalInfo) parts.push(`Info: ${generalInfo}`);
+    if (fanCount) parts.push(`Fani/Followers: ${fanCount.toLocaleString()}`);
+    if (talkingAbout) parts.push(`Discuta despre asta: ${talkingAbout.toLocaleString()}`);
+    if (website) parts.push(`Website: ${website}`);
+
+    if (postsContent) {
+      parts.push("\n## Postari Recente\n");
+      parts.push(postsContent);
+    }
+
+    const content = parts.join("\n").slice(0, maxChars);
+    if (content.length < minChars) return null;
+
+    return {
+      url,
+      content,
+      title: name || undefined,
+      description: about || description || undefined,
+      source: "fallback",
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Generic HTML fallback
+// ---------------------------------------------------------------------------
+
 async function scrapeWithFallback(
   url: string,
   maxChars: number,
@@ -303,6 +444,13 @@ export async function scrapeUrlContent(
   const maxChars = options?.maxChars ?? DEFAULT_MAX_CHARS;
   const minChars = options?.minChars ?? DEFAULT_MIN_CHARS;
   const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+
+  // For Facebook URLs, try Graph API first (Facebook blocks all scrapers)
+  const fbPageId = parseFacebookPageId(url);
+  if (fbPageId) {
+    const fbResult = await scrapeWithFacebookAPI(url, fbPageId, maxChars, minChars);
+    if (fbResult) return fbResult;
+  }
 
   const firecrawlResult = await scrapeWithFirecrawl(
     url,
