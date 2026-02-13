@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { FacebookAdapter, InstagramAdapter } from "@contentos/content-engine/platforms/meta";
+import { TikTokAdapter } from "@contentos/content-engine/platforms/tiktok";
+import { LinkedInAdapter } from "@contentos/content-engine/platforms/linkedin";
 import {
   deriveCreativeSignals,
   type AIObjective,
@@ -129,6 +131,18 @@ export async function GET(request: NextRequest) {
               continue; // Skip Instagram for text-only
             }
             const adapter = new InstagramAdapter({ appId, appSecret });
+            result = await adapter.publishPost(account.access_token, content);
+          } else if (account.platform === "tiktok") {
+            const tiktokKey = process.env.TIKTOK_CLIENT_KEY || "";
+            const tiktokSecret = process.env.TIKTOK_CLIENT_SECRET || "";
+            if (!tiktokKey || !tiktokSecret) continue;
+            const adapter = new TikTokAdapter({ clientKey: tiktokKey, clientSecret: tiktokSecret });
+            result = await adapter.publishPost(account.access_token, content);
+          } else if (account.platform === "linkedin") {
+            const linkedinId = process.env.LINKEDIN_CLIENT_ID || "";
+            const linkedinSecret = process.env.LINKEDIN_CLIENT_SECRET || "";
+            if (!linkedinId || !linkedinSecret) continue;
+            const adapter = new LinkedInAdapter({ clientId: linkedinId, clientSecret: linkedinSecret });
             result = await adapter.publishPost(account.access_token, content);
           } else {
             continue;

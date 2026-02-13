@@ -44,6 +44,7 @@ export { ContentAIService } from "./ai/service";
 export { FacebookAdapter, InstagramAdapter, MetaAPIError } from "./platforms/meta";
 export { TikTokAdapter } from "./platforms/tiktok";
 export { YouTubeAdapter } from "./platforms/youtube";
+export { LinkedInAdapter, LinkedInAPIError } from "./platforms/linkedin";
 
 // Prompts (for customization)
 export {

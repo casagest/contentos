@@ -8,7 +8,7 @@
 export type OrganizationType = "creator" | "business" | "agency" | "dental_clinic";
 export type Plan = "free" | "starter" | "pro" | "agency" | "dental";
 export type UserRole = "owner" | "admin" | "member" | "viewer";
-export type Platform = "facebook" | "instagram" | "tiktok" | "youtube" | "twitter";
+export type Platform = "facebook" | "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin";
 export type SyncStatus = "pending" | "syncing" | "synced" | "error";
 
 export type ContentType =
@@ -98,6 +98,8 @@ export interface Organization {
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   medicalcor_clinic_id?: string;
+  onboarding_step: number;
+  onboarding_completed_at?: string;
   settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;

@@ -33,11 +33,14 @@ export async function middleware(request: NextRequest) {
     "/coach",
     "/compose",
     "/analyze",
+    "/analytics",
+    "/calendar",
     "/history",
     "/research",
     "/braindump",
     "/inspiration",
     "/settings",
+    "/onboarding",
   ];
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)

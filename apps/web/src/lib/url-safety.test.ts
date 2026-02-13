@@ -1,98 +1,162 @@
-import { describe, it, beforeEach, afterEach } from "node:test";
-import assert from "node:assert/strict";
-import { isUrlSafeForFetch, isUrlSafeSync, safeFetch } from "./url-safety";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { isUrlSafeSync, isUrlSafeForFetch, safeFetch } from "./url-safety";
 
 describe("url-safety (SSRF Guard)", () => {
   describe("isUrlSafeSync", () => {
     it("blocks localhost and variants", () => {
-      assert.equal(isUrlSafeSync("http://localhost/").ok, false);
-      assert.equal(isUrlSafeSync("https://localhost/").ok, false);
-      assert.equal(isUrlSafeSync("http://127.0.0.1/").ok, false);
-      assert.equal(isUrlSafeSync("http://127.1.1.1/").ok, false);
-      assert.equal(isUrlSafeSync("http://0.0.0.0/").ok, false);
-      assert.equal(isUrlSafeSync("http://[::1]/").ok, false);
+      expect(isUrlSafeSync("http://localhost/").ok).toBe(false);
+      expect(isUrlSafeSync("https://localhost/").ok).toBe(false);
+      expect(isUrlSafeSync("http://127.0.0.1/").ok).toBe(false);
+      expect(isUrlSafeSync("http://127.1.1.1/").ok).toBe(false);
+      expect(isUrlSafeSync("http://0.0.0.0/").ok).toBe(false);
+      expect(isUrlSafeSync("http://[::1]/").ok).toBe(false);
     });
 
     it("blocks private CIDR IPs", () => {
-      assert.equal(isUrlSafeSync("http://10.0.0.1/").ok, false);
-      assert.equal(isUrlSafeSync("https://10.255.255.255/").ok, false);
-      assert.equal(isUrlSafeSync("http://192.168.0.1/").ok, false);
-      assert.equal(isUrlSafeSync("http://192.168.255.255/").ok, false);
-      assert.equal(isUrlSafeSync("http://172.16.0.1/").ok, false);
-      assert.equal(isUrlSafeSync("http://172.31.255.255/").ok, false);
-      assert.equal(isUrlSafeSync("http://172.20.100.50/").ok, false);
+      expect(isUrlSafeSync("http://10.0.0.1/").ok).toBe(false);
+      expect(isUrlSafeSync("https://10.255.255.255/").ok).toBe(false);
+      expect(isUrlSafeSync("http://192.168.0.1/").ok).toBe(false);
+      expect(isUrlSafeSync("http://192.168.255.255/").ok).toBe(false);
+      expect(isUrlSafeSync("http://172.16.0.1/").ok).toBe(false);
+      expect(isUrlSafeSync("http://172.31.255.255/").ok).toBe(false);
+      expect(isUrlSafeSync("http://172.20.100.50/").ok).toBe(false);
     });
 
     it("blocks link-local (169.254.*)", () => {
-      assert.equal(isUrlSafeSync("http://169.254.0.1/").ok, false);
-      assert.equal(isUrlSafeSync("http://169.254.255.255/").ok, false);
+      expect(isUrlSafeSync("http://169.254.0.1/").ok).toBe(false);
+      expect(isUrlSafeSync("http://169.254.255.255/").ok).toBe(false);
     });
 
     it("allows only HTTP and HTTPS", () => {
-      assert.equal(isUrlSafeSync("ftp://example.com/").ok, false);
-      assert.equal(isUrlSafeSync("file:///etc/passwd").ok, false);
-      assert.equal(isUrlSafeSync("javascript:alert(1)").ok, false);
-      assert.equal(isUrlSafeSync("data:text/html,evil").ok, false);
+      expect(isUrlSafeSync("ftp://example.com/").ok).toBe(false);
+      expect(isUrlSafeSync("file:///etc/passwd").ok).toBe(false);
+      expect(isUrlSafeSync("javascript:alert(1)").ok).toBe(false);
+      expect(isUrlSafeSync("data:text/html,evil").ok).toBe(false);
     });
 
     it("allows only ports 80 and 443", () => {
-      assert.equal(isUrlSafeSync("http://example.com:8080/").ok, false);
-      assert.equal(isUrlSafeSync("http://example.com:22/").ok, false);
-      assert.equal(isUrlSafeSync("https://example.com:8443/").ok, false);
+      expect(isUrlSafeSync("http://example.com:8080/").ok).toBe(false);
+      expect(isUrlSafeSync("http://example.com:22/").ok).toBe(false);
+      expect(isUrlSafeSync("https://example.com:8443/").ok).toBe(false);
     });
 
     it("allows safe public HTTP(S) URLs", () => {
-      assert.equal(isUrlSafeSync("https://example.com/").ok, true);
-      assert.equal(isUrlSafeSync("http://example.com/").ok, true);
-      assert.equal(isUrlSafeSync("https://example.com:443/path").ok, true);
-      assert.equal(isUrlSafeSync("http://example.com:80/path").ok, true);
-      assert.equal(isUrlSafeSync("https://8.8.8.8/").ok, true);
-      assert.equal(isUrlSafeSync("https://1.1.1.1/").ok, true);
+      expect(isUrlSafeSync("https://example.com/").ok).toBe(true);
+      expect(isUrlSafeSync("http://example.com/").ok).toBe(true);
+      expect(isUrlSafeSync("https://example.com:443/path").ok).toBe(true);
+      expect(isUrlSafeSync("http://example.com:80/path").ok).toBe(true);
+      expect(isUrlSafeSync("https://8.8.8.8/").ok).toBe(true);
+      expect(isUrlSafeSync("https://1.1.1.1/").ok).toBe(true);
     });
 
     it("blocks invalid URLs", () => {
-      assert.equal(isUrlSafeSync("not-a-url").ok, false);
-      assert.equal(isUrlSafeSync("").ok, false);
+      expect(isUrlSafeSync("not-a-url").ok).toBe(false);
+      expect(isUrlSafeSync("").ok).toBe(false);
     });
 
     it("blocks reserved TLD hostnames", () => {
-      assert.equal(isUrlSafeSync("http://internal.local/").ok, false);
-      assert.equal(isUrlSafeSync("http://service.internal/").ok, false);
-      assert.equal(isUrlSafeSync("http://box.lan/").ok, false);
-      assert.equal(isUrlSafeSync("http://server.home/").ok, false);
+      expect(isUrlSafeSync("http://internal.local/").ok).toBe(false);
+      expect(isUrlSafeSync("http://service.internal/").ok).toBe(false);
+      expect(isUrlSafeSync("http://box.lan/").ok).toBe(false);
+      expect(isUrlSafeSync("http://server.home/").ok).toBe(false);
+      expect(isUrlSafeSync("http://app.localhost/").ok).toBe(false);
+    });
+
+    it("blocks multicast IPs (224+)", () => {
+      expect(isUrlSafeSync("http://224.0.0.1/").ok).toBe(false);
+      expect(isUrlSafeSync("http://239.255.255.255/").ok).toBe(false);
+      expect(isUrlSafeSync("http://255.255.255.255/").ok).toBe(false);
+    });
+
+    it("blocks 0.0.0.0/8 range", () => {
+      expect(isUrlSafeSync("http://0.1.2.3/").ok).toBe(false);
+    });
+
+    it("allows safe public IPv6", () => {
+      expect(isUrlSafeSync("http://[2001:db8::1]/").ok).toBe(true);
+    });
+
+    it("blocks IPv6 link-local (fe80)", () => {
+      expect(isUrlSafeSync("http://[fe80::1]/").ok).toBe(false);
+    });
+
+    it("blocks IPv6 unique local (fc00/fd00)", () => {
+      expect(isUrlSafeSync("http://[fc00::1]/").ok).toBe(false);
+      expect(isUrlSafeSync("http://[fd12::1]/").ok).toBe(false);
+    });
+
+    it("blocks IPv6 long-form loopback", () => {
+      expect(isUrlSafeSync("http://[0:0:0:0:0:0:0:1]/").ok).toBe(false);
     });
   });
 
   describe("isUrlSafeForFetch", () => {
     it("blocks localhost (async)", async () => {
       const r = await isUrlSafeForFetch("http://localhost/");
-      assert.equal(r.ok, false);
-      assert.ok((r.reason || "").toLowerCase().includes("localhost"));
+      expect(r.ok).toBe(false);
+      expect((r.reason || "").toLowerCase()).toContain("localhost");
     });
 
     it("blocks private IPs", async () => {
       const r = await isUrlSafeForFetch("http://192.168.1.1/");
-      assert.equal(r.ok, false);
+      expect(r.ok).toBe(false);
     });
 
     it("allows public domains", async () => {
       const r = await isUrlSafeForFetch("https://example.com/");
-      assert.equal(r.ok, true);
+      expect(r.ok).toBe(true);
+    });
+
+    it("blocks invalid URL (async)", async () => {
+      const r = await isUrlSafeForFetch("not-a-url");
+      expect(r.ok).toBe(false);
+    });
+
+    it("blocks disallowed scheme (async)", async () => {
+      const r = await isUrlSafeForFetch("ftp://example.com/");
+      expect(r.ok).toBe(false);
+    });
+
+    it("blocks disallowed port (async)", async () => {
+      const r = await isUrlSafeForFetch("http://example.com:8080/");
+      expect(r.ok).toBe(false);
+    });
+
+    it("blocks blocked suffix (async)", async () => {
+      const r = await isUrlSafeForFetch("http://my.internal/");
+      expect(r.ok).toBe(false);
+    });
+
+    it("allows public IPv4 (async)", async () => {
+      const r = await isUrlSafeForFetch("http://8.8.8.8/");
+      expect(r.ok).toBe(true);
+    });
+
+    it("blocks IPv6 loopback (async)", async () => {
+      const r = await isUrlSafeForFetch("http://[::1]/");
+      expect(r.ok).toBe(false);
+    });
+
+    it("allows public IPv6 (async)", async () => {
+      const r = await isUrlSafeForFetch("http://[2001:db8::1]/");
+      expect(r.ok).toBe(true);
+    });
+
+    it("blocks IPv6 link-local (async)", async () => {
+      const r = await isUrlSafeForFetch("http://[fe80::1]/");
+      expect(r.ok).toBe(false);
     });
   });
 
   describe("safeFetch", () => {
     const originalFetch = globalThis.fetch;
-    let calls: Array<[unknown, unknown]> = [];
     let fetchImpl: (url: unknown, options: unknown) => Promise<Response>;
 
     beforeEach(() => {
-      calls = [];
       fetchImpl = async () => new Response("ok", { status: 200 });
-      globalThis.fetch = (async (url: unknown, options: unknown) => {
-        calls.push([url, options]);
-        return fetchImpl(url, options);
-      }) as any;
+      vi.stubGlobal("fetch", async (url: unknown, options: unknown) =>
+        fetchImpl(url, options)
+      );
     });
 
     afterEach(() => {
@@ -100,27 +164,24 @@ describe("url-safety (SSRF Guard)", () => {
     });
 
     it("validates URL before fetch", async () => {
-      fetchImpl = async () => new Response("ok", { status: 200 });
-
+      const calls: unknown[] = [];
+      fetchImpl = async (url) => {
+        calls.push(url);
+        return new Response("ok", { status: 200 });
+      };
       await safeFetch("https://example.com/", { timeoutMs: 5000 });
-      assert.equal(calls.length, 1);
-
-      const [url, options] = calls[0] as [unknown, unknown];
-      assert.equal(url, "https://example.com/");
-      assert.equal((options as any)?.redirect, "manual");
+      expect(calls.length).toBe(1);
     });
 
     it("throws for unsafe URL", async () => {
-      await assert.rejects(
-        safeFetch("http://127.0.0.1/", { timeoutMs: 5000 }),
-        /URL unsafe/i
-      );
-      assert.equal(calls.length, 0);
+      await expect(
+        safeFetch("http://127.0.0.1/", { timeoutMs: 5000 })
+      ).rejects.toThrow(/URL unsafe/i);
     });
 
     it("uses timeout", async () => {
-      fetchImpl = (_url: unknown, options: any) => {
-        return new Promise((_resolve, reject) => {
+      fetchImpl = (_url: unknown, options: any) =>
+        new Promise((_resolve, reject) => {
           const signal: AbortSignal | undefined = options?.signal;
           if (!signal) return reject(new Error("missing signal"));
           if (signal.aborted) return reject(new Error("aborted"));
@@ -128,12 +189,10 @@ describe("url-safety (SSRF Guard)", () => {
             once: true,
           });
         });
-      };
 
-      await assert.rejects(
-        safeFetch("https://example.com/", { timeoutMs: 50 }),
-        /aborted/i
-      );
+      await expect(
+        safeFetch("https://example.com/", { timeoutMs: 50 })
+      ).rejects.toThrow(/aborted/i);
     });
 
     it("follows redirects when Location is safe", async () => {
@@ -149,24 +208,60 @@ describe("url-safety (SSRF Guard)", () => {
         return new Response("final content", { status: 200 });
       };
 
-      const res = await safeFetch("https://example.com/redirect", { timeoutMs: 5000 });
-      assert.equal(res.status, 200);
-      assert.equal(calls.length, 2);
+      const res = await safeFetch("https://example.com/redirect", {
+        timeoutMs: 5000,
+      });
+      expect(res.status).toBe(200);
     });
 
     it("blocks redirect chains to localhost", async () => {
-      fetchImpl = async () => {
-        return new Response(null, {
+      fetchImpl = async () =>
+        new Response(null, {
           status: 302,
           headers: { Location: "http://127.0.0.1/evil" },
         });
+
+      await expect(
+        safeFetch("https://example.com/redirect", { timeoutMs: 5000 })
+      ).rejects.toThrow(/URL unsafe/i);
+    });
+
+    it("throws on too many redirects", async () => {
+      let call = 0;
+      fetchImpl = async () => {
+        call++;
+        return new Response(null, {
+          status: 302,
+          headers: { Location: `https://example.com/r${call}` },
+        });
       };
 
-      await assert.rejects(
-        safeFetch("https://example.com/redirect", { timeoutMs: 5000 }),
-        /URL unsafe/i
-      );
-      assert.equal(calls.length, 1);
+      await expect(
+        safeFetch("https://example.com/start", { timeoutMs: 5000 })
+      ).rejects.toThrow(/redirect/i);
+    });
+
+    it("stops redirect chain when Location header is missing", async () => {
+      fetchImpl = async () =>
+        new Response(null, { status: 302 });
+
+      await expect(
+        safeFetch("https://example.com/redirect", { timeoutMs: 5000 })
+      ).rejects.toThrow(/redirect/i);
+    });
+
+    it("passes custom headers", async () => {
+      let capturedHeaders: any;
+      fetchImpl = async (_url: unknown, opts: any) => {
+        capturedHeaders = opts?.headers;
+        return new Response("ok", { status: 200 });
+      };
+
+      await safeFetch("https://example.com/", {
+        timeoutMs: 5000,
+        headers: { "X-Custom": "test" },
+      });
+      expect(capturedHeaders?.["X-Custom"]).toBe("test");
     });
   });
 });

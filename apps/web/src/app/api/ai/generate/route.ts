@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, Language } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
-import { buildOpenRouterModelChain, resolveAIProvider } from "@/lib/ai/provider";
+import { buildOpenRouterModelChain, resolveAIProvider, resolveAIProviderForTask } from "@/lib/ai/provider";
 import { buildDeterministicGeneration } from "@/lib/ai/deterministic";
 import {
   type AIObjective,
@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
     language: deterministicLanguage,
   });
 
-  const provider = resolveAIProvider();
+  const provider = resolveAIProviderForTask("generate");
   const intentHash = buildIntentCacheKey(ROUTE_KEY, {
     input,
     platforms,

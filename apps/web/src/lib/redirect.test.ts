@@ -1,40 +1,46 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 import { sanitizeRedirectPath } from "./redirect";
 
 describe("sanitizeRedirectPath", () => {
   it("returns fallback for null/undefined/empty", () => {
-    assert.equal(sanitizeRedirectPath(null, "/dashboard"), "/dashboard");
-    assert.equal(sanitizeRedirectPath(undefined, "/dashboard"), "/dashboard");
-    assert.equal(sanitizeRedirectPath("", "/dashboard"), "/dashboard");
-    assert.equal(sanitizeRedirectPath("   ", "/dashboard"), "/dashboard");
+    expect(sanitizeRedirectPath(null, "/dashboard")).toBe("/dashboard");
+    expect(sanitizeRedirectPath(undefined, "/dashboard")).toBe("/dashboard");
+    expect(sanitizeRedirectPath("", "/dashboard")).toBe("/dashboard");
+    expect(sanitizeRedirectPath("   ", "/dashboard")).toBe("/dashboard");
+  });
+
+  it("uses default fallback /dashboard", () => {
+    expect(sanitizeRedirectPath(null)).toBe("/dashboard");
   });
 
   it("allows safe internal relative paths", () => {
-    assert.equal(sanitizeRedirectPath("/dashboard", "/x"), "/dashboard");
-    assert.equal(sanitizeRedirectPath("/settings", "/x"), "/settings");
-    assert.equal(sanitizeRedirectPath("/login", "/x"), "/login");
-    assert.equal(sanitizeRedirectPath("/update-password", "/x"), "/update-password");
+    expect(sanitizeRedirectPath("/dashboard", "/x")).toBe("/dashboard");
+    expect(sanitizeRedirectPath("/settings", "/x")).toBe("/settings");
+    expect(sanitizeRedirectPath("/login", "/x")).toBe("/login");
+    expect(sanitizeRedirectPath("/update-password", "/x")).toBe("/update-password");
   });
 
   it("rejects protocol-relative URLs", () => {
-    assert.equal(sanitizeRedirectPath("//evil.com/path", "/dashboard"), "/dashboard");
-    assert.equal(sanitizeRedirectPath("//example.com", "/dashboard"), "/dashboard");
+    expect(sanitizeRedirectPath("//evil.com/path", "/dashboard")).toBe("/dashboard");
+    expect(sanitizeRedirectPath("//example.com", "/dashboard")).toBe("/dashboard");
   });
 
   it("rejects absolute URLs", () => {
-    assert.equal(sanitizeRedirectPath("https://evil.com", "/dashboard"), "/dashboard");
-    assert.equal(sanitizeRedirectPath("http://evil.com/phish", "/dashboard"), "/dashboard");
-    assert.equal(sanitizeRedirectPath("https://evil.com/callback", "/dashboard"), "/dashboard");
+    expect(sanitizeRedirectPath("https://evil.com", "/dashboard")).toBe("/dashboard");
+    expect(sanitizeRedirectPath("http://evil.com/phish", "/dashboard")).toBe("/dashboard");
   });
 
   it("rejects javascript and other schemes", () => {
-    assert.equal(sanitizeRedirectPath("javascript:alert(1)", "/dashboard"), "/dashboard");
-    assert.equal(sanitizeRedirectPath("data:text/html,<script>", "/dashboard"), "/dashboard");
+    expect(sanitizeRedirectPath("javascript:alert(1)", "/dashboard")).toBe("/dashboard");
+    expect(sanitizeRedirectPath("data:text/html,<script>", "/dashboard")).toBe("/dashboard");
   });
 
   it("rejects paths that do not start with /", () => {
-    assert.equal(sanitizeRedirectPath("dashboard", "/x"), "/x");
-    assert.equal(sanitizeRedirectPath("evil.com/path", "/x"), "/x");
+    expect(sanitizeRedirectPath("dashboard", "/x")).toBe("/x");
+    expect(sanitizeRedirectPath("evil.com/path", "/x")).toBe("/x");
+  });
+
+  it("handles non-string value type guard", () => {
+    expect(sanitizeRedirectPath(42 as unknown as string)).toBe("/dashboard");
   });
 });

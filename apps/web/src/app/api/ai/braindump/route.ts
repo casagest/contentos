@@ -3,7 +3,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { scrapeUrlContent } from "@/lib/scrape";
 import { expiresAtIso, hashUrl, SCRAPE_CACHE_TTL_MS } from "@/lib/url-cache";
-import { buildOpenRouterModelChain, resolveAIProvider } from "@/lib/ai/provider";
+import { buildOpenRouterModelChain, resolveAIProvider, resolveAIProviderForTask } from "@/lib/ai/provider";
+import { routeAICall, resolveEffectiveProvider } from "@/lib/ai/multi-model-router";
 import { buildDeterministicBrainDump } from "@/lib/ai/deterministic";
 import {
   type AIObjective,
@@ -604,54 +605,45 @@ export async function POST(request: NextRequest) {
 
     // If it's a question, return a conversational response asking for AI to answer
     if (coachResult.action === "answer") {
-      const provider = resolveAIProvider();
-
-      // If no AI provider, answer with a helpful default
-      if (provider.mode === "template" || !provider.apiKey) {
-        return NextResponse.json({
-          type: "conversation",
-          action: "answer",
-          intent: coachResult.intent,
-          messages: [
-            ...coachResult.messages,
-            {
-              id: `msg_${Date.now()}_answer`,
-              role: "assistant",
-              content: "Buna intrebare! Din pacate, nu am acces la AI in acest moment pentru a-ti raspunde. Dar poti reformula ca idee de continut si o transform in postari!",
-            },
-          ],
-        });
-      }
-
-      // Use AI to answer the question
+      // Use multi-model router to answer with the best available provider
       try {
-        const answerModel = selectModel("economy", provider.mode, provider.model);
-        let answerText: string;
+        const answerConfig = resolveEffectiveProvider("braindump");
+        // Check if any provider is available
+        const hasProvider = (() => {
+          const keys = [
+            process.env.ANTHROPIC_API_KEY,
+            process.env.OPENAI_API_KEY,
+            process.env.GOOGLE_AI_API_KEY,
+            process.env.OPENROUTER_API_KEY,
+          ];
+          return keys.some((k) => k?.trim());
+        })();
 
-        if (provider.mode === "openrouter") {
-          const result = await createOpenRouterCompletion({
-            apiKey: provider.apiKey,
-            baseUrl: provider.baseUrl,
-            model: answerModel,
-            maxTokens: 1200,
-            systemPrompt: buildBrainDumpAnswerSystemPrompt(),
-            userMessage: rawInput,
+        if (!hasProvider) {
+          return NextResponse.json({
+            type: "conversation",
+            action: "answer",
+            intent: coachResult.intent,
+            messages: [
+              ...coachResult.messages,
+              {
+                id: `msg_${Date.now()}_answer`,
+                role: "assistant",
+                content: "Buna intrebare! Din pacate, nu am acces la AI in acest moment pentru a-ti raspunde. Dar poti reformula ca idee de continut si o transform in postari!",
+              },
+            ],
           });
-          answerText = result.text;
-        } else {
-          const client = new Anthropic({ apiKey: provider.apiKey });
-          const result = await client.messages.create({
-            model: answerModel,
-            max_tokens: 1200,
-            system: buildBrainDumpAnswerSystemPrompt(),
-            messages: [{ role: "user", content: rawInput }],
-          });
-          answerText = result.content
-            .filter((b): b is Anthropic.TextBlock => b.type === "text")
-            .map((b) => b.text)
-            .join("\n");
         }
 
+        const aiResult = await routeAICall({
+          task: "braindump",
+          messages: [
+            { role: "system", content: buildBrainDumpAnswerSystemPrompt() },
+            { role: "user", content: rawInput },
+          ],
+          maxTokens: 1200,
+        });
+
         return NextResponse.json({
           type: "conversation",
           action: "answer",
@@ -661,9 +653,10 @@ export async function POST(request: NextRequest) {
             {
               id: `msg_${Date.now()}_answer`,
               role: "assistant",
-              content: answerText,
+              content: aiResult.text,
             },
           ],
+          meta: { provider: aiResult.provider, model: aiResult.model },
         });
       } catch {
         return NextResponse.json({
@@ -735,7 +728,7 @@ export async function POST(request: NextRequest) {
     .map((result) => `SOURCE: ${result.url}\n${result.content}`)
     .join("\n\n---\n\n");
 
-  const provider = resolveAIProvider();
+  const provider = resolveAIProviderForTask("braindump");
   const deterministicFallback = (warning?: string) =>
     buildDeterministicBrainDump({
       rawInput: rawInput + (urlContext ? `\n\n${urlContext}` : ""),
@@ -993,9 +986,25 @@ export async function POST(request: NextRequest) {
     let modelText = "";
     let resolvedModel = model;
 
-    if (provider.mode === "openrouter") {
+    // Use multi-model router for providers that ContentAIService doesn't support
+    const multiModelConfig = resolveEffectiveProvider("braindump");
+    const useMultiModelDirect = multiModelConfig.provider === "google" || multiModelConfig.provider === "openai";
+
+    if (useMultiModelDirect) {
+      // Route through multi-model router for Google/OpenAI native support
+      const aiResult = await routeAICall({
+        task: "braindump",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        maxTokens,
+      });
+      modelText = aiResult.text;
+      resolvedModel = aiResult.model;
+    } else if (provider.mode === "openrouter") {
       const completion = await createOpenRouterCompletion({
-        apiKey: provider.apiKey,
+        apiKey: provider.apiKey!,
         baseUrl: provider.baseUrl,
         model,
         maxTokens,
@@ -1005,7 +1014,7 @@ export async function POST(request: NextRequest) {
       modelText = completion.text;
       resolvedModel = completion.model;
     } else {
-      const client = new Anthropic({ apiKey: provider.apiKey });
+      const client = new Anthropic({ apiKey: provider.apiKey! });
       const response = await client.messages.create({
         model,
         max_tokens: maxTokens,
