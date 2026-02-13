@@ -1,165 +1,172 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  isUrlSafeForFetch,
-  isUrlSafeSync,
-  safeFetch,
-} from "./url-safety";
+import { describe, it, beforeEach, afterEach } from "node:test";
+import assert from "node:assert/strict";
+import { isUrlSafeForFetch, isUrlSafeSync, safeFetch } from "./url-safety";
 
 describe("url-safety (SSRF Guard)", () => {
   describe("isUrlSafeSync", () => {
-    it("blochează localhost și variații", () => {
-      expect(isUrlSafeSync("http://localhost/").ok).toBe(false);
-      expect(isUrlSafeSync("https://localhost/").ok).toBe(false);
-      expect(isUrlSafeSync("http://127.0.0.1/").ok).toBe(false);
-      expect(isUrlSafeSync("http://127.1.1.1/").ok).toBe(false);
-      expect(isUrlSafeSync("http://0.0.0.0/").ok).toBe(false);
-      expect(isUrlSafeSync("http://[::1]/").ok).toBe(false);
+    it("blocks localhost and variants", () => {
+      assert.equal(isUrlSafeSync("http://localhost/").ok, false);
+      assert.equal(isUrlSafeSync("https://localhost/").ok, false);
+      assert.equal(isUrlSafeSync("http://127.0.0.1/").ok, false);
+      assert.equal(isUrlSafeSync("http://127.1.1.1/").ok, false);
+      assert.equal(isUrlSafeSync("http://0.0.0.0/").ok, false);
+      assert.equal(isUrlSafeSync("http://[::1]/").ok, false);
     });
 
-    it("blochează IP-uri private CIDR", () => {
-      expect(isUrlSafeSync("http://10.0.0.1/").ok).toBe(false);
-      expect(isUrlSafeSync("https://10.255.255.255/").ok).toBe(false);
-      expect(isUrlSafeSync("http://192.168.0.1/").ok).toBe(false);
-      expect(isUrlSafeSync("http://192.168.255.255/").ok).toBe(false);
-      expect(isUrlSafeSync("http://172.16.0.1/").ok).toBe(false);
-      expect(isUrlSafeSync("http://172.31.255.255/").ok).toBe(false);
-      expect(isUrlSafeSync("http://172.20.100.50/").ok).toBe(false);
+    it("blocks private CIDR IPs", () => {
+      assert.equal(isUrlSafeSync("http://10.0.0.1/").ok, false);
+      assert.equal(isUrlSafeSync("https://10.255.255.255/").ok, false);
+      assert.equal(isUrlSafeSync("http://192.168.0.1/").ok, false);
+      assert.equal(isUrlSafeSync("http://192.168.255.255/").ok, false);
+      assert.equal(isUrlSafeSync("http://172.16.0.1/").ok, false);
+      assert.equal(isUrlSafeSync("http://172.31.255.255/").ok, false);
+      assert.equal(isUrlSafeSync("http://172.20.100.50/").ok, false);
     });
 
-    it("blochează link-local (169.254.*)", () => {
-      expect(isUrlSafeSync("http://169.254.0.1/").ok).toBe(false);
-      expect(isUrlSafeSync("http://169.254.255.255/").ok).toBe(false);
+    it("blocks link-local (169.254.*)", () => {
+      assert.equal(isUrlSafeSync("http://169.254.0.1/").ok, false);
+      assert.equal(isUrlSafeSync("http://169.254.255.255/").ok, false);
     });
 
-    it("permite doar HTTP și HTTPS", () => {
-      expect(isUrlSafeSync("ftp://example.com/").ok).toBe(false);
-      expect(isUrlSafeSync("file:///etc/passwd").ok).toBe(false);
-      expect(isUrlSafeSync("javascript:alert(1)").ok).toBe(false);
-      expect(isUrlSafeSync("data:text/html,evil").ok).toBe(false);
+    it("allows only HTTP and HTTPS", () => {
+      assert.equal(isUrlSafeSync("ftp://example.com/").ok, false);
+      assert.equal(isUrlSafeSync("file:///etc/passwd").ok, false);
+      assert.equal(isUrlSafeSync("javascript:alert(1)").ok, false);
+      assert.equal(isUrlSafeSync("data:text/html,evil").ok, false);
     });
 
-    it("permite doar porturile 80 și 443", () => {
-      expect(isUrlSafeSync("http://example.com:8080/").ok).toBe(false);
-      expect(isUrlSafeSync("http://example.com:22/").ok).toBe(false);
-      expect(isUrlSafeSync("https://example.com:8443/").ok).toBe(false);
+    it("allows only ports 80 and 443", () => {
+      assert.equal(isUrlSafeSync("http://example.com:8080/").ok, false);
+      assert.equal(isUrlSafeSync("http://example.com:22/").ok, false);
+      assert.equal(isUrlSafeSync("https://example.com:8443/").ok, false);
     });
 
-    it("permite URL-uri publice HTTP(S) sigure", () => {
-      expect(isUrlSafeSync("https://example.com/").ok).toBe(true);
-      expect(isUrlSafeSync("http://example.com/").ok).toBe(true);
-      expect(isUrlSafeSync("https://example.com:443/path").ok).toBe(true);
-      expect(isUrlSafeSync("http://example.com:80/path").ok).toBe(true);
-      expect(isUrlSafeSync("https://8.8.8.8/").ok).toBe(true);
-      expect(isUrlSafeSync("https://1.1.1.1/").ok).toBe(true);
+    it("allows safe public HTTP(S) URLs", () => {
+      assert.equal(isUrlSafeSync("https://example.com/").ok, true);
+      assert.equal(isUrlSafeSync("http://example.com/").ok, true);
+      assert.equal(isUrlSafeSync("https://example.com:443/path").ok, true);
+      assert.equal(isUrlSafeSync("http://example.com:80/path").ok, true);
+      assert.equal(isUrlSafeSync("https://8.8.8.8/").ok, true);
+      assert.equal(isUrlSafeSync("https://1.1.1.1/").ok, true);
     });
 
-    it("blochează URL-uri invalide", () => {
-      expect(isUrlSafeSync("not-a-url").ok).toBe(false);
-      expect(isUrlSafeSync("").ok).toBe(false);
+    it("blocks invalid URLs", () => {
+      assert.equal(isUrlSafeSync("not-a-url").ok, false);
+      assert.equal(isUrlSafeSync("").ok, false);
     });
 
-    it("blochează hostname-uri cu suffix rezervat", () => {
-      expect(isUrlSafeSync("http://internal.local/").ok).toBe(false);
-      expect(isUrlSafeSync("http://service.internal/").ok).toBe(false);
-      expect(isUrlSafeSync("http://box.lan/").ok).toBe(false);
-      expect(isUrlSafeSync("http://server.home/").ok).toBe(false);
+    it("blocks reserved TLD hostnames", () => {
+      assert.equal(isUrlSafeSync("http://internal.local/").ok, false);
+      assert.equal(isUrlSafeSync("http://service.internal/").ok, false);
+      assert.equal(isUrlSafeSync("http://box.lan/").ok, false);
+      assert.equal(isUrlSafeSync("http://server.home/").ok, false);
     });
   });
 
   describe("isUrlSafeForFetch", () => {
-    it("blochează localhost (async)", async () => {
+    it("blocks localhost (async)", async () => {
       const r = await isUrlSafeForFetch("http://localhost/");
-      expect(r.ok).toBe(false);
-      expect(r.reason).toContain("localhost");
+      assert.equal(r.ok, false);
+      assert.ok((r.reason || "").toLowerCase().includes("localhost"));
     });
 
-    it("blochează IP-uri private", async () => {
+    it("blocks private IPs", async () => {
       const r = await isUrlSafeForFetch("http://192.168.1.1/");
-      expect(r.ok).toBe(false);
+      assert.equal(r.ok, false);
     });
 
-    it("permite domenii publice", async () => {
+    it("allows public domains", async () => {
       const r = await isUrlSafeForFetch("https://example.com/");
-      expect(r.ok).toBe(true);
+      assert.equal(r.ok, true);
     });
   });
 
   describe("safeFetch", () => {
     const originalFetch = globalThis.fetch;
+    let calls: Array<[unknown, unknown]> = [];
+    let fetchImpl: (url: unknown, options: unknown) => Promise<Response>;
 
     beforeEach(() => {
-      globalThis.fetch = vi.fn();
+      calls = [];
+      fetchImpl = async () => new Response("ok", { status: 200 });
+      globalThis.fetch = (async (url: unknown, options: unknown) => {
+        calls.push([url, options]);
+        return fetchImpl(url, options);
+      }) as any;
     });
 
     afterEach(() => {
       globalThis.fetch = originalFetch;
     });
 
-    it("validă URL înainte de fetch", async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(
-        new Response("ok", { status: 200 })
-      );
+    it("validates URL before fetch", async () => {
+      fetchImpl = async () => new Response("ok", { status: 200 });
 
       await safeFetch("https://example.com/", { timeoutMs: 5000 });
-      expect(fetch).toHaveBeenCalledWith(
-        "https://example.com/",
-        expect.objectContaining({ redirect: "manual" })
+      assert.equal(calls.length, 1);
+
+      const [url, options] = calls[0] as [unknown, unknown];
+      assert.equal(url, "https://example.com/");
+      assert.equal((options as any)?.redirect, "manual");
+    });
+
+    it("throws for unsafe URL", async () => {
+      await assert.rejects(
+        safeFetch("http://127.0.0.1/", { timeoutMs: 5000 }),
+        /URL unsafe/i
+      );
+      assert.equal(calls.length, 0);
+    });
+
+    it("uses timeout", async () => {
+      fetchImpl = (_url: unknown, options: any) => {
+        return new Promise((_resolve, reject) => {
+          const signal: AbortSignal | undefined = options?.signal;
+          if (!signal) return reject(new Error("missing signal"));
+          if (signal.aborted) return reject(new Error("aborted"));
+          signal.addEventListener("abort", () => reject(new Error("aborted")), {
+            once: true,
+          });
+        });
+      };
+
+      await assert.rejects(
+        safeFetch("https://example.com/", { timeoutMs: 50 }),
+        /aborted/i
       );
     });
 
-    it("aruncă pentru URL unsafe", async () => {
-      await expect(
-        safeFetch("http://127.0.0.1/", { timeoutMs: 5000 })
-      ).rejects.toThrow("URL unsafe");
-
-      expect(fetch).not.toHaveBeenCalled();
-    });
-
-    it("folosește timeout", async () => {
-      vi.mocked(fetch).mockImplementation(
-        () =>
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("timeout")), 100)
-          )
-      );
-
-      await expect(
-        safeFetch("https://example.com/", { timeoutMs: 50 })
-      ).rejects.toThrow();
-    });
-
-    it("urmează redirect-uri dacă Location este safe", async () => {
-      vi.mocked(fetch)
-        .mockResolvedValueOnce(
-          new Response(null, {
+    it("follows redirects when Location is safe", async () => {
+      let call = 0;
+      fetchImpl = async () => {
+        call += 1;
+        if (call === 1) {
+          return new Response(null, {
             status: 302,
             headers: { Location: "https://example.com/final" },
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response("final content", { status: 200 })
-        );
+          });
+        }
+        return new Response("final content", { status: 200 });
+      };
 
-      const res = await safeFetch("https://example.com/redirect", {
-        timeoutMs: 5000,
-      });
-      expect(res.status).toBe(200);
-      expect(fetch).toHaveBeenCalledTimes(2);
+      const res = await safeFetch("https://example.com/redirect", { timeoutMs: 5000 });
+      assert.equal(res.status, 200);
+      assert.equal(calls.length, 2);
     });
 
-    it("blochează redirect chain către localhost", async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(
-        new Response(null, {
+    it("blocks redirect chains to localhost", async () => {
+      fetchImpl = async () => {
+        return new Response(null, {
           status: 302,
           headers: { Location: "http://127.0.0.1/evil" },
-        })
+        });
+      };
+
+      await assert.rejects(
+        safeFetch("https://example.com/redirect", { timeoutMs: 5000 }),
+        /URL unsafe/i
       );
-
-      await expect(
-        safeFetch("https://example.com/redirect", { timeoutMs: 5000 })
-      ).rejects.toThrow("URL unsafe");
-
-      expect(fetch).toHaveBeenCalledTimes(1);
+      assert.equal(calls.length, 1);
     });
   });
 });

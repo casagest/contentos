@@ -388,6 +388,11 @@ function resolveDraftMeta(draft: DecisionDraftData | null | undefined): {
   roiMultiple: number | null;
   estimatedCostUsd: number;
   projectedUplift: number | null;
+  escalated: boolean | null;
+  escalationCandidate: boolean | null;
+  qualityMode: string | null;
+  modelChain: string | null;
+  roiGateReason: string | null;
 } {
   const aiSuggestions = asRecord(draft?.ai_suggestions);
   const meta = asRecord(aiSuggestions.meta);
@@ -414,6 +419,14 @@ function resolveDraftMeta(draft: DecisionDraftData | null | undefined): {
       typeof roiGate.expectedUpliftPoints === "number"
         ? (roiGate.expectedUpliftPoints as number)
         : null,
+    escalated: typeof meta.escalated === "boolean" ? (meta.escalated as boolean) : null,
+    escalationCandidate:
+      typeof meta.escalationCandidate === "boolean"
+        ? (meta.escalationCandidate as boolean)
+        : null,
+    qualityMode: asString(meta.qualityMode) || null,
+    modelChain: asString(meta.modelChain) || null,
+    roiGateReason: asString(roiGate.reason) || null,
   };
 }
 
@@ -482,6 +495,11 @@ export async function logDecisionForPublishedPost(params: {
       roi_multiple: resolved.roiMultiple,
       decision_context: {
         draftSource: params.draft?.source || null,
+        escalated: resolved.escalated,
+        escalationCandidate: resolved.escalationCandidate,
+        qualityMode: resolved.qualityMode,
+        modelChain: resolved.modelChain,
+        roiGateReason: resolved.roiGateReason,
         selectedVariant: variant.selectedVariant,
         variantCandidateCount: variant.candidateCount,
         ...(params.decisionContext || {}),

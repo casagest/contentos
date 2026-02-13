@@ -21,3 +21,4 @@ supabase/.temp/
 .pnpm-store/
 .claude/settings.local.json
 supabase/supabase/.temp/
+**/.tmp/

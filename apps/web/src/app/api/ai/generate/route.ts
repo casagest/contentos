@@ -18,8 +18,16 @@ import {
   withCacheMeta,
 } from "@/lib/ai/governor";
 import { selectBestVariantWithBandit } from "@/lib/ai/outcome-learning";
+import { classifyIntent } from "@/lib/ai/intent-classifier";
+import {
+  loadCreativeInsights,
+  generateCreativeAngles,
+  buildCreativeBrief,
+  type Platform as CreativePlatform,
+  type CreativeAngle,
+} from "@/lib/ai/creative-intelligence";
 
-const ROUTE_KEY = "generate:v3";
+const ROUTE_KEY = "generate:v4";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const VALID_PLATFORMS: Platform[] = ["facebook", "instagram", "tiktok", "youtube"];
 
@@ -31,6 +39,10 @@ interface GenerateBody {
   includeHashtags?: boolean;
   includeEmoji?: boolean;
   language?: Language;
+  /** When set, skip angle exploration and generate directly */
+  selectedAngleId?: string;
+  /** Request creative angles without generating content */
+  exploreOnly?: boolean;
 }
 
 interface VariantSelectionMeta {
@@ -162,6 +174,100 @@ export async function POST(request: NextRequest) {
   const includeHashtags = body.includeHashtags ?? true;
   const includeEmoji = body.includeEmoji ?? true;
 
+  // --- Intent Classification ---
+  const intentResult = classifyIntent(input);
+
+  // If it's a question, respond helpfully instead of generating content
+  if (intentResult.intent === "question" && intentResult.confidence >= 0.75) {
+    return NextResponse.json({
+      intent: intentResult,
+      platformVersions: {},
+      meta: {
+        mode: "intent_redirect",
+        message: "Ai pus o intrebare. Vrei sa raspundem la ea, sau sa cream continut pe aceasta tema?",
+        suggestedFollowUp: intentResult.suggestedFollowUp,
+      },
+    });
+  }
+
+  // If it's vague, ask for clarification
+  if (intentResult.intent === "vague_idea" && intentResult.confidence >= 0.65) {
+    return NextResponse.json({
+      intent: intentResult,
+      platformVersions: {},
+      meta: {
+        mode: "clarification_needed",
+        message: intentResult.clarificationNeeded || "Am nevoie de mai mult context. Pentru cine e continutul? Ce obiectiv ai?",
+        suggestedFollowUp: intentResult.suggestedFollowUp,
+      },
+    });
+  }
+
+  // --- Creative Intelligence: Explore Phase ---
+  const primaryPlatform = platforms[0] as CreativePlatform;
+  const insights = await loadCreativeInsights({
+    supabase: session.supabase,
+    organizationId: session.organizationId,
+    platform: primaryPlatform,
+    objective,
+  });
+
+  const creativeAngles = generateCreativeAngles({
+    input,
+    platform: primaryPlatform,
+    objective,
+    insights,
+    tone,
+  });
+
+  // If exploreOnly, return angles without generating content
+  if (body.exploreOnly) {
+    return NextResponse.json({
+      intent: intentResult,
+      angles: creativeAngles,
+      insights: {
+        topPerformers: insights.filter((i) => i.rank === "top").slice(0, 3),
+        underexplored: insights.filter((i) => i.rank === "untested").slice(0, 3),
+      },
+      meta: { mode: "explore", platform: primaryPlatform, objective },
+    });
+  }
+
+  // Build creative brief for selected angle or best angle
+  const selectedAngle = body.selectedAngleId
+    ? creativeAngles.find((a) => a.id === body.selectedAngleId) || creativeAngles[0]
+    : creativeAngles[0];
+
+  // Load business profile for creative brief
+  let businessProfileForBrief: Parameters<typeof buildCreativeBrief>[0]["businessProfile"];
+  const { data: orgForBrief } = await session.supabase
+    .from("organizations")
+    .select("settings")
+    .eq("id", session.organizationId)
+    .single();
+
+  const orgSettings = orgForBrief?.settings as Record<string, unknown> | null;
+  if (orgSettings?.businessProfile) {
+    const bp = orgSettings.businessProfile as Record<string, unknown>;
+    businessProfileForBrief = {
+      name: typeof bp.name === "string" ? bp.name : undefined,
+      description: typeof bp.description === "string" ? bp.description : undefined,
+      industry: typeof bp.industry === "string" ? bp.industry : undefined,
+      tones: Array.isArray(bp.tones) ? bp.tones.filter((t): t is string => typeof t === "string") : undefined,
+      targetAudience: typeof bp.targetAudience === "string" ? bp.targetAudience : undefined,
+      usps: Array.isArray(bp.usps) ? bp.usps.filter((u): u is string => typeof u === "string") : undefined,
+    };
+  }
+
+  const creativeBrief = buildCreativeBrief({
+    input,
+    platform: primaryPlatform,
+    objective,
+    angles: selectedAngle ? [selectedAngle] : creativeAngles.slice(0, 2),
+    insights,
+    businessProfile: businessProfileForBrief,
+  });
+
   const deterministic = buildDeterministicGeneration({
     input,
     targetPlatforms: platforms,
@@ -256,18 +362,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(deterministicPayload);
   }
 
+  // Reuse org settings already loaded for creative brief
+  const settings = orgSettings;
   let userVoiceDescription: string | undefined;
-  const { data: org } = await session.supabase
-    .from("organizations")
-    .select("settings")
-    .eq("id", session.organizationId)
-    .single();
-
-  const settings = org?.settings as Record<string, unknown> | null;
   if (settings?.businessProfile) {
     const profile = settings.businessProfile as { description?: string };
     userVoiceDescription = profile.description;
   }
+
+  // Combine voice description with creative brief for genius-level output
+  const enhancedVoiceDescription = [
+    userVoiceDescription || "",
+    "",
+    creativeBrief.creativeBriefPrompt,
+  ].filter(Boolean).join("\n");
 
   const avgDeterministicScore = averageScore(deterministic.platformVersions);
   const premiumThreshold = Number(process.env.AI_GENERATE_PREMIUM_THRESHOLD || 70);
@@ -341,6 +449,7 @@ export async function POST(request: NextRequest) {
     organizationSettings: settings,
     fallbackMinRoiMultiple,
     fallbackValuePerScorePointUsd,
+    learningScope: { draftSource: "ai_generated" },
   });
   const roiDecision = evaluatePremiumRoiGate({
     baselineScore: avgDeterministicScore,
@@ -427,7 +536,7 @@ export async function POST(request: NextRequest) {
       tone,
       includeHashtags,
       includeEmoji,
-      userVoiceDescription,
+      userVoiceDescription: enhancedVoiceDescription,
     });
     const resolvedModel = service.getLastResolvedModel() || model;
     const aiSelected = await applyVariantBanditSelection({
@@ -440,6 +549,9 @@ export async function POST(request: NextRequest) {
     const responsePayload = {
       ...aiResult,
       platformVersions: aiSelected.platformVersions,
+      intent: intentResult,
+      angles: creativeAngles,
+      selectedAngle: selectedAngle || null,
       meta: {
         mode: "ai",
         provider: provider.mode,
@@ -450,6 +562,11 @@ export async function POST(request: NextRequest) {
         objectiveValueConfig: valueConfig,
         roiGate: roiDecision,
         variantSelector: aiSelected.variantSelector,
+        creativeBrief: {
+          topPerformers: creativeBrief.topPerformers.length,
+          avoidPatterns: creativeBrief.avoidPatterns.length,
+          anglesGenerated: creativeAngles.length,
+        },
       },
     };
 

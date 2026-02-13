@@ -3,10 +3,24 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { FacebookAdapter, InstagramAdapter } from "@contentos/content-engine/platforms/meta";
 import {
   deriveCreativeSignals,
+  type AIObjective,
   logDecisionForPublishedPost,
   logOutcomeForPost,
   refreshCreativeMemoryFromPost,
 } from "@/lib/ai/outcome-learning";
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function resolveDraftObjective(draft: Record<string, any>): AIObjective {
+  const aiSuggestions = asRecord(draft?.ai_suggestions);
+  const meta = asRecord(aiSuggestions.meta);
+  const objective = typeof meta.objective === "string" ? meta.objective : "";
+  if (objective === "reach" || objective === "leads" || objective === "saves") return objective;
+  return "engagement";
+}
 
 function resolveDraftTextForPlatform(draft: Record<string, any>, platform: string): string {
   const platformVersions =
@@ -74,6 +88,7 @@ export async function GET(request: NextRequest) {
     let failed = 0;
 
     for (const draft of drafts) {
+      const objective = resolveDraftObjective(draft);
       const targetPlatforms: string[] = draft.target_platforms || [];
       if (targetPlatforms.length === 0) {
         failed++;
@@ -157,6 +172,7 @@ export async function GET(request: NextRequest) {
                 platform_versions: draft.platform_versions,
                 ai_suggestions: draft.ai_suggestions,
               },
+              objective,
               decisionContext: {
                 publishType: "scheduled",
                 scheduledAt: draft.scheduled_at || null,
@@ -168,6 +184,7 @@ export async function GET(request: NextRequest) {
               post: insertedPost,
               source: "publish",
               eventType: "published",
+              objective,
               metadata: {
                 publishType: "scheduled",
                 platformPostId: result.platformPostId,
@@ -178,6 +195,7 @@ export async function GET(request: NextRequest) {
               await refreshCreativeMemoryFromPost({
                 supabase,
                 post: insertedPost,
+                objective,
                 metadata: {
                   source: "publish",
                   publishType: "scheduled",

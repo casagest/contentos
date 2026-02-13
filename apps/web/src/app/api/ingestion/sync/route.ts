@@ -5,6 +5,7 @@ import {
   deriveCreativeSignals,
   logOutcomeForPost,
   refreshCreativeMemoryFromPost,
+  type AIObjective,
 } from "@/lib/ai/outcome-learning";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
@@ -395,12 +396,45 @@ async function recordSyncedOutcomes(params: {
 
   if (!rows || !rows.length) return;
 
+  const postIds = rows
+    .map((post) => (typeof post?.id === "string" ? post.id : ""))
+    .filter(Boolean);
+  const objectivesByPostId = new Map<string, AIObjective>();
+
+  if (postIds.length) {
+    const { data: decisionRows } = await params.supabase
+      .from("decision_logs")
+      .select("post_id,objective,created_at")
+      .eq("organization_id", params.organizationId)
+      .in("post_id", postIds)
+      .order("created_at", { ascending: false })
+      .limit(Math.min(500, postIds.length * 3));
+
+    if (Array.isArray(decisionRows)) {
+      for (const row of decisionRows as Array<{
+        post_id?: unknown;
+        objective?: unknown;
+      }>) {
+        const postId = typeof row.post_id === "string" ? row.post_id : null;
+        if (!postId || objectivesByPostId.has(postId)) continue;
+        const objective = typeof row.objective === "string" ? row.objective : "";
+        if (objective === "reach" || objective === "leads" || objective === "saves") {
+          objectivesByPostId.set(postId, objective as AIObjective);
+        } else {
+          objectivesByPostId.set(postId, "engagement");
+        }
+      }
+    }
+  }
+
   for (const post of rows) {
+    const objective = objectivesByPostId.get(post.id) || "engagement";
     const outcomeLogged = await logOutcomeForPost({
       supabase: params.supabase,
       post,
       source: "sync",
       eventType: "snapshot",
+      objective,
       metadata: {
         syncType: "ingestion",
         platformPostId: post.platform_post_id,
@@ -411,6 +445,7 @@ async function recordSyncedOutcomes(params: {
       await refreshCreativeMemoryFromPost({
         supabase: params.supabase,
         post,
+        objective,
         metadata: {
           source: "sync",
           syncType: "ingestion",
@@ -419,4 +454,3 @@ async function recordSyncedOutcomes(params: {
     }
   }
 }
-

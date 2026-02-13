@@ -19,6 +19,16 @@ import {
   withCacheMeta,
 } from "@/lib/ai/governor";
 import type { BusinessProfile } from "@contentos/database";
+import {
+  classifyIntent,
+  type IntentClassification,
+} from "@/lib/ai/intent-classifier";
+import {
+  processBrainDumpInput,
+  buildBrainDumpAnswerSystemPrompt,
+  buildEnrichedGenerationPrompt,
+  type ConversationMessage,
+} from "@/lib/ai/braindump-coach";
 
 const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
 const MAX_URLS = 3;
@@ -37,6 +47,10 @@ interface BrainDumpRequest {
   language?: Language;
   qualityMode?: QualityMode;
   objective?: AIObjective;
+  /** Conversation history for multi-turn mode */
+  conversationHistory?: ConversationMessage[];
+  /** Whether to use conversational mode with intent detection */
+  conversationMode?: boolean;
 }
 
 interface SessionContext {
@@ -580,6 +594,113 @@ export async function POST(request: NextRequest) {
   const qualityMode = normalizeQualityMode(body.qualityMode);
   const objective: AIObjective = body.objective || "engagement";
 
+  // --- Conversational Intent Detection ---
+  if (body.conversationMode !== false) {
+    const coachResult = processBrainDumpInput({
+      input: rawInput,
+      conversationHistory: body.conversationHistory || [],
+      platforms: requestedPlatforms,
+    });
+
+    // If it's a question, return a conversational response asking for AI to answer
+    if (coachResult.action === "answer") {
+      const provider = resolveAIProvider();
+
+      // If no AI provider, answer with a helpful default
+      if (provider.mode === "template" || !provider.apiKey) {
+        return NextResponse.json({
+          type: "conversation",
+          action: "answer",
+          intent: coachResult.intent,
+          messages: [
+            ...coachResult.messages,
+            {
+              id: `msg_${Date.now()}_answer`,
+              role: "assistant",
+              content: "Buna intrebare! Din pacate, nu am acces la AI in acest moment pentru a-ti raspunde. Dar poti reformula ca idee de continut si o transform in postari!",
+            },
+          ],
+        });
+      }
+
+      // Use AI to answer the question
+      try {
+        const answerModel = selectModel("economy", provider.mode, provider.model);
+        let answerText: string;
+
+        if (provider.mode === "openrouter") {
+          const result = await createOpenRouterCompletion({
+            apiKey: provider.apiKey,
+            baseUrl: provider.baseUrl,
+            model: answerModel,
+            maxTokens: 1200,
+            systemPrompt: buildBrainDumpAnswerSystemPrompt(),
+            userMessage: rawInput,
+          });
+          answerText = result.text;
+        } else {
+          const client = new Anthropic({ apiKey: provider.apiKey });
+          const result = await client.messages.create({
+            model: answerModel,
+            max_tokens: 1200,
+            system: buildBrainDumpAnswerSystemPrompt(),
+            messages: [{ role: "user", content: rawInput }],
+          });
+          answerText = result.content
+            .filter((b): b is Anthropic.TextBlock => b.type === "text")
+            .map((b) => b.text)
+            .join("\n");
+        }
+
+        return NextResponse.json({
+          type: "conversation",
+          action: "answer",
+          intent: coachResult.intent,
+          messages: [
+            ...coachResult.messages,
+            {
+              id: `msg_${Date.now()}_answer`,
+              role: "assistant",
+              content: answerText,
+            },
+          ],
+        });
+      } catch {
+        return NextResponse.json({
+          type: "conversation",
+          action: "answer",
+          intent: coachResult.intent,
+          messages: [
+            ...coachResult.messages,
+            {
+              id: `msg_${Date.now()}_answer`,
+              role: "assistant",
+              content: "Am inteles intrebarea ta, dar am intampinat o eroare. Reformuleaz-o ca idee de continut si o transform in postari!",
+            },
+          ],
+        });
+      }
+    }
+
+    // If it's vague, return clarification questions
+    if (coachResult.action === "clarify") {
+      return NextResponse.json({
+        type: "conversation",
+        action: "clarify",
+        intent: coachResult.intent,
+        messages: coachResult.messages,
+        clarifications: coachResult.clarifications,
+      });
+    }
+
+    // If enriched, use the enriched input for generation
+    if (coachResult.action === "enriched_generate" && coachResult.enrichedInput) {
+      // Continue with generation but use enriched input
+      // rawInput stays the same for cache key, but we'll add context to the prompt
+    }
+  }
+  // --- End Intent Detection ---
+
   let businessProfile: BusinessProfile | null = null;
   const { data: org } = await session.supabase
     .from("organizations")
@@ -798,6 +919,7 @@ export async function POST(request: NextRequest) {
     organizationSettings: settings,
     fallbackMinRoiMultiple,
     fallbackValuePerScorePointUsd,
+    learningScope: { draftSource: "braindump" },
   });
   const roiDecision = evaluatePremiumRoiGate({
     baselineScore,

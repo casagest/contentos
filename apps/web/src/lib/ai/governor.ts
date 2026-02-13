@@ -129,8 +129,15 @@ function clamp(value: number, min: number, max: number): number {
 export interface ObjectiveValueConfig {
   minRoiMultiple: number;
   valuePerScorePointUsd: number;
+  baseMinRoiMultiple?: number;
+  baseValuePerScorePointUsd?: number;
   leadValueUsd: number | null;
   learnedLeadValueUsd: number | null;
+  learnedMinRoiMultiple?: number | null;
+  learnedValuePerScorePointUsd?: number | null;
+  learningSampleSize?: number | null;
+  learningCorrelation?: number | null;
+  learningDraftSource?: string | null;
   source: "defaults" | "organization_settings" | "outcome_learning";
 }
 
@@ -372,6 +379,254 @@ async function estimateLearnedLeadValueUsd(params: {
   }
 }
 
+type EconomicsLearningTuning = {
+  valueMultiplier: number;
+  roiMultiplier: number | null;
+  sampleSize: number;
+  correlation: number | null;
+  draftSource: string | null;
+};
+
+function median(values: number[]): number {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
+}
+
+function correlation(xs: number[], ys: number[]): number | null {
+  if (xs.length !== ys.length || xs.length < 3) return null;
+  const n = xs.length;
+  const meanX = xs.reduce((sum, value) => sum + value, 0) / n;
+  const meanY = ys.reduce((sum, value) => sum + value, 0) / n;
+
+  let cov = 0;
+  let varX = 0;
+  let varY = 0;
+
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - meanX;
+    const dy = ys[i] - meanY;
+    cov += dx * dy;
+    varX += dx * dx;
+    varY += dy * dy;
+  }
+
+  if (varX <= 0 || varY <= 0) return null;
+  return cov / Math.sqrt(varX * varY);
+}
+
+function normalizeOutcomeMetric(params: {
+  objective: AIObjective;
+  outcome: Record<string, unknown>;
+}): number | null {
+  const objective = params.objective;
+  const row = params.outcome;
+
+  if (objective === "engagement") {
+    const rate = asNumber(row.engagement_rate);
+    return rate !== null ? rate : null;
+  }
+
+  if (objective === "reach") {
+    const reach = asNumber(row.reach_count);
+    return reach !== null ? Math.log1p(Math.max(0, reach)) : null;
+  }
+
+  if (objective === "saves") {
+    const saves = asNumber(row.saves_count);
+    return saves !== null ? Math.log1p(Math.max(0, saves)) : null;
+  }
+
+  if (objective === "leads") {
+    const metadata = asRecord(row.metadata);
+    const leads =
+      asNumber(metadata.leadsCount) ||
+      asNumber(metadata.leads_count) ||
+      asNumber(metadata.conversions);
+    return leads !== null ? Math.log1p(Math.max(0, leads)) : null;
+  }
+
+  return null;
+}
+
+async function estimateLearnedEconomicsTuning(params: {
+  supabase: any;
+  organizationId: string;
+  objective: AIObjective;
+  draftSource?: string | null;
+}): Promise<EconomicsLearningTuning | null> {
+  try {
+    const ttlMs = Math.max(
+      60_000,
+      Math.floor(getEnvNumber("AI_ECONOMICS_LEARNING_TTL_MS", 6 * 60 * 60 * 1000))
+    );
+    const lookbackDays = Math.max(
+      30,
+      Math.floor(getEnvNumber("AI_ECONOMICS_LEARNING_LOOKBACK_DAYS", 120))
+    );
+    const minSamples = Math.max(
+      12,
+      Math.floor(getEnvNumber("AI_ECONOMICS_LEARNING_MIN_SAMPLES", 25))
+    );
+
+    const routeKey = "economics-learning:v1";
+    const intentHash = buildIntentCacheKey(routeKey, {
+      objective: params.objective,
+      draftSource: params.draftSource || null,
+      lookbackDays,
+    });
+
+    const cached = await getIntentCache({
+      supabase: params.supabase,
+      organizationId: params.organizationId,
+      routeKey,
+      intentHash,
+    });
+
+    if (cached && cached.response && typeof cached.response === "object") {
+      const cachedRow = cached.response as Record<string, unknown>;
+      const valueMultiplier = asNumber(cachedRow.valueMultiplier);
+      const roiMultiplier = asNumber(cachedRow.roiMultiplier);
+      const sampleSize = asNumber(cachedRow.sampleSize);
+      const correlationValue = asNumber(cachedRow.correlation);
+      const draftSource =
+        typeof cachedRow.draftSource === "string" ? cachedRow.draftSource : null;
+      if (valueMultiplier && sampleSize) {
+        return {
+          valueMultiplier,
+          roiMultiplier: roiMultiplier ?? null,
+          sampleSize,
+          correlation: correlationValue,
+          draftSource,
+        };
+      }
+    }
+
+    const sinceIso = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: decisionRows } = await params.supabase
+      .from("decision_logs")
+      .select("post_id,expected_score,decision_context,created_at")
+      .eq("organization_id", params.organizationId)
+      .eq("objective", params.objective)
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: false })
+      .limit(320);
+
+    if (!Array.isArray(decisionRows) || decisionRows.length === 0) return null;
+
+    const draftSource = params.draftSource || null;
+    const decisions: Array<{
+      postId: string;
+      expectedScore: number;
+      escalated: boolean | null;
+    }> = [];
+
+    for (const row of decisionRows as Array<Record<string, unknown>>) {
+      const postId = typeof row.post_id === "string" ? row.post_id : null;
+      if (!postId) continue;
+
+      const expectedScore = asNumber(row.expected_score);
+      if (expectedScore === null) continue;
+
+      const ctx = asRecord(row.decision_context);
+      if (draftSource) {
+        const seenSource = typeof ctx.draftSource === "string" ? ctx.draftSource : null;
+        if (seenSource !== draftSource) continue;
+      }
+
+      const escalated =
+        typeof ctx.escalated === "boolean" ? (ctx.escalated as boolean) : null;
+
+      decisions.push({ postId, expectedScore, escalated });
+    }
+
+    if (decisions.length < minSamples) return null;
+
+    const postIds = [...new Set(decisions.map((row) => row.postId))];
+
+    const { data: outcomeRows } = await params.supabase
+      .from("outcome_events")
+      .select(
+        "post_id,recorded_at,engagement_rate,reach_count,saves_count,metadata"
+      )
+      .eq("organization_id", params.organizationId)
+      .eq("objective", params.objective)
+      .in("post_id", postIds)
+      .order("recorded_at", { ascending: false })
+      .limit(1200);
+
+    if (!Array.isArray(outcomeRows) || outcomeRows.length === 0) return null;
+
+    const latestOutcomeByPostId = new Map<string, Record<string, unknown>>();
+    for (const row of outcomeRows as Array<Record<string, unknown>>) {
+      const postId = typeof row.post_id === "string" ? row.post_id : null;
+      if (!postId || latestOutcomeByPostId.has(postId)) continue;
+      latestOutcomeByPostId.set(postId, row);
+    }
+
+    const xs: number[] = [];
+    const ys: number[] = [];
+    const escalatedYs: number[] = [];
+    const baseYs: number[] = [];
+
+    for (const decision of decisions) {
+      const outcome = latestOutcomeByPostId.get(decision.postId);
+      if (!outcome) continue;
+      const y = normalizeOutcomeMetric({ objective: params.objective, outcome });
+      if (y === null) continue;
+
+      xs.push(decision.expectedScore);
+      ys.push(y);
+      if (decision.escalated === true) escalatedYs.push(y);
+      if (decision.escalated === false) baseYs.push(y);
+    }
+
+    if (ys.length < minSamples) return null;
+
+    const r = correlation(xs, ys);
+    const valueMultiplier = clamp(0.75 + Math.max(0, r || 0) * 0.5, 0.55, 1.1);
+
+    let roiMultiplier: number | null = null;
+    if (escalatedYs.length >= 6 && baseYs.length >= 6) {
+      const threshold = median(ys);
+      const premiumRate =
+        escalatedYs.filter((value) => value >= threshold).length / escalatedYs.length;
+      const baseRate = baseYs.filter((value) => value >= threshold).length / baseYs.length;
+      const delta = premiumRate - baseRate;
+      roiMultiplier = clamp(1 - delta * 0.9, 0.85, 1.25);
+    }
+
+    const result: EconomicsLearningTuning = {
+      valueMultiplier: Number(valueMultiplier.toFixed(4)),
+      roiMultiplier: roiMultiplier !== null ? Number(roiMultiplier.toFixed(4)) : null,
+      sampleSize: ys.length,
+      correlation: r !== null ? Number(r.toFixed(4)) : null,
+      draftSource,
+    };
+
+    await setIntentCache({
+      supabase: params.supabase,
+      organizationId: params.organizationId,
+      routeKey,
+      intentHash,
+      provider: "learning",
+      model: "outcome",
+      response: result as unknown as JsonRecord,
+      estimatedCostUsd: 0,
+      ttlMs,
+    });
+
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveObjectiveValueConfig(params: {
   supabase: any;
   organizationId: string;
@@ -379,6 +634,7 @@ export async function resolveObjectiveValueConfig(params: {
   organizationSettings?: JsonRecord | null;
   fallbackMinRoiMultiple: number;
   fallbackValuePerScorePointUsd: number;
+  learningScope?: { draftSource?: string };
 }): Promise<ObjectiveValueConfig> {
   const fallbackLeadValueUsd = getEnvNumber("AI_DEFAULT_LEAD_VALUE_USD", 45);
   const fallbackLeadScoreFactor = getEnvNumber("AI_LEAD_VALUE_TO_SCORE_FACTOR", 0.002);
@@ -422,14 +678,63 @@ export async function resolveObjectiveValueConfig(params: {
     }
   }
 
+  const baseMinRoiMultiple = minRoiMultiple;
+  const baseValuePerScorePointUsd = valuePerScorePointUsd;
+
+  let learnedMinRoiMultiple: number | null = null;
+  let learnedValuePerScorePointUsd: number | null = null;
+  let learningSampleSize: number | null = null;
+  let learningCorrelation: number | null = null;
+  const learningDraftSource = params.learningScope?.draftSource || null;
+
+  const tuning = await estimateLearnedEconomicsTuning({
+    supabase: params.supabase,
+    organizationId: params.organizationId,
+    objective: params.objective,
+    draftSource: learningDraftSource,
+  });
+
+  if (tuning) {
+    learningSampleSize = tuning.sampleSize;
+    learningCorrelation = tuning.correlation;
+
+    if (tuning.roiMultiplier !== null) {
+      learnedMinRoiMultiple = clamp(minRoiMultiple * tuning.roiMultiplier, 1, 6);
+      minRoiMultiple = learnedMinRoiMultiple;
+    }
+
+    if (params.objective !== "leads") {
+      learnedValuePerScorePointUsd = Math.max(
+        0.000001,
+        valuePerScorePointUsd * tuning.valueMultiplier
+      );
+      valuePerScorePointUsd = learnedValuePerScorePointUsd;
+    }
+
+    source = "outcome_learning";
+  }
+
   minRoiMultiple = Math.max(1, Number(minRoiMultiple.toFixed(4)));
   valuePerScorePointUsd = Math.max(0.000001, Number(valuePerScorePointUsd.toFixed(6)));
 
   return {
     minRoiMultiple,
     valuePerScorePointUsd,
+    baseMinRoiMultiple: Number(baseMinRoiMultiple.toFixed(4)),
+    baseValuePerScorePointUsd: Number(baseValuePerScorePointUsd.toFixed(6)),
     leadValueUsd,
     learnedLeadValueUsd,
+    learnedMinRoiMultiple:
+      typeof learnedMinRoiMultiple === "number"
+        ? Number(learnedMinRoiMultiple.toFixed(4))
+        : null,
+    learnedValuePerScorePointUsd:
+      typeof learnedValuePerScorePointUsd === "number"
+        ? Number(learnedValuePerScorePointUsd.toFixed(6))
+        : null,
+    learningSampleSize,
+    learningCorrelation,
+    learningDraftSource,
     source,
   };
 }
