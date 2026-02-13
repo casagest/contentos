@@ -128,8 +128,8 @@ function buildChecks() {
       method: "GET",
       path: "/api/health",
       expectedStatuses: [200],
-      warnMs: 450,
-      critMs: 1200,
+      warnMs: 200,
+      critMs: 800,
     },
     {
       name: "ai_score_auth_gate",
