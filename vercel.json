@@ -13,6 +13,14 @@
     {
       "path": "/api/cron/analytics-daily",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/metrics-sync",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/token-refresh",
+      "schedule": "0 3 * * *"
     }
   ],
   "headers": [
