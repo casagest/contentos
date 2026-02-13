@@ -18,6 +18,7 @@ import {
   X,
   LogOut,
   ChevronRight,
+  TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/coach", label: "AI Coach", icon: MessageSquareText },
   { href: "/compose", label: "Composer", icon: PenTool },
   { href: "/analyze", label: "Scorer", icon: BarChart3 },
+  { href: "/analytics", label: "Analytics", icon: TrendingUp },
   { href: "/calendar", label: "Calendar", icon: CalendarCheck },
   { href: "/history", label: "Post History", icon: Clock },
   { href: "/research", label: "Research", icon: Search },

@@ -199,6 +199,20 @@ export async function POST(
       const versionText = resolveDraftTextForPlatform(draft, account.platform);
       const signals = deriveCreativeSignals({ text: versionText });
 
+      const draftMediaUrls: string[] = draft.media_urls || [];
+      const videoExts = [".mp4", ".mov", ".avi", ".m4v", ".webm"];
+      const hasVideo = draftMediaUrls.some((u: string) =>
+        videoExts.some((ext) => u.toLowerCase().split("?")[0].endsWith(ext))
+      );
+      const detectedContentType =
+        draftMediaUrls.length > 1
+          ? "carousel"
+          : hasVideo
+            ? "reel"
+            : draftMediaUrls.length === 1
+              ? "image"
+              : "text";
+
       const { data: insertedPost } = await supabase
         .from("posts")
         .insert({
@@ -207,9 +221,9 @@ export async function POST(
           platform: result.platform,
           platform_post_id: result.platformPostId,
           platform_url: result.platformUrl,
-          content_type: "text",
+          content_type: detectedContentType,
           text_content: versionText,
-          media_urls: draft.media_urls || [],
+          media_urls: draftMediaUrls,
           hashtags: draft.hashtags || [],
           hook_type: signals.hookType,
           cta_type: signals.ctaType,
