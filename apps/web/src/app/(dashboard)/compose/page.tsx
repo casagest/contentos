@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   PenTool,
   Copy,
@@ -24,7 +25,9 @@ import {
   Compass,
   AlertCircle,
   MessageCircle,
+  Image as ImageIcon,
 } from "lucide-react";
+import MediaUpload from "./media-upload";
 
 // ---------- Types ----------
 type Objective = "engagement" | "reach" | "leads" | "saves";
@@ -112,6 +115,26 @@ export default function ComposePage() {
   const [objective, setObjective] = useState<Objective>("engagement");
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmoji, setIncludeEmoji] = useState(true);
+
+  // Media state
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [organizationId, setOrganizationId] = useState<string>("");
+
+  // Load organization ID for media uploads
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("users")
+        .select("organization_id")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.organization_id) setOrganizationId(data.organization_id);
+        });
+    });
+  }, []);
 
   // Explore state
   const [angles, setAngles] = useState<CreativeAngle[]>([]);
@@ -269,6 +292,7 @@ export default function ComposePage() {
           title: body.slice(0, 60).split("\n")[0],
           body,
           hashtags,
+          media_urls: mediaUrls,
           target_platforms: selectedPlatforms,
           platform_versions: platformVersions,
           algorithm_scores: algorithmScores,
@@ -301,6 +325,7 @@ export default function ComposePage() {
     setGeneratedContent({});
     setGenerationMeta(null);
     setError(null);
+    setMediaUrls([]);
   };
 
   const backToExplore = () => {
@@ -391,6 +416,21 @@ export default function ComposePage() {
                 </span>
               </div>
             </div>
+
+            {/* Media Upload */}
+            {organizationId && (
+              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" />
+                  Media
+                </label>
+                <MediaUpload
+                  mediaUrls={mediaUrls}
+                  onChange={setMediaUrls}
+                  organizationId={organizationId}
+                />
+              </div>
+            )}
 
             {/* Platform selection */}
             <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">

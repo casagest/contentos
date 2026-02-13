@@ -334,8 +334,45 @@ export class FacebookAdapter implements PlatformAdapter {
     });
     const pageId = meResponse.id;
 
-    if (content.mediaUrls && content.mediaUrls.length > 0) {
-      // Photo post — use first image
+    if (content.mediaUrls && content.mediaUrls.length > 1) {
+      // Multi-photo post — upload each photo unpublished, then attach to post
+      const mediaIds: string[] = [];
+      for (const url of content.mediaUrls) {
+        const photoResult = await this.graphPostRequest(
+          `/${pageId}/photos`,
+          accessToken,
+          { url, published: "false" }
+        );
+        mediaIds.push(photoResult.id);
+      }
+
+      // Create post with attached media
+      const attachedMedia = mediaIds
+        .map((id, i) => `attached_media[${i}]=${encodeURIComponent(JSON.stringify({ media_fbid: id }))}`)
+        .join("&");
+
+      const url = `${META_GRAPH_API}/${pageId}/feed`;
+      const body = `message=${encodeURIComponent(content.text)}&${attachedMedia}&access_token=${encodeURIComponent(accessToken)}`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        throw new MetaAPIError(data.error.message, data.error);
+      }
+
+      return {
+        platformPostId: data.id,
+        platformUrl: `https://www.facebook.com/${data.id}`,
+      };
+    }
+
+    if (content.mediaUrls && content.mediaUrls.length === 1) {
+      // Single photo post
       const result = await this.graphPostRequest(
         `/${pageId}/photos`,
         accessToken,
@@ -611,29 +648,159 @@ export class InstagramAdapter implements PlatformAdapter {
       throw new MetaAPIError("No Instagram Business Account found.", {});
     }
 
-    // Step 1: Create media container
+    // Detect if we have a video URL (for Reel publishing)
+    const videoExtensions = [".mp4", ".mov", ".avi", ".m4v", ".webm"];
+    const isVideoUrl = (url: string) =>
+      videoExtensions.some((ext) => url.toLowerCase().split("?")[0].endsWith(ext));
+
+    const firstUrl = content.mediaUrls[0];
+
+    // --- REEL: Single video ---
+    if (content.mediaUrls.length === 1 && isVideoUrl(firstUrl)) {
+      // Step 1: Create video container
+      const containerResult = await this.graphPostRequest(
+        `/${igAccountId}/media`,
+        accessToken,
+        {
+          video_url: firstUrl,
+          caption: content.text,
+          media_type: "REELS",
+        }
+      );
+
+      const containerId = containerResult.id;
+
+      // Step 2: Poll until processing is finished (max 60s)
+      await this.waitForMediaReady(igAccountId, containerId, accessToken);
+
+      // Step 3: Publish
+      const publishResult = await this.graphPostRequest(
+        `/${igAccountId}/media_publish`,
+        accessToken,
+        { creation_id: containerId }
+      );
+
+      return {
+        platformPostId: publishResult.id,
+        platformUrl: `https://www.instagram.com/reel/${publishResult.id}/`,
+      };
+    }
+
+    // --- CAROUSEL: Multiple images ---
+    if (content.mediaUrls.length > 1) {
+      // Step 1: Create individual media containers for each image
+      const childIds: string[] = [];
+      for (const url of content.mediaUrls.slice(0, 10)) {
+        const params: Record<string, string> = { is_carousel_item: "true" };
+        if (isVideoUrl(url)) {
+          params.video_url = url;
+          params.media_type = "VIDEO";
+        } else {
+          params.image_url = url;
+        }
+
+        const childResult = await this.graphPostRequest(
+          `/${igAccountId}/media`,
+          accessToken,
+          params
+        );
+        childIds.push(childResult.id);
+      }
+
+      // Wait a moment for video items to process
+      if (content.mediaUrls.some(isVideoUrl)) {
+        for (const childId of childIds) {
+          await this.waitForMediaReady(igAccountId, childId, accessToken);
+        }
+      }
+
+      // Step 2: Create carousel container
+      const carouselUrl = `${META_GRAPH_API}/${igAccountId}/media`;
+      const carouselBody = new URLSearchParams({
+        caption: content.text,
+        media_type: "CAROUSEL",
+        access_token: accessToken,
+      });
+      // Add children as comma-separated IDs
+      carouselBody.set("children", childIds.join(","));
+
+      const carouselResponse = await fetch(carouselUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: carouselBody.toString(),
+      });
+
+      const carouselData = await carouselResponse.json();
+      if (carouselData.error) {
+        throw new MetaAPIError(carouselData.error.message, carouselData.error);
+      }
+
+      // Step 3: Publish the carousel
+      const publishResult = await this.graphPostRequest(
+        `/${igAccountId}/media_publish`,
+        accessToken,
+        { creation_id: carouselData.id }
+      );
+
+      return {
+        platformPostId: publishResult.id,
+        platformUrl: `https://www.instagram.com/p/${publishResult.id}/`,
+      };
+    }
+
+    // --- SINGLE IMAGE (existing flow) ---
     const containerResult = await this.graphPostRequest(
       `/${igAccountId}/media`,
       accessToken,
       {
         caption: content.text,
-        image_url: content.mediaUrls[0],
+        image_url: firstUrl,
       }
     );
 
-    const creationId = containerResult.id;
-
-    // Step 2: Publish the container
     const publishResult = await this.graphPostRequest(
       `/${igAccountId}/media_publish`,
       accessToken,
-      { creation_id: creationId }
+      { creation_id: containerResult.id }
     );
 
     return {
       platformPostId: publishResult.id,
       platformUrl: `https://www.instagram.com/p/${publishResult.id}/`,
     };
+  }
+
+  /**
+   * Polls the media container status until it is FINISHED or times out.
+   * Instagram video uploads are async — the container must finish processing before publishing.
+   */
+  private async waitForMediaReady(
+    igAccountId: string,
+    containerId: string,
+    accessToken: string,
+    maxWaitMs: number = 60_000
+  ): Promise<void> {
+    const start = Date.now();
+    const pollInterval = 3_000;
+
+    while (Date.now() - start < maxWaitMs) {
+      const statusResponse = await this.graphRequest(
+        `/${containerId}`,
+        accessToken,
+        { fields: "status_code" }
+      );
+
+      const status = statusResponse.status_code;
+      if (status === "FINISHED") return;
+      if (status === "ERROR") {
+        throw new MetaAPIError(`Media container ${containerId} failed processing`, { status_code: status });
+      }
+
+      // Wait before next poll
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+
+    throw new MetaAPIError(`Media container ${containerId} timed out after ${maxWaitMs}ms`, {});
   }
 
   // ----------------------------------------------------------
