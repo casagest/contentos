@@ -26,7 +26,7 @@ const SCOPES = [
 ].join(",");
 
 export async function GET() {
-  const appId = process.env.FACEBOOK_APP_ID || process.env.META_APP_ID;
+  const appId = (process.env.FACEBOOK_APP_ID || process.env.META_APP_ID || "").trim();
 
   if (!appId) {
     return NextResponse.json(
@@ -48,7 +48,7 @@ export async function GET() {
     path: "/",
   });
 
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/facebook/callback`;
+  const redirectUri = `${(process.env.NEXT_PUBLIC_APP_URL || "").trim()}/api/auth/facebook/callback`;
 
   const params = new URLSearchParams({
     client_id: appId,

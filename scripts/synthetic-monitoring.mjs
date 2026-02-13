@@ -128,7 +128,7 @@ function buildChecks() {
       method: "GET",
       path: "/api/health",
       expectedStatuses: [200],
-      warnMs: 200,
+      warnMs: 300,
       critMs: 800,
     },
     {

@@ -518,13 +518,13 @@ function SocialPerformance({
           Conectează-ți conturile de social media pentru a vedea performanța
           reală a postărilor tale.
         </p>
-        <Link
+        <a
           href="/api/auth/facebook"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition"
         >
           <Share2 className="w-4 h-4" />
           Conectează Facebook
-        </Link>
+        </a>
       </div>
     );
   }
