@@ -1,4 +1,6 @@
-﻿export type AIProviderMode = "anthropic" | "openrouter" | "template";
+﻿import { type AITask, resolveEffectiveProvider } from "./multi-model-router";
+
+export type AIProviderMode = "anthropic" | "openrouter" | "template";
 
 export interface AIProviderResolution {
   mode: AIProviderMode;
@@ -135,4 +137,62 @@ export function resolveAIProvider(): AIProviderResolution {
   }
 
   return { mode: "template", model: "template" };
+}
+
+/**
+ * Bridge between multi-model router and the old AIProviderResolution format.
+ * Uses the multi-model router's smart resolution (checks all 4 providers)
+ * then maps to AIProviderResolution for ContentAIService compatibility.
+ *
+ * For providers ContentAIService doesn't support (google, openai),
+ * routes through OpenRouter or falls back to Anthropic.
+ */
+export function resolveAIProviderForTask(task: AITask): AIProviderResolution {
+  const forceTemplate = process.env.AI_FORCE_TEMPLATE?.trim().toLowerCase() === "true";
+  if (forceTemplate) {
+    return { mode: "template", model: "template" };
+  }
+
+  const config = resolveEffectiveProvider(task);
+
+  const openRouterBaseUrl =
+    process.env.OPENROUTER_BASE_URL?.trim() ||
+    "https://openrouter.ai/api/v1/chat/completions";
+
+  switch (config.provider) {
+    case "anthropic": {
+      const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+      if (!apiKey) return resolveAIProvider();
+      return { mode: "anthropic", apiKey, model: config.model };
+    }
+
+    case "openrouter": {
+      const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+      if (!apiKey) return resolveAIProvider();
+      return { mode: "openrouter", apiKey, model: config.model, baseUrl: openRouterBaseUrl };
+    }
+
+    case "google":
+    case "openai": {
+      // ContentAIService doesn't support google/openai directly.
+      // Route through OpenRouter if available (it supports all models).
+      const orKey = process.env.OPENROUTER_API_KEY?.trim();
+      if (orKey) {
+        // Map google models to OpenRouter model identifiers
+        const orModel = config.provider === "google"
+          ? `google/${config.model}`
+          : `openai/${config.model}`;
+        return { mode: "openrouter", apiKey: orKey, model: orModel, baseUrl: openRouterBaseUrl };
+      }
+
+      // Fall back to Anthropic if available
+      const anthKey = process.env.ANTHROPIC_API_KEY?.trim();
+      if (anthKey) {
+        return { mode: "anthropic", apiKey: anthKey, model: config.fallbackModel || "claude-haiku-4-5-20251001" };
+      }
+
+      // Last resort: old resolver
+      return resolveAIProvider();
+    }
+  }
 }

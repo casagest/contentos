@@ -2,7 +2,7 @@
 import { ContentAIService } from "@contentos/content-engine";
 import type { ContentType, Platform } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
-import { buildOpenRouterModelChain, resolveAIProvider } from "@/lib/ai/provider";
+import { buildOpenRouterModelChain, resolveAIProvider, resolveAIProviderForTask } from "@/lib/ai/provider";
 import { scrapeUrlContent } from "@/lib/scrape";
 import { expiresAtIso, hashUrl, RESEARCH_CACHE_TTL_MS, SCRAPE_CACHE_TTL_MS } from "@/lib/url-cache";
 import {
@@ -440,7 +440,7 @@ export async function POST(request: NextRequest) {
     }
 
     const deterministic = deterministicResearchSnapshot(username, scraped.content);
-    const aiProvider = resolveAIProvider();
+    const aiProvider = resolveAIProviderForTask("research");
     const startedAt = Date.now();
 
     let final: ComputedResearchResult = {
