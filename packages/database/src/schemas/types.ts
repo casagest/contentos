@@ -8,7 +8,7 @@
 export type OrganizationType = "creator" | "business" | "agency" | "dental_clinic";
 export type Plan = "free" | "starter" | "pro" | "agency" | "dental";
 export type UserRole = "owner" | "admin" | "member" | "viewer";
-export type Platform = "facebook" | "instagram" | "tiktok" | "youtube" | "twitter";
+export type Platform = "facebook" | "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin";
 export type SyncStatus = "pending" | "syncing" | "synced" | "error";
 
 export type ContentType =

@@ -39,7 +39,7 @@ const platformMeta: Record<
   tiktok: {
     label: "TikTok",
     color: "bg-gray-700 hover:bg-gray-600",
-    connectUrl: "#",
+    connectUrl: "/api/auth/tiktok",
     icon: "T",
   },
   youtube: {
@@ -47,6 +47,12 @@ const platformMeta: Record<
     color: "bg-red-600 hover:bg-red-500",
     connectUrl: "#",
     icon: "Y",
+  },
+  linkedin: {
+    label: "LinkedIn",
+    color: "bg-blue-700 hover:bg-blue-600",
+    connectUrl: "/api/auth/linkedin",
+    icon: "in",
   },
 };
 
@@ -60,6 +66,8 @@ function platformGradient(platform: string): string {
       return "from-gray-700 to-gray-800";
     case "youtube":
       return "from-red-600 to-red-700";
+    case "linkedin":
+      return "from-blue-700 to-blue-800";
     default:
       return "from-gray-600 to-gray-700";
   }

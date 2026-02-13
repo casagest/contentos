@@ -15,6 +15,7 @@ export const PlatformSchema = z.enum([
   "tiktok",
   "youtube",
   "twitter",
+  "linkedin",
 ]);
 export type Platform = z.infer<typeof PlatformSchema>;
 

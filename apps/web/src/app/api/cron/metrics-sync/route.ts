@@ -7,18 +7,20 @@ import {
 } from "@/lib/ai/outcome-learning";
 
 /**
- * Cron job: Sync engagement metrics from Meta Graph API for recent posts.
+ * Cron job: Sync engagement metrics for recent posts across all platforms.
  * Runs every 30 minutes.
  *
  * Flow:
  * 1. Find all posts published in the last 14 days with a platform_post_id
  * 2. Group by social_account (to reuse access_token)
- * 3. For each post, call Meta Graph API to get current metrics
+ * 3. For each post, call platform API to get current metrics
  * 4. Update the posts table with fresh metrics
  * 5. Log outcome events for the outcome learning system
  */
 
 const META_GRAPH_API = "https://graph.facebook.com/v21.0";
+const TIKTOK_API = "https://open.tiktokapis.com/v2";
+const LINKEDIN_API = "https://api.linkedin.com";
 const SYNC_WINDOW_DAYS = 14;
 const MAX_POSTS_PER_RUN = 100;
 
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
       )
       .gte("published_at", since.toISOString())
       .not("platform_post_id", "is", null)
-      .in("platform", ["facebook", "instagram"])
+      .in("platform", ["facebook", "instagram", "tiktok", "linkedin"])
       .order("published_at", { ascending: false })
       .limit(MAX_POSTS_PER_RUN);
 
@@ -121,6 +123,10 @@ export async function GET(request: NextRequest) {
           metrics = await fetchFacebookMetrics(post.platform_post_id, account.access_token);
         } else if (post.platform === "instagram") {
           metrics = await fetchInstagramMetrics(post.platform_post_id, account.access_token);
+        } else if (post.platform === "tiktok") {
+          metrics = await fetchTikTokMetrics(post.platform_post_id, account.access_token);
+        } else if (post.platform === "linkedin") {
+          metrics = await fetchLinkedInMetrics(post.platform_post_id, account.access_token);
         }
 
         if (!metrics) continue;
@@ -326,6 +332,103 @@ async function fetchInstagramMetrics(
       views: 0,
       reach,
       impressions,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================
+// TikTok Metrics
+// ============================================================
+
+async function fetchTikTokMetrics(
+  platformPostId: string,
+  accessToken: string
+): Promise<{
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  views: number;
+  reach: number;
+  impressions: number;
+} | null> {
+  try {
+    const response = await fetch(`${TIKTOK_API}/video/query/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        filters: { video_ids: [platformPostId] },
+        fields: ["id", "like_count", "comment_count", "share_count", "view_count"],
+      }),
+    });
+
+    const { data } = await response.json();
+    const video = data?.videos?.[0];
+    if (!video) return null;
+
+    return {
+      likes: video.like_count || 0,
+      comments: video.comment_count || 0,
+      shares: video.share_count || 0,
+      saves: 0, // TikTok doesn't expose saves via API
+      views: video.view_count || 0,
+      reach: 0,
+      impressions: 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================
+// LinkedIn Metrics
+// ============================================================
+
+async function fetchLinkedInMetrics(
+  platformPostId: string,
+  accessToken: string
+): Promise<{
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  views: number;
+  reach: number;
+  impressions: number;
+} | null> {
+  try {
+    // LinkedIn UGC Post stats via Social Actions
+    const activityUrn = platformPostId.startsWith("urn:")
+      ? platformPostId
+      : `urn:li:share:${platformPostId}`;
+
+    const response = await fetch(
+      `${LINKEDIN_API}/v2/socialActions/${encodeURIComponent(activityUrn)}?` +
+        new URLSearchParams({ fields: "likesSummary,commentsSummary" }),
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "LinkedIn-Version": "202401",
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (data.status && data.status >= 400) return null;
+
+    return {
+      likes: data.likesSummary?.totalLikes || 0,
+      comments: data.commentsSummary?.totalFirstLevelComments || 0,
+      shares: 0, // LinkedIn doesn't expose reshares count via this endpoint
+      saves: 0,
+      views: 0,
+      reach: 0,
+      impressions: 0,
     };
   } catch {
     return null;

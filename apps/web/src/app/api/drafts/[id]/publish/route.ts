@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { FacebookAdapter, InstagramAdapter } from "@contentos/content-engine/platforms/meta";
+import { TikTokAdapter } from "@contentos/content-engine/platforms/tiktok";
+import { LinkedInAdapter } from "@contentos/content-engine/platforms/linkedin";
 import {
   deriveCreativeSignals,
   type AIObjective,
@@ -173,6 +175,36 @@ export async function POST(
           const result = await adapter.publishPost(account.access_token, content);
           results.push({
             platform: "instagram",
+            success: true,
+            platformPostId: result.platformPostId,
+            platformUrl: result.platformUrl,
+          });
+        } else if (account.platform === "tiktok") {
+          const tiktokKey = process.env.TIKTOK_CLIENT_KEY || "";
+          const tiktokSecret = process.env.TIKTOK_CLIENT_SECRET || "";
+          if (!tiktokKey || !tiktokSecret) {
+            results.push({ platform: "tiktok", success: false, error: "TikTok nu este configurat." });
+            continue;
+          }
+          const adapter = new TikTokAdapter({ clientKey: tiktokKey, clientSecret: tiktokSecret });
+          const result = await adapter.publishPost(account.access_token, content);
+          results.push({
+            platform: "tiktok",
+            success: true,
+            platformPostId: result.platformPostId,
+            platformUrl: result.platformUrl,
+          });
+        } else if (account.platform === "linkedin") {
+          const linkedinId = process.env.LINKEDIN_CLIENT_ID || "";
+          const linkedinSecret = process.env.LINKEDIN_CLIENT_SECRET || "";
+          if (!linkedinId || !linkedinSecret) {
+            results.push({ platform: "linkedin", success: false, error: "LinkedIn nu este configurat." });
+            continue;
+          }
+          const adapter = new LinkedInAdapter({ clientId: linkedinId, clientSecret: linkedinSecret });
+          const result = await adapter.publishPost(account.access_token, content);
+          results.push({
+            platform: "linkedin",
             success: true,
             platformPostId: result.platformPostId,
             platformUrl: result.platformUrl,

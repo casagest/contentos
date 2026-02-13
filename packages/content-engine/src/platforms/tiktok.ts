@@ -161,6 +161,91 @@ export class TikTokAdapter implements PlatformAdapter {
     };
   }
 
+  async publishPost(
+    accessToken: string,
+    content: { text: string; mediaUrls?: string[] }
+  ): Promise<{ platformPostId: string; platformUrl: string }> {
+    // TikTok only supports video publishing
+    const videoExts = [".mp4", ".mov", ".avi", ".m4v", ".webm"];
+    const videoUrl = content.mediaUrls?.find((url) =>
+      videoExts.some((ext) => url.toLowerCase().split("?")[0].endsWith(ext))
+    );
+
+    if (!videoUrl) {
+      throw new Error("TikTok accepta doar continut video. Adauga un fisier video (.mp4, .mov).");
+    }
+
+    // Step 1: Initialize video publish
+    const initResponse = await fetch(`${TIKTOK_API}/post/publish/video/init/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=UTF-8",
+      },
+      body: JSON.stringify({
+        post_info: {
+          title: content.text.slice(0, 150),
+          privacy_level: "PUBLIC_TO_EVERYONE",
+          disable_duet: false,
+          disable_comment: false,
+          disable_stitch: false,
+        },
+        source_info: {
+          source: "PULL_FROM_URL",
+          video_url: videoUrl,
+        },
+      }),
+    });
+
+    const initData = await initResponse.json();
+
+    if (initData.error?.code) {
+      throw new Error(`TikTok publish error (${initData.error.code}): ${initData.error.message}`);
+    }
+
+    const publishId = initData.data?.publish_id;
+    if (!publishId) {
+      throw new Error("TikTok nu a returnat un publish_id.");
+    }
+
+    // Step 2: Poll for completion (max 60 seconds)
+    const maxAttempts = 12;
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const statusResponse = await fetch(`${TIKTOK_API}/post/publish/status/fetch/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json; charset=UTF-8",
+        },
+        body: JSON.stringify({ publish_id: publishId }),
+      });
+
+      const statusData = await statusResponse.json();
+      const status = statusData.data?.status;
+
+      if (status === "PUBLISH_COMPLETE") {
+        return {
+          platformPostId: publishId,
+          platformUrl: `https://www.tiktok.com/@user/video/${publishId}`,
+        };
+      }
+
+      if (status === "FAILED") {
+        throw new Error(
+          `TikTok publish failed: ${statusData.data?.fail_reason || "Unknown"}`
+        );
+      }
+    }
+
+    // Return even if still processing — TikTok may take longer for large videos
+    return {
+      platformPostId: publishId,
+      platformUrl: `https://www.tiktok.com/@user/video/${publishId}`,
+    };
+  }
+
   private extractHashtags(text: string): string[] {
     const matches = text.match(/#[\wăâîșțĂÂÎȘȚ]+/g);
     return matches ? matches.map((h) => h.toLowerCase()) : [];

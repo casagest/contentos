@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { TikTokAdapter } from "@contentos/content-engine/platforms/tiktok";
+import { LinkedInAdapter } from "@contentos/content-engine/platforms/linkedin";
 
 /**
- * Cron job: Refresh Facebook/Instagram access tokens before expiry.
+ * Cron job: Refresh Facebook/Instagram/TikTok/LinkedIn access tokens before expiry.
  * Runs daily at 03:00 UTC.
  *
- * Meta long-lived tokens last ~60 days. This cron:
- * 1. Finds tokens expiring within 7 days
- * 2. Exchanges each for a new long-lived token via Meta Graph API
- * 3. Updates social_accounts with the new token + expiry
+ * Each platform uses a different refresh mechanism:
+ * - Meta (FB/IG): Exchange current long-lived token for a new one via fb_exchange_token grant
+ * - TikTok: Standard refresh_token grant via TikTok OAuth API
+ * - LinkedIn: Standard refresh_token grant via LinkedIn OAuth API
  *
  * If a refresh fails (token already expired or revoked), marks the account
  * with sync_status='error' so the UI can prompt reconnection.
@@ -25,13 +27,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const appId = process.env.FACEBOOK_APP_ID || process.env.META_APP_ID || "";
-  const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.META_APP_SECRET || "";
-
-  if (!appId || !appSecret) {
-    return NextResponse.json({ error: "Missing Meta app credentials" }, { status: 500 });
-  }
-
   try {
     const supabase = createServiceClient();
 
@@ -41,9 +36,9 @@ export async function GET(request: NextRequest) {
 
     const { data: accounts, error: accountsError } = await supabase
       .from("social_accounts")
-      .select("id, platform, platform_user_id, platform_name, access_token, token_expires_at, organization_id")
+      .select("id, platform, platform_user_id, platform_name, access_token, refresh_token, token_expires_at, organization_id")
       .eq("is_active", true)
-      .in("platform", ["facebook", "instagram"])
+      .in("platform", ["facebook", "instagram", "tiktok", "linkedin"])
       .not("token_expires_at", "is", null)
       .lt("token_expires_at", expiryThreshold.toISOString())
       .order("token_expires_at", { ascending: true });
@@ -67,14 +62,13 @@ export async function GET(request: NextRequest) {
 
     // Track already-refreshed tokens to avoid duplicate refreshes
     // (Instagram accounts share the same page token as their Facebook page)
-    const refreshedTokens = new Map<string, { accessToken: string; expiresAt: string }>();
+    const refreshedTokens = new Map<string, { accessToken: string; refreshToken?: string; expiresAt: string }>();
 
     for (const account of accounts) {
       const tokenKey = account.access_token;
       const isAlreadyExpired = new Date(account.token_expires_at) < new Date();
 
       if (isAlreadyExpired) {
-        // Token is already expired — can't refresh, mark as error
         await supabase
           .from("social_accounts")
           .update({
@@ -93,6 +87,7 @@ export async function GET(request: NextRequest) {
           .from("social_accounts")
           .update({
             access_token: cached.accessToken,
+            ...(cached.refreshToken ? { refresh_token: cached.refreshToken } : {}),
             token_expires_at: cached.expiresAt,
             sync_status: "synced",
             sync_error: null,
@@ -103,17 +98,57 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        const result = await exchangeForLongLivedToken({
-          currentToken: account.access_token,
-          appId,
-          appSecret,
-        });
+        let result: { accessToken: string; refreshToken?: string; expiresAt?: Date; expiresIn?: number };
 
-        const expiresAt = new Date(Date.now() + result.expiresIn * 1000).toISOString();
+        if (account.platform === "facebook" || account.platform === "instagram") {
+          // Meta: exchange current long-lived token for a new one
+          const appId = process.env.FACEBOOK_APP_ID || process.env.META_APP_ID || "";
+          const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.META_APP_SECRET || "";
+          if (!appId || !appSecret) {
+            console.error("Cron token-refresh: missing Meta credentials, skipping", account.platform);
+            errors++;
+            continue;
+          }
+          const metaResult = await exchangeForLongLivedToken({
+            currentToken: account.access_token,
+            appId,
+            appSecret,
+          });
+          result = { accessToken: metaResult.accessToken, expiresIn: metaResult.expiresIn };
+        } else if (account.platform === "tiktok") {
+          // TikTok: standard refresh_token grant
+          const clientKey = process.env.TIKTOK_CLIENT_KEY || "";
+          const clientSecret = process.env.TIKTOK_CLIENT_SECRET || "";
+          if (!clientKey || !clientSecret || !account.refresh_token) {
+            console.error("Cron token-refresh: missing TikTok credentials or refresh_token");
+            errors++;
+            continue;
+          }
+          const adapter = new TikTokAdapter({ clientKey, clientSecret });
+          result = await adapter.refreshAccessToken(account.refresh_token);
+        } else if (account.platform === "linkedin") {
+          // LinkedIn: standard refresh_token grant
+          const clientId = process.env.LINKEDIN_CLIENT_ID || "";
+          const clientSecret = process.env.LINKEDIN_CLIENT_SECRET || "";
+          if (!clientId || !clientSecret || !account.refresh_token) {
+            console.error("Cron token-refresh: missing LinkedIn credentials or refresh_token");
+            errors++;
+            continue;
+          }
+          const adapter = new LinkedInAdapter({ clientId, clientSecret });
+          result = await adapter.refreshAccessToken(account.refresh_token);
+        } else {
+          continue;
+        }
+
+        const expiresAt = result.expiresAt
+          ? result.expiresAt.toISOString()
+          : new Date(Date.now() + (result.expiresIn || 5184000) * 1000).toISOString();
 
         // Cache the result for shared tokens
         refreshedTokens.set(tokenKey, {
           accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
           expiresAt,
         });
 
@@ -121,6 +156,7 @@ export async function GET(request: NextRequest) {
           .from("social_accounts")
           .update({
             access_token: result.accessToken,
+            ...(result.refreshToken ? { refresh_token: result.refreshToken } : {}),
             token_expires_at: expiresAt,
             sync_status: "synced",
             sync_error: null,
@@ -135,7 +171,6 @@ export async function GET(request: NextRequest) {
           message
         );
 
-        // If it's a 190 error (token invalid), mark as expired
         if (message.includes("190") || message.includes("expired") || message.includes("invalid")) {
           await supabase
             .from("social_accounts")

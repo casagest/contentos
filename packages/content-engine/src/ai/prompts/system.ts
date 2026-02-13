@@ -190,6 +190,32 @@ STRUCTURĂ OPTIMĂ:
 - Reply strategy: răspunde la conturi mari în primele 5 minute
 - Timing: Luni-Vineri 8:00-10:00 și 17:00-19:00
 - Hashtag-uri: max 2 (prea multe = spam semnal)`,
+  linkedin: `CONTEXT ALGORITM LINKEDIN (2024-2026):
+
+SEMNALE POZITIVE (boost organic reach):
+1. Dwell time — postări care țin atenția (text mai lung e OK pe LinkedIn)
+2. Comentarii și conversații profesionale
+3. Partajări cu opinie proprie adăugată
+4. Conținut nativ (fără link-uri externe în primele 3 ore)
+5. Document/carusel (PDF) au cel mai mare reach organic
+6. Postări personale > postări corporate generice
+7. Hook puternic în primele 3 linii (înainte de "...see more")
+8. Postare regulată (3-5x pe săptămână)
+
+SEMNALE NEGATIVE (reduce reach):
+1. Link-uri externe în postarea inițială (pune-le în primul comentariu)
+2. Prea multe hashtag-uri (max 3-5, specifice nișei)
+3. Conținut generic/copiat fără perspectivă personală
+4. Postări prea scurte sau doar imagini fără context
+5. Engagement bait ("Like dacă ești de acord")
+
+STRUCTURĂ OPTIMĂ:
+- Hook puternic în primele 3 linii
+- Paragraf scurt, cu spații între linii (easy to scan)
+- Poveste personală sau lecție practică
+- CTA care invită la discuție ("Ce părere aveți?", "Care e experiența voastră?")
+- 3-5 hashtag-uri la final (mix de nișă + populare)
+- Timing: Marți-Joi 8:00-10:00 și 17:00-18:00`,
 };
 
 // ============================================================
@@ -467,6 +493,17 @@ export function buildScoringPrompt(context: {
       "media_boost",
       "link_penalty",
       "hashtag_optimization",
+      "timing_optimization",
+    ] as const,
+    linkedin: [
+      "hook_quality",
+      "dwell_time",
+      "comment_depth",
+      "share_potential",
+      "professional_value",
+      "personal_storytelling",
+      "link_placement",
+      "hashtag_relevance",
       "timing_optimization",
     ] as const,
   };

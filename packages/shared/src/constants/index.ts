@@ -12,6 +12,7 @@ export const PLATFORM_COLORS = {
   tiktok: "#FF0050",
   youtube: "#FF0000",
   twitter: "#1DA1F2",
+  linkedin: "#0A66C2",
 } as const;
 
 export const PLATFORM_LABELS = {
@@ -20,4 +21,5 @@ export const PLATFORM_LABELS = {
   tiktok: "TikTok",
   youtube: "YouTube",
   twitter: "X (Twitter)",
+  linkedin: "LinkedIn",
 } as const;
