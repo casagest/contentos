@@ -2,14 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import {
   Settings,
   User,
-  CreditCard,
   Bell,
   Shield,
   CheckCircle2,
 } from "lucide-react";
 import BusinessProfileForm from "./business-profile-form";
 import ConnectedAccounts from "./connected-accounts";
-import type { BusinessProfile } from "@contentos/database";
+import BillingSection from "./billing-section";
+import type { BusinessProfile, Plan } from "@contentos/database";
 
 export default async function SettingsPage({
   searchParams,
@@ -23,9 +23,10 @@ export default async function SettingsPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch business profile only (connected accounts are fetched client-side via API)
   let businessProfile: BusinessProfile | null = null;
-  
+  let currentPlan: Plan = "free";
+  let hasStripeCustomer = false;
+
   if (user) {
     const { data: userData } = await supabase
       .from("users")
@@ -36,18 +37,22 @@ export default async function SettingsPage({
     if (userData?.organization_id) {
       const { data: org } = await supabase
         .from("organizations")
-        .select("settings")
+        .select("settings, plan, stripe_customer_id")
         .eq("id", userData.organization_id)
         .single();
 
-      const settings = org?.settings as Record<string, unknown> | null;
-      if (settings?.businessProfile) {
-        businessProfile = settings.businessProfile as BusinessProfile;
+      if (org) {
+        currentPlan = (org.plan as Plan) || "free";
+        hasStripeCustomer = !!org.stripe_customer_id;
+        const settings = org.settings as Record<string, unknown> | null;
+        if (settings?.businessProfile) {
+          businessProfile = settings.businessProfile as BusinessProfile;
+        }
       }
     }
   }
 
-  const showSuccess = params.connected === "facebook";
+  const showSuccess = !!params.connected;
 
   return (
     <div>
@@ -104,48 +109,8 @@ export default async function SettingsPage({
         {/* Connected accounts - fetched client-side */}
         <ConnectedAccounts showSuccess={showSuccess} />
 
-        {/* Subscription */}
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <CreditCard className="w-4 h-4 text-gray-400" />
-            <h2 className="text-base font-semibold text-white">Abonament</h2>
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-lg bg-white/[0.02] border border-white/[0.06] mb-4">
-            <div>
-              <div className="text-sm font-medium text-white">Plan gratuit</div>
-              <div className="text-xs text-gray-500 mt-0.5">
-                2 conturi conectate, 50 generari/luna
-              </div>
-            </div>
-            <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-600/10 text-brand-300 border border-brand-500/20">
-              Activ
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-4 rounded-lg border border-white/[0.06] hover:border-brand-500/30 transition">
-              <div className="text-sm font-medium text-white mb-1">
-                Creator Pro
-              </div>
-              <div className="text-xs text-gray-400 mb-3">
-                10 conturi, generari nelimitate, AI Coach
-              </div>
-              <div className="text-lg font-bold text-white">
-                &euro;29<span className="text-xs text-gray-500 font-normal">/luna</span>
-              </div>
-            </div>
-            <div className="p-4 rounded-lg border border-white/[0.06] hover:border-brand-500/30 transition">
-              <div className="text-sm font-medium text-white mb-1">
-                Agency
-              </div>
-              <div className="text-xs text-gray-400 mb-3">
-                Conturi nelimitate, API access, echipa
-              </div>
-              <div className="text-lg font-bold text-white">
-                &euro;99<span className="text-xs text-gray-500 font-normal">/luna</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Billing */}
+        <BillingSection currentPlan={currentPlan} hasStripeCustomer={hasStripeCustomer} />
 
         {/* Notifications */}
         <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
