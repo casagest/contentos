@@ -2,54 +2,54 @@ import { describe, it, expect } from "vitest";
 
 /**
  * Robust JSON parser for AI responses
- * Handles markdown code blocks, preamble text, and balanced braces
+ * Handles markdown code blocks, BOM, control characters, trailing commas,
+ * preamble text, and balanced brace extraction
  */
 export function parseAIJsonResponse(text: string): any {
   let parsed = null;
   try {
-    // Step 1: Strip markdown code blocks if present
-    let cleanText = text;
+    let cleanText = text || "";
+
+    // Step 1: Strip markdown code blocks
     const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
       cleanText = codeBlockMatch[1].trim();
     }
 
-    // Step 1b: If text starts with a key (no outer braces), wrap in {}
-    const trimmedText = cleanText.trimStart();
-    if (trimmedText.startsWith("\"") && trimmedText.includes("\"platformVersions\"")) {
-      cleanText = "{ " + cleanText + " }";
+    // Step 2: Remove BOM and control characters (except newlines/tabs)
+    cleanText = cleanText.replace(/^\uFEFF/, "").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+
+    // Step 3: If text starts with a key (no outer braces), wrap in {}
+    const trimmedForCheck = cleanText.trim();
+    if (trimmedForCheck.startsWith("\"") && trimmedForCheck.includes("\"platformVersions\"")) {
+      cleanText = "{" + cleanText + "}";
     }
 
-    // Step 2: Try direct parse first (cleanest path)
+    // Step 4: Fix common JSON issues from LLMs
+    // Remove trailing commas before } or ]
+    cleanText = cleanText.replace(/,\s*([\]}])/g, "$1");
+    // Remove any trailing text after last }
+    const lastBrace = cleanText.lastIndexOf("}");
+    if (lastBrace !== -1 && lastBrace < cleanText.length - 1) {
+      cleanText = cleanText.substring(0, lastBrace + 1);
+    }
+
+    // Step 5: Try direct parse
     try {
       parsed = JSON.parse(cleanText);
     } catch {
-      // Step 3: Extract JSON object with balanced braces
+      // Step 6: Try balanced brace extraction as fallback
       const jsonStart = cleanText.indexOf("{");
       if (jsonStart !== -1) {
         let depth = 0;
         let jsonEnd = -1;
         let inString = false;
         let escapeNext = false;
-        
         for (let i = jsonStart; i < cleanText.length; i++) {
           const char = cleanText[i];
-          
-          if (escapeNext) {
-            escapeNext = false;
-            continue;
-          }
-          
-          if (char === '\\') {
-            escapeNext = true;
-            continue;
-          }
-          
-          if (char === '"') {
-            inString = !inString;
-            continue;
-          }
-          
+          if (escapeNext) { escapeNext = false; continue; }
+          if (char === "\\") { escapeNext = true; continue; }
+          if (char === "\"") { inString = !inString; continue; }
           if (!inString) {
             if (char === "{") depth++;
             else if (char === "}") {
@@ -58,9 +58,15 @@ export function parseAIJsonResponse(text: string): any {
             }
           }
         }
-        
         if (jsonEnd !== -1) {
-          parsed = JSON.parse(cleanText.substring(jsonStart, jsonEnd + 1));
+          const extracted = cleanText.substring(jsonStart, jsonEnd + 1);
+          // Also fix trailing commas in extracted text
+          const fixedExtracted = extracted.replace(/,\s*([\]}])/g, "$1");
+          try {
+            parsed = JSON.parse(fixedExtracted);
+          } catch {
+            parsed = null;
+          }
         }
       }
     }
@@ -275,5 +281,62 @@ Let me know if you need any adjustments!`;
         }
       }
     });
+  });
+
+  it("handles JSON with BOM character at start", () => {
+    const input = '\uFEFF{"platformVersions": {"facebook": {"text": "test"}}}';
+    const result = parseAIJsonResponse(input);
+    expect(result).toEqual({
+      platformVersions: {
+        facebook: {
+          text: "test"
+        }
+      }
+    });
+  });
+
+  it("handles JSON with trailing commas", () => {
+    const input = '{"platformVersions": {"facebook": {"text": "test",},},}';
+    const result = parseAIJsonResponse(input);
+    expect(result).toEqual({
+      platformVersions: {
+        facebook: {
+          text: "test"
+        }
+      }
+    });
+  });
+
+  it("handles JSON with control characters", () => {
+    const input = '{"platformVersions": {"facebook": {"text": "test\x03"}}}';
+    const result = parseAIJsonResponse(input);
+    expect(result).toBeTruthy();
+    expect(result.platformVersions.facebook.text).toBe("test");
+  });
+
+  it("handles JSON with trailing text after closing brace", () => {
+    const input = '{"platformVersions": {"facebook": {"text": "test"}}}\n\nI hope this helps!';
+    const result = parseAIJsonResponse(input);
+    expect(result).toEqual({
+      platformVersions: {
+        facebook: {
+          text: "test"
+        }
+      }
+    });
+  });
+
+  it("handles JSON with trailing commas in arrays", () => {
+    const input = '{"platformVersions": {"facebook": {"text": "test", "hashtags": ["#one", "#two",]}}}';
+    const result = parseAIJsonResponse(input);
+    expect(result).toBeTruthy();
+    expect(result.platformVersions.facebook.hashtags).toEqual(["#one", "#two"]);
+  });
+
+  it("preserves text around embedded control characters", () => {
+    const input = '{"platformVersions": {"facebook": {"text": "before\x02after content"}}}';
+    const result = parseAIJsonResponse(input);
+    expect(result).toBeTruthy();
+    expect(result.platformVersions.facebook.text).toBe("beforeafter content");
   });
 });

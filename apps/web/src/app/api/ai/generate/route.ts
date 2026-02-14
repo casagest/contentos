@@ -555,6 +555,9 @@ Return ONLY valid JSON with this exact structure:
       // Step 2: Remove BOM and control characters (except newlines/tabs)
       cleanText = cleanText.replace(/^\uFEFF/, "").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 
+      // Step 3: If text starts with a key (no outer braces), wrap in {}
+      const trimmedForCheck = cleanText.trim();
+      if (trimmedForCheck.startsWith("\"") && trimmedForCheck.includes("\"platformVersions\"")) {
       // Step 3: If no outer braces but has platformVersions key, wrap
       if (!cleanText.startsWith("{") && cleanText.includes("\"platformVersions\"")) {
         cleanText = "{" + cleanText + "}";
@@ -580,6 +583,19 @@ Return ONLY valid JSON with this exact structure:
         if (jsonStart !== -1) {
           let depth = 0;
           let jsonEnd = -1;
+          let inString = false;
+          let escapeNext = false;
+          for (let i = jsonStart; i < cleanText.length; i++) {
+            const char = cleanText[i];
+            if (escapeNext) { escapeNext = false; continue; }
+            if (char === "\\") { escapeNext = true; continue; }
+            if (char === "\"") { inString = !inString; continue; }
+            if (!inString) {
+              if (char === "{") depth++;
+              else if (char === "}") {
+                depth--;
+                if (depth === 0) { jsonEnd = i; break; }
+              }
           for (let i = jsonStart; i < cleanText.length; i++) {
             if (cleanText[i] === "{") depth++;
             else if (cleanText[i] === "}") {
