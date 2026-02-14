@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { verifyCronSecret } from "@/lib/cron-auth";
 
 /**
  * Cron job: Aggregate daily analytics from posts into analytics_daily table.
@@ -11,10 +12,7 @@ import { createServiceClient } from "@/lib/supabase/service";
  * - Net followers change (from social_accounts if available)
  */
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

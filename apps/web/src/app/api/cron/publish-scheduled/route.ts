@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { FacebookAdapter, InstagramAdapter } from "@contentos/content-engine/platforms/meta";
 import { TikTokAdapter } from "@contentos/content-engine/platforms/tiktok";
 import { LinkedInAdapter } from "@contentos/content-engine/platforms/linkedin";
@@ -53,11 +54,8 @@ function resolveDraftTextForPlatform(draft: Record<string, any>, platform: strin
 }
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  // Verify cron secret (timing-safe)
+  if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
