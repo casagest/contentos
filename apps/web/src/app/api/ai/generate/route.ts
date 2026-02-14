@@ -202,6 +202,19 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // If it's a command (e.g. "make it shorter"), redirect to modification flow
+  if (intentResult.intent === "command" && intentResult.confidence >= 0.8) {
+    return NextResponse.json({
+      intent: intentResult,
+      platformVersions: {},
+      meta: {
+        mode: "command_redirect",
+        message: "Ai dat o instructiune de modificare. Trimite continutul original pe care vrei sa-l modific.",
+        suggestedFollowUp: "Furnizeaza textul pe care vrei sa il modific, apoi repeta instructiunea.",
+      },
+    });
+  }
+
   // --- Creative Intelligence: Explore Phase ---
   const primaryPlatform = platforms[0] as CreativePlatform;
   const insights = await loadCreativeInsights({
