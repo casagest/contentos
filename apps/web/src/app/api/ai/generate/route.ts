@@ -520,16 +520,21 @@ ${hashtagInstruction}
 ${emojiInstruction}
 
 ${enhancedVoiceDescription ? `Brand voice & creative brief:\n${enhancedVoiceDescription}\n` : ""}
-Return ONLY valid JSON with this exact structure:
+CRITICAL FORMATTING RULES:
+- Respond with RAW JSON only. No markdown, no code blocks, no backticks, no explanation.
+- Your entire response must be a single valid JSON object starting with { and ending with }
+- Inside text strings, use \\n for newlines, never actual line breaks
+- Do NOT wrap the response in \`\`\`json blocks
+
+Return this exact JSON structure:
 {
   "platformVersions": {
     "${platforms[0]}": {
-      "text": string,
-      "hashtags": [string],
-      "alternativeVersions": [string],
-      "algorithmScore": { "overallScore": number }
+      "text": "the post content as a single string",
+      "hashtags": ["tag1", "tag2"],
+      "alternativeVersions": ["version2", "version3"],
+      "algorithmScore": { "overallScore": 82 }
     }
-    // ... one entry per platform
   }
 }`,
         },
@@ -537,88 +542,50 @@ Return ONLY valid JSON with this exact structure:
           role: "user",
           content: `Create content about: ${input}`,
         },
+        {
+          role: "assistant",
+          content: `{`,
+        },
       ],
       maxTokens: estimatedOutputTokens,
     });
+
+    // Prepend the opening brace that was used as prefill
+    aiResult.text = "{" + (aiResult.text || "");
 
     let parsed;
     let parseError = "";
     try {
       let cleanText = aiResult.text || "";
 
-      // Step 1: Strip markdown code blocks
+      // Step 1: Strip markdown code blocks if still present
       const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (codeBlockMatch) {
         cleanText = codeBlockMatch[1].trim();
       }
 
-      // Step 2: Remove BOM and control characters (except newlines/tabs)
+      // Step 2: Clean control characters
       cleanText = cleanText.replace(/^\uFEFF/, "").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 
-      // Step 3: If text starts with a key (no outer braces), wrap in {}
-      const trimmedForCheck = cleanText.trim();
-      if (trimmedForCheck.startsWith("\"") && trimmedForCheck.includes("\"platformVersions\"")) {
-      // Step 3: If no outer braces but has platformVersions key, wrap
-      if (!cleanText.startsWith("{") && cleanText.includes("\"platformVersions\"")) {
-        cleanText = "{" + cleanText + "}";
+      // Step 3: Wrap in braces if missing
+      const trimmed = cleanText.trim();
+      if (!trimmed.startsWith("{")) {
+        cleanText = "{" + cleanText;
       }
 
-      // Step 4: Fix common JSON issues from LLMs
-      // Remove trailing commas before } or ]
+      // Step 4: Fix trailing commas before } or ]
       cleanText = cleanText.replace(/,\s*([\]}])/g, "$1");
-      // Remove any trailing text after last }
+
+      // Step 5: Trim after last closing brace
       const lastBrace = cleanText.lastIndexOf("}");
-      if (lastBrace !== -1 && lastBrace < cleanText.length - 1) {
+      if (lastBrace !== -1) {
         cleanText = cleanText.substring(0, lastBrace + 1);
       }
 
-      // Step 5: Try direct parse
-      try {
-        parsed = JSON.parse(cleanText);
-      } catch (e) {
-        parseError = `Direct parse failed: ${e instanceof Error ? e.message : String(e)}`;
-
-        // Step 6: Try balanced brace extraction as fallback
-        const jsonStart = cleanText.indexOf("{");
-        if (jsonStart !== -1) {
-          let depth = 0;
-          let jsonEnd = -1;
-          let inString = false;
-          let escapeNext = false;
-          for (let i = jsonStart; i < cleanText.length; i++) {
-            const char = cleanText[i];
-            if (escapeNext) { escapeNext = false; continue; }
-            if (char === "\\") { escapeNext = true; continue; }
-            if (char === "\"") { inString = !inString; continue; }
-            if (!inString) {
-              if (char === "{") depth++;
-              else if (char === "}") {
-                depth--;
-                if (depth === 0) { jsonEnd = i; break; }
-              }
-          for (let i = jsonStart; i < cleanText.length; i++) {
-            if (cleanText[i] === "{") depth++;
-            else if (cleanText[i] === "}") {
-              depth--;
-              if (depth === 0) { jsonEnd = i; break; }
-            }
-          }
-          if (jsonEnd !== -1) {
-            const extracted = cleanText.substring(jsonStart, jsonEnd + 1);
-            // Also fix trailing commas in extracted text
-            const fixedExtracted = extracted.replace(/,\s*([\]}])/g, "$1");
-            try {
-              parsed = JSON.parse(fixedExtracted);
-              parseError = ""; // cleared - extraction worked
-            } catch (e2) {
-              parseError += ` | Extraction also failed: ${e2 instanceof Error ? e2.message : String(e2)}`;
-            }
-          }
-        }
-      }
+      parsed = JSON.parse(cleanText);
     } catch (e) {
+      parseError = e instanceof Error ? e.message : String(e);
       parsed = null;
-      parseError = `Outer catch: ${e instanceof Error ? e.message : String(e)}`;
     }
 
     if (!parsed || !parsed.platformVersions) {
@@ -634,7 +601,6 @@ Return ONLY valid JSON with this exact structure:
             rawFirst500: aiResult.text?.substring(0, 500) || "",
             rawLast200: aiResult.text?.substring(Math.max(0, (aiResult.text?.length || 0) - 200)) || "",
             parseError,
-            parsedKeys: parsed ? Object.keys(parsed) : null,
           },
         },
       };
