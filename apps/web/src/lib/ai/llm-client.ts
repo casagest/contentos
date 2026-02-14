@@ -18,15 +18,8 @@
 import { type CognitiveError, type Result, Ok, Err } from "./types";
 
 // ---------------------------------------------------------------------------
-// Configuration (validated at import time, not at call time)
+// Configuration (lazy — validated at call time to avoid build-time crashes)
 // ---------------------------------------------------------------------------
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-if (!OPENAI_API_KEY && process.env.NODE_ENV === "production") {
-  throw new Error(
-    "FATAL: OPENAI_API_KEY is not set. Cannot start in production mode."
-  );
-}
 
 const LLM_TIMEOUT_MS = 20_000; // 20s — aggressive but safe for gpt-4o-mini
 const LLM_MAX_RETRIES = 2; // 1 original + 2 retries = 3 total attempts
@@ -127,7 +120,7 @@ export async function callLLM(
   const circuitCheck = checkCircuit();
   if (!circuitCheck.ok) return Err(circuitCheck.error);
 
-  const apiKey = OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return Err({
       code: "LLM_ERROR",
