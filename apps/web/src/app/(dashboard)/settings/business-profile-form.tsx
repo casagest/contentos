@@ -149,7 +149,7 @@ export default function BusinessProfileForm({
           <label className={labelClass}>
             Descrierea afacerii{" "}
             <span className="text-gray-600">
-              ({profile.description.length}/500)
+              ({profile.description.length}/2000)
             </span>
           </label>
           <textarea
@@ -157,11 +157,11 @@ export default function BusinessProfileForm({
             onChange={(e) =>
               handleChange(
                 "description",
-                e.target.value.slice(0, 500)
+                e.target.value.slice(0, 2000)
               )
             }
-            placeholder="Ce face afacerea ta? Descrie pe scurt serviciile și misiunea."
-            rows={3}
+            placeholder="Ce face afacerea ta? Descrie serviciile, misiunea, tehnologiile, echipa, realizările. Cu cât mai detaliat, cu atât AI-ul generează conținut mai bun."
+            rows={5}
             className={inputClass + " resize-none"}
           />
         </div>
@@ -211,54 +211,74 @@ export default function BusinessProfileForm({
 
         {/* Target Audience */}
         <div>
-          <label className={labelClass}>Publicul țintă</label>
+          <label className={labelClass}>
+            Publicul țintă{" "}
+            <span className="text-gray-600">
+              ({profile.targetAudience.length}/1500)
+            </span>
+          </label>
           <textarea
             value={profile.targetAudience}
             onChange={(e) =>
-              handleChange("targetAudience", e.target.value)
+              handleChange("targetAudience", e.target.value.slice(0, 1500))
             }
-            placeholder="Descrie clientul tău ideal. ex: Femei 25-45 ani, interesate de estetica dentară, venituri medii-mari, din zona urbană."
-            rows={2}
+            placeholder="Descrie clientul tău ideal: vârstă, probleme, motivații, trigger-uri emoționale și raționale. ex: Pacienți 40-70 ani cu edentație extinsă, purtători de proteze mobile nemulțumiți."
+            rows={4}
             className={inputClass + " resize-none"}
           />
         </div>
 
         {/* USPs */}
         <div>
-          <label className={labelClass}>USP-uri / Diferențiatori</label>
+          <label className={labelClass}>
+            USP-uri / Diferențiatori{" "}
+            <span className="text-gray-600">
+              ({profile.usps.length}/2000)
+            </span>
+          </label>
           <textarea
             value={profile.usps}
-            onChange={(e) => handleChange("usps", e.target.value)}
-            placeholder="Ce te face diferit de competiție? ex: Singura clinică cu tehnologie All-on-4 din oraș, garanție pe viață pentru implanturi."
-            rows={2}
+            onChange={(e) => handleChange("usps", e.target.value.slice(0, 2000))}
+            placeholder="Ce te face diferit de competiție? Listează fiecare USP detaliat. ex: One Step ALL-ON-X® — dinți finali în 5 zile, laborator propriu in-house, implanturi Straumann."
+            rows={5}
             className={inputClass + " resize-none"}
           />
         </div>
 
         {/* Avoid Phrases */}
         <div>
-          <label className={labelClass}>Cuvinte/expresii de evitat</label>
+          <label className={labelClass}>
+            Cuvinte/expresii de evitat{" "}
+            <span className="text-gray-600">
+              ({profile.avoidPhrases.length}/1000)
+            </span>
+          </label>
           <textarea
             value={profile.avoidPhrases}
             onChange={(e) =>
-              handleChange("avoidPhrases", e.target.value)
+              handleChange("avoidPhrases", e.target.value.slice(0, 1000))
             }
-            placeholder="Cuvinte pe care AI-ul nu trebuie să le folosească. ex: ieftin, reducere, cel mai bun"
-            rows={2}
+            placeholder="Cuvinte pe care AI-ul nu trebuie să le folosească. ex: ieftin, reducere, cel mai bun, tratament miracol, garantăm vindecarea"
+            rows={3}
             className={inputClass + " resize-none"}
           />
         </div>
 
         {/* Preferred Phrases */}
         <div>
-          <label className={labelClass}>Cuvinte/expresii preferate</label>
+          <label className={labelClass}>
+            Cuvinte/expresii preferate{" "}
+            <span className="text-gray-600">
+              ({profile.preferredPhrases.length}/1000)
+            </span>
+          </label>
           <textarea
             value={profile.preferredPhrases}
             onChange={(e) =>
-              handleChange("preferredPhrases", e.target.value)
+              handleChange("preferredPhrases", e.target.value.slice(0, 1000))
             }
-            placeholder="Expresii sau sloganuri pe care AI-ul să le includă. ex: Zâmbetul tău, grija noastră; Calitate premium"
-            rows={2}
+            placeholder="Expresii sau termeni pe care AI-ul să le includă. ex: One Step ALL-ON-X®, dinți ficși în 5 zile, Neodent® by Straumann, 0729 122 422"
+            rows={3}
             className={inputClass + " resize-none"}
           />
         </div>
