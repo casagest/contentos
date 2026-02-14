@@ -533,13 +533,9 @@ ${hashtagInstruction}
 ${emojiInstruction}
 
 ${enhancedVoiceDescription ? `Brand voice & creative brief:\n${enhancedVoiceDescription}\n` : ""}
-CRITICAL FORMATTING RULES:
-- Respond with RAW JSON only. No markdown, no code blocks, no backticks, no explanation.
-- Your entire response must be a single valid JSON object starting with { and ending with }
-- Inside text strings, use \\n for newlines, never actual line breaks
-- Do NOT wrap the response in \`\`\`json blocks
+CRITICAL: Your response must be RAW JSON only. No markdown. No backticks. No code blocks. No explanation text. Start with { and end with }. Use \\n for line breaks inside text values, never real newlines.
 
-Return this exact JSON structure:
+JSON structure:
 {
   "platformVersions": {
     "${platforms[0]}": {
@@ -571,25 +567,28 @@ Return this exact JSON structure:
     try {
       let cleanText = aiResult.text || "";
 
-      // Step 1: Strip markdown code blocks if still present
+      // Strip markdown code blocks if present
       const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (codeBlockMatch) {
         cleanText = codeBlockMatch[1].trim();
       }
 
-      // Step 2: Clean control characters
-      cleanText = cleanText.replace(/^\uFEFF/, "").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+      // Remove BOM
+      cleanText = cleanText.replace(/^\uFEFF/, "");
 
-      // Step 3: Wrap in braces if missing
-      const trimmed = cleanText.trim();
-      if (!trimmed.startsWith("{")) {
+      // Ensure starts with {
+      cleanText = cleanText.trim();
+      if (!cleanText.startsWith("{")) {
         cleanText = "{" + cleanText;
       }
 
-      // Step 4: Fix trailing commas before } or ]
+      // NUCLEAR FIX: Replace ALL real newlines with spaces (Claude should use \\n for intentional breaks)
+      cleanText = cleanText.replace(/\r?\n/g, " ").replace(/\r/g, " ");
+
+      // Fix trailing commas
       cleanText = cleanText.replace(/,\s*([\]}])/g, "$1");
 
-      // Step 5: Trim after last closing brace
+      // Trim after last }
       const lastBrace = cleanText.lastIndexOf("}");
       if (lastBrace !== -1) {
         cleanText = cleanText.substring(0, lastBrace + 1);
