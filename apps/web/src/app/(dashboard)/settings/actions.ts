@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import type { BusinessProfile } from "@contentos/database";
 
 export async function saveBusinessProfile(profile: BusinessProfile) {
@@ -26,8 +27,11 @@ export async function saveBusinessProfile(profile: BusinessProfile) {
     return { error: "Nu s-a gasit organizatia." };
   }
 
+  // Use service client for DB operations (bypasses RLS that silently blocks)
+  const serviceClient = createServiceClient();
+
   // Fetch current settings to merge
-  const { data: org, error: orgError } = await supabase
+  const { data: org, error: orgError } = await serviceClient
     .from("organizations")
     .select("settings")
     .eq("id", userData.organization_id)
@@ -43,18 +47,47 @@ export async function saveBusinessProfile(profile: BusinessProfile) {
     businessProfile: profile,
   };
 
-  const { error: updateError } = await supabase
+  // Use .select() to verify rows were actually updated
+  const { data: updateResult, error: updateError } = await serviceClient
     .from("organizations")
     .update({ settings: updatedSettings })
-    .eq("id", userData.organization_id);
+    .eq("id", userData.organization_id)
+    .select("id");
 
   if (updateError) {
     return { error: `Eroare la salvare: ${updateError.message}` };
   }
 
+  // Detect if 0 rows affected
+  if (!updateResult || updateResult.length === 0) {
+    return {
+      error:
+        "Salvarea nu a reusit — organizatia nu a fost gasita.",
+    };
+  }
+
+  // Verify the data was actually persisted
+  const { data: verifyOrg } = await serviceClient
+    .from("organizations")
+    .select("settings")
+    .eq("id", userData.organization_id)
+    .single();
+
+  const savedSettings = verifyOrg?.settings as Record<string, unknown> | null;
+  const savedProfile = savedSettings?.businessProfile as Record<
+    string,
+    unknown
+  > | null;
+
+  if (!savedProfile || savedProfile.description !== profile.description) {
+    return {
+      error: "Datele nu s-au salvat corect in baza de date. Incercati din nou.",
+    };
+  }
+
   revalidatePath("/settings");
   revalidatePath("/dashboard");
-  return { success: true };
+  return { success: true, savedProfile: profile };
 }
 
 export async function updateUserName(name: string) {
@@ -101,7 +134,9 @@ export async function saveNotificationPrefs(prefs: Record<string, boolean>) {
     return { error: "Nu s-a gasit organizatia." };
   }
 
-  const { data: org } = await supabase
+  const notifService = createServiceClient();
+
+  const { data: org } = await notifService
     .from("organizations")
     .select("settings")
     .eq("id", userData.organization_id)
@@ -113,13 +148,18 @@ export async function saveNotificationPrefs(prefs: Record<string, boolean>) {
     notifications: prefs,
   };
 
-  const { error } = await supabase
+  const { data: updateResult, error } = await notifService
     .from("organizations")
     .update({ settings: updatedSettings })
-    .eq("id", userData.organization_id);
+    .eq("id", userData.organization_id)
+    .select("id");
 
   if (error) {
     return { error: `Eroare la salvare: ${error.message}` };
+  }
+
+  if (!updateResult || updateResult.length === 0) {
+    return { error: "Salvarea nu a reusit." };
   }
 
   return { success: true };

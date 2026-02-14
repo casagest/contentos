@@ -71,6 +71,18 @@ export default function BusinessProfileForm({
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Track the last known server profile to detect genuine reloads
+  const [lastServerProfile, setLastServerProfile] = useState(initialProfile);
+
+  // Sync state when server sends genuinely NEW data (e.g., page reload, not revalidate after our save)
+  if (initialProfile !== lastServerProfile) {
+    setLastServerProfile(initialProfile);
+    // Only reset form state if we didn't just save (avoid clobbering user's edits)
+    if (!saved && initialProfile) {
+      setProfile(initialProfile);
+    }
+  }
+
   function handleChange(
     field: keyof BusinessProfile,
     value: string | string[]
@@ -109,6 +121,9 @@ export default function BusinessProfileForm({
         setError(result.error);
       } else {
         setSaved(true);
+        // Update the last known server profile to match what we just saved,
+        // so revalidatePath doesn't clobber our state
+        setLastServerProfile(profile);
         setTimeout(() => setSaved(false), 3000);
       }
     });
