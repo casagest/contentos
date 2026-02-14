@@ -543,8 +543,57 @@ Return ONLY valid JSON with this exact structure:
 
     let parsed;
     try {
-      const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      // Step 1: Strip markdown code blocks if present
+      let cleanText = aiResult.text;
+      const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        cleanText = codeBlockMatch[1].trim();
+      }
+
+      // Step 2: Try direct parse first (cleanest path)
+      try {
+        parsed = JSON.parse(cleanText);
+      } catch {
+        // Step 3: Extract JSON object with balanced braces
+        const jsonStart = cleanText.indexOf("{");
+        if (jsonStart !== -1) {
+          let depth = 0;
+          let jsonEnd = -1;
+          let inString = false;
+          let escapeNext = false;
+          
+          for (let i = jsonStart; i < cleanText.length; i++) {
+            const char = cleanText[i];
+            
+            if (escapeNext) {
+              escapeNext = false;
+              continue;
+            }
+            
+            if (char === '\\') {
+              escapeNext = true;
+              continue;
+            }
+            
+            if (char === '"') {
+              inString = !inString;
+              continue;
+            }
+            
+            if (!inString) {
+              if (char === "{") depth++;
+              else if (char === "}") {
+                depth--;
+                if (depth === 0) { jsonEnd = i; break; }
+              }
+            }
+          }
+          
+          if (jsonEnd !== -1) {
+            parsed = JSON.parse(cleanText.substring(jsonStart, jsonEnd + 1));
+          }
+        }
+      }
     } catch {
       parsed = null;
     }
@@ -557,6 +606,11 @@ Return ONLY valid JSON with this exact structure:
           provider: aiResult.provider,
           model: aiResult.model,
           warning: "AI response could not be parsed. Deterministic fallback used.",
+          debug: {
+            rawLength: aiResult.text?.length || 0,
+            rawPreview: aiResult.text?.substring(0, 500) || "",
+            parsedKeys: parsed ? Object.keys(parsed) : null,
+          },
         },
       };
       return NextResponse.json(payload);
