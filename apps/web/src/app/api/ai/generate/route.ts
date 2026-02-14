@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, Language } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
-import { buildOpenRouterModelChain, resolveAIProvider, resolveAIProviderForTask } from "@/lib/ai/provider";
+import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicGeneration } from "@/lib/ai/deterministic";
 import {
   type AIObjective,
@@ -277,7 +276,6 @@ export async function POST(request: NextRequest) {
     language: deterministicLanguage,
   });
 
-  const provider = resolveAIProviderForTask("generate");
   const intentHash = buildIntentCacheKey(ROUTE_KEY, {
     input,
     platforms,
@@ -332,7 +330,14 @@ export async function POST(request: NextRequest) {
     },
   };
 
-  if (provider.mode === "template" || !provider.apiKey) {
+  const hasAnyProvider = [
+    process.env.ANTHROPIC_API_KEY,
+    process.env.OPENAI_API_KEY,
+    process.env.GOOGLE_AI_API_KEY,
+    process.env.OPENROUTER_API_KEY,
+  ].some((k) => k?.trim());
+
+  if (!hasAnyProvider) {
     await setIntentCache({
       supabase: session.supabase,
       organizationId: session.organizationId,
@@ -356,7 +361,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       mode: "deterministic",
       success: true,
-      metadata: { reason: "provider_template_mode", objective },
+      metadata: { reason: "no_provider_available", objective },
     });
 
     return NextResponse.json(deterministicPayload);
@@ -379,29 +384,8 @@ export async function POST(request: NextRequest) {
 
   const avgDeterministicScore = averageScore(deterministic.platformVersions);
   const premiumThreshold = Number(process.env.AI_GENERATE_PREMIUM_THRESHOLD || 70);
-  const economyModel =
-    provider.mode === "openrouter"
-      ? buildOpenRouterModelChain({
-          quality: "economy",
-          preferred:
-            process.env.AI_MODEL_GENERATE_ECONOMY?.trim() ||
-            process.env.AI_MODEL_GENERATE?.trim() ||
-            provider.model,
-        })
-      : process.env.AI_MODEL_GENERATE_ECONOMY?.trim() || "claude-3-5-haiku-latest";
-  const premiumModel =
-    provider.mode === "openrouter"
-      ? buildOpenRouterModelChain({
-          quality: "premium",
-          preferred:
-            process.env.AI_MODEL_GENERATE_PREMIUM?.trim() ||
-            process.env.AI_MODEL_GENERATE?.trim() ||
-            provider.model,
-        })
-      : process.env.AI_MODEL_GENERATE_PREMIUM?.trim() ||
-        provider.model ||
-        process.env.AI_MODEL_GENERATE?.trim() ||
-        "claude-sonnet-4-5-20250929";
+  const economyModelRef = "claude-3-5-haiku-latest";
+  const premiumModelRef = "claude-sonnet-4-5-20250929";
 
   const estimatedInputTokens =
     estimateTokensFromText(input) +
@@ -410,12 +394,12 @@ export async function POST(request: NextRequest) {
     estimateTokensFromText(userVoiceDescription || "");
   const estimatedOutputTokens = Math.max(1, platforms.length) * 920;
   const economyCostUsd = estimateAnthropicCostUsd(
-    economyModel,
+    economyModelRef,
     estimatedInputTokens,
     estimatedOutputTokens
   );
   const premiumCostUsd = estimateAnthropicCostUsd(
-    premiumModel,
+    premiumModelRef,
     estimatedInputTokens,
     estimatedOutputTokens
   );
@@ -462,7 +446,6 @@ export async function POST(request: NextRequest) {
   });
 
   const shouldEscalate = lowQualitySignal && roiDecision.shouldEscalate;
-  const model = shouldEscalate ? premiumModel : economyModel;
   const estimatedCostUsd = shouldEscalate ? premiumCostUsd : economyCostUsd;
 
   const budget = await decidePaidAIAccess({
@@ -520,43 +503,82 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
-    const service = new ContentAIService({
-      apiKey: provider.apiKey,
-      model,
-      provider: provider.mode === "openrouter" ? "openrouter" : "anthropic",
-      baseUrl: provider.baseUrl,
+    const platformsList = platforms.join(", ");
+    const hashtagInstruction = includeHashtags ? "Include relevant hashtags." : "Do NOT include hashtags.";
+    const emojiInstruction = includeEmoji ? "Include emojis where appropriate." : "Do NOT include emojis.";
+
+    const aiResult = await routeAICall({
+      task: "generate",
+      messages: [
+        {
+          role: "system",
+          content: `You are a world-class social media content creator. Generate engaging content for the following platforms: ${platformsList}.
+
+Language: ${language}
+Tone: ${tone}
+${hashtagInstruction}
+${emojiInstruction}
+
+${enhancedVoiceDescription ? `Brand voice & creative brief:\n${enhancedVoiceDescription}\n` : ""}
+Return ONLY valid JSON with this exact structure:
+{
+  "platformVersions": {
+    "${platforms[0]}": {
+      "text": string,
+      "hashtags": [string],
+      "alternativeVersions": [string],
+      "algorithmScore": { "overallScore": number }
+    }
+    // ... one entry per platform
+  }
+}`,
+        },
+        {
+          role: "user",
+          content: `Create content about: ${input}`,
+        },
+      ],
+      maxTokens: estimatedOutputTokens,
     });
 
-    const aiResult = await service.generateContent({
-      organizationId: session.organizationId,
-      input,
-      inputType: "text",
-      targetPlatforms: platforms,
-      language,
-      tone,
-      includeHashtags,
-      includeEmoji,
-      userVoiceDescription: enhancedVoiceDescription,
-    });
-    const resolvedModel = service.getLastResolvedModel() || model;
+    let parsed;
+    try {
+      const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch {
+      parsed = null;
+    }
+
+    if (!parsed || !parsed.platformVersions) {
+      const payload = {
+        ...deterministicPayload,
+        meta: {
+          ...(deterministicPayload.meta || {}),
+          provider: aiResult.provider,
+          model: aiResult.model,
+          warning: "AI response could not be parsed. Deterministic fallback used.",
+        },
+      };
+      return NextResponse.json(payload);
+    }
+
     const aiSelected = await applyVariantBanditSelection({
       supabase: session.supabase,
       organizationId: session.organizationId,
       objective,
-      platformVersions: aiResult.platformVersions as Record<string, any>,
+      platformVersions: parsed.platformVersions as Record<string, any>,
     });
 
     const responsePayload = {
-      ...aiResult,
+      ...parsed,
       platformVersions: aiSelected.platformVersions,
       intent: intentResult,
       angles: creativeAngles,
       selectedAngle: selectedAngle || null,
       meta: {
         mode: "ai",
-        provider: provider.mode,
-        model: resolvedModel,
-        modelChain: provider.mode === "openrouter" ? model : undefined,
+        provider: aiResult.provider,
+        model: aiResult.model,
         escalated: shouldEscalate,
         objective,
         objectiveValueConfig: valueConfig,
@@ -576,8 +598,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model: resolvedModel,
+      provider: aiResult.provider,
+      model: aiResult.model,
       response: responsePayload,
       estimatedCostUsd,
       ttlMs: CACHE_TTL_MS,
@@ -589,13 +611,13 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model: resolvedModel,
+      provider: aiResult.provider,
+      model: aiResult.model,
       mode: "ai",
-      inputTokens: estimatedInputTokens,
-      outputTokens: estimatedOutputTokens,
+      inputTokens: aiResult.inputTokens || estimatedInputTokens,
+      outputTokens: aiResult.outputTokens || estimatedOutputTokens,
       estimatedCostUsd,
-      latencyMs: Date.now() - startedAt,
+      latencyMs: aiResult.latencyMs,
       success: true,
       metadata: {
         escalated: shouldEscalate,
@@ -603,7 +625,6 @@ export async function POST(request: NextRequest) {
         objective,
         lowQualitySignal,
         projectedPremiumScore,
-        modelChain: provider.mode === "openrouter" ? model : undefined,
         objectiveValueConfig: valueConfig,
         roiGate: roiDecision,
       },
@@ -648,8 +669,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model,
+      provider: "router",
+      model: "unknown",
       mode: "ai",
       inputTokens: estimatedInputTokens,
       outputTokens: 0,
