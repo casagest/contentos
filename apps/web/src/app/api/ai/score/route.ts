@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, ContentType, Language } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
-import { buildOpenRouterModelChain, resolveAIProvider } from "@/lib/ai/provider";
+import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicScore } from "@/lib/ai/deterministic";
 import {
   buildIntentCacheKey,
@@ -49,7 +48,6 @@ export async function POST(request: NextRequest) {
 
   const contentType = (body.contentType || "text") as ContentType;
   const language = (body.language || "ro") as Language;
-  const provider = resolveAIProvider();
 
   const deterministic = buildDeterministicScore({ content, platform, contentType });
 
@@ -95,7 +93,15 @@ export async function POST(request: NextRequest) {
     },
   };
 
-  if (provider.mode === "template" || !provider.apiKey) {
+  // Check if any AI provider is available
+  const hasAnyProvider = [
+    process.env.ANTHROPIC_API_KEY,
+    process.env.OPENAI_API_KEY,
+    process.env.GOOGLE_AI_API_KEY,
+    process.env.OPENROUTER_API_KEY,
+  ].some((k) => k?.trim());
+
+  if (!hasAnyProvider) {
     await setIntentCache({
       supabase: session.supabase,
       organizationId: session.organizationId,
@@ -119,45 +125,19 @@ export async function POST(request: NextRequest) {
       model: "template",
       mode: "deterministic",
       success: true,
-      metadata: { reason: "provider_template_mode" },
+      metadata: { reason: "no_provider_available" },
     });
 
     return NextResponse.json(deterministicPayload);
   }
 
   const premiumThreshold = Number(process.env.AI_SCORE_PREMIUM_THRESHOLD || 68);
-  const economyModel =
-    provider.mode === "openrouter"
-      ? buildOpenRouterModelChain({
-          quality: "economy",
-          preferred:
-            process.env.AI_MODEL_SCORE_ECONOMY?.trim() ||
-            process.env.AI_MODEL_SCORE?.trim() ||
-            provider.model,
-        })
-      : process.env.AI_MODEL_SCORE_ECONOMY?.trim() ||
-        process.env.AI_MODEL_SCORE?.trim() ||
-        "claude-3-5-haiku-latest";
-  const premiumModel =
-    provider.mode === "openrouter"
-      ? buildOpenRouterModelChain({
-          quality: "premium",
-          preferred:
-            process.env.AI_MODEL_SCORE_PREMIUM?.trim() ||
-            process.env.AI_MODEL_SCORE?.trim() ||
-            provider.model,
-        })
-      : process.env.AI_MODEL_SCORE_PREMIUM?.trim() ||
-        provider.model ||
-        "claude-sonnet-4-5-20250929";
-
   const shouldEscalate = deterministic.overallScore < premiumThreshold;
-  const model = shouldEscalate ? premiumModel : economyModel;
 
   const estimatedInputTokens = estimateTokensFromText(content) + 420;
   const estimatedOutputTokens = 700;
   const estimatedCostUsd = estimateAnthropicCostUsd(
-    model,
+    shouldEscalate ? "claude-sonnet-4-5-20250929" : "claude-3-5-haiku-latest",
     estimatedInputTokens,
     estimatedOutputTokens
   );
@@ -215,28 +195,59 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
-    const service = new ContentAIService({
-      apiKey: provider.apiKey,
-      model,
-      provider: provider.mode === "openrouter" ? "openrouter" : "anthropic",
-      baseUrl: provider.baseUrl,
+    const aiResult = await routeAICall({
+      task: "score",
+      messages: [
+        {
+          role: "system",
+          content: `You are a senior social media content analyst. Score the following ${platform} ${contentType} content on a 0-100 scale. Evaluate: hook strength, clarity, CTA effectiveness, platform fit, emotional resonance, visual description quality, hashtag strategy, content length optimization, and overall engagement potential.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "overallScore": number,
+  "grade": "S"|"A"|"B"|"C"|"D"|"F",
+  "metrics": [{"name": string, "score": number, "maxScore": number, "feedback": string}],
+  "summary": string,
+  "improvements": [string],
+  "alternativeVersions": [string]
+}`,
+        },
+        {
+          role: "user",
+          content: `Language: ${language}\nPlatform: ${platform}\nContent type: ${contentType}\n\nContent:\n${content}`,
+        },
+      ],
+      maxTokens: estimatedOutputTokens,
     });
 
-    const aiResult = await service.scoreContent({
-      content,
-      platform,
-      contentType,
-      language,
-    });
-    const resolvedModel = service.getLastResolvedModel() || model;
+    let parsed;
+    try {
+      const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch {
+      parsed = null;
+    }
+
+    // Fallback to deterministic if JSON parsing fails
+    if (!parsed || typeof parsed.overallScore !== "number") {
+      const payload = {
+        ...deterministic,
+        meta: {
+          mode: "deterministic",
+          provider: aiResult.provider,
+          model: aiResult.model,
+          warning: "AI response could not be parsed. Deterministic fallback used.",
+        },
+      };
+      return NextResponse.json(payload);
+    }
 
     const responsePayload = {
-      ...aiResult,
+      ...parsed,
       meta: {
         mode: "ai",
-        provider: provider.mode,
-        model: resolvedModel,
-        modelChain: provider.mode === "openrouter" ? model : undefined,
+        provider: aiResult.provider,
+        model: aiResult.model,
         escalated: shouldEscalate,
       },
     };
@@ -247,8 +258,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model: resolvedModel,
+      provider: aiResult.provider,
+      model: aiResult.model,
       response: responsePayload,
       estimatedCostUsd,
       ttlMs: CACHE_TTL_MS,
@@ -260,18 +271,17 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model: resolvedModel,
+      provider: aiResult.provider,
+      model: aiResult.model,
       mode: "ai",
-      inputTokens: estimatedInputTokens,
-      outputTokens: estimatedOutputTokens,
+      inputTokens: aiResult.inputTokens || estimatedInputTokens,
+      outputTokens: aiResult.outputTokens || estimatedOutputTokens,
       estimatedCostUsd,
-      latencyMs: Date.now() - startedAt,
+      latencyMs: aiResult.latencyMs,
       success: true,
       metadata: {
         escalated: shouldEscalate,
         deterministicScore: deterministic.overallScore,
-        modelChain: provider.mode === "openrouter" ? model : undefined,
       },
     });
 
@@ -315,8 +325,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model,
+      provider: "router",
+      model: "unknown",
       mode: "ai",
       inputTokens: estimatedInputTokens,
       outputTokens: 0,
@@ -324,9 +334,7 @@ export async function POST(request: NextRequest) {
       latencyMs: Date.now() - startedAt,
       success: false,
       errorCode: status ? `http_${status}` : "unknown",
-      metadata: {
-        fallback: "deterministic",
-      },
+      metadata: { fallback: "deterministic" },
     });
 
     return NextResponse.json(payload);

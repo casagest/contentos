@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { scrapeUrlContent } from "@/lib/scrape";
 import { expiresAtIso, hashUrl, SCRAPE_CACHE_TTL_MS } from "@/lib/url-cache";
-import { buildOpenRouterModelChain, resolveAIProvider, resolveAIProviderForTask } from "@/lib/ai/provider";
 import { routeAICall, resolveEffectiveProvider } from "@/lib/ai/multi-model-router";
 import { buildDeterministicBrainDump } from "@/lib/ai/deterministic";
 import {
@@ -30,6 +28,12 @@ import {
   buildEnrichedGenerationPrompt,
   type ConversationMessage,
 } from "@/lib/ai/braindump-coach";
+import {
+  loadCreativeInsights,
+  generateCreativeAngles,
+  buildCreativeBrief,
+  type Platform as CreativePlatform,
+} from "@/lib/ai/creative-intelligence";
 
 const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
 const MAX_URLS = 3;
@@ -140,117 +144,6 @@ function parseModelJson(rawText: string): Record<string, unknown> {
   }
 
   throw new Error("No JSON object found in model response.");
-}
-
-async function createOpenRouterCompletion(params: {
-  apiKey: string;
-  baseUrl?: string;
-  model: string;
-  maxTokens: number;
-  systemPrompt: string;
-  userMessage: string;
-}): Promise<{ text: string; model: string }> {
-  const models = [...new Set(params.model.split(",").map((item) => item.trim()).filter(Boolean))];
-  const candidates = models.length ? models : ["openrouter/auto"];
-  let lastError: (Error & { status?: number }) | null = null;
-
-  for (const model of candidates) {
-    try {
-      const response = await fetch(
-        params.baseUrl || "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${params.apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer":
-              process.env.OPENROUTER_SITE_URL?.trim() ||
-              "https://contentos-project.vercel.app",
-            "X-Title": process.env.OPENROUTER_APP_NAME?.trim() || "ContentOS",
-          },
-          body: JSON.stringify({
-            model,
-            max_tokens: params.maxTokens,
-            messages: [
-              { role: "system", content: params.systemPrompt },
-              { role: "user", content: params.userMessage },
-            ],
-          }),
-        }
-      );
-
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: { message?: string };
-        choices?: Array<{
-          message?: { content?: string | Array<{ type?: string; text?: string }> };
-        }>;
-      };
-
-      if (!response.ok) {
-        const error = new Error(
-          payload.error?.message ||
-            `OpenRouter request failed with status ${response.status}`
-        ) as Error & { status: number };
-        error.status = response.status;
-        throw error;
-      }
-
-      const content = payload.choices?.[0]?.message?.content;
-      if (typeof content === "string" && content.trim()) {
-        return { text: content, model };
-      }
-
-      if (Array.isArray(content)) {
-        const text = content
-          .map((item) => (item && typeof item.text === "string" ? item.text : ""))
-          .join("\n")
-          .trim();
-        if (text) {
-          return { text, model };
-        }
-      }
-
-      const missingTextError = new Error("OpenRouter response missing text content.") as Error & {
-        status: number;
-      };
-      missingTextError.status = 502;
-      throw missingTextError;
-    } catch (error) {
-      const providerError =
-        error instanceof Error
-          ? (error as Error & { status?: number })
-          : (() => {
-              const unknown = new Error("Unknown OpenRouter error.") as Error & {
-                status: number;
-              };
-              unknown.status = 500;
-              return unknown;
-            })();
-      lastError = providerError;
-      const status = typeof providerError.status === "number" ? providerError.status : 500;
-      const message = providerError.message || "";
-      const hasNextModel = model !== candidates[candidates.length - 1];
-      const shouldFallback =
-        hasNextModel &&
-        (new Set([400, 401, 402, 403, 404, 408, 409, 425, 429, 500, 502, 503, 504]).has(
-          status
-        ) ||
-          message.toLowerCase().includes("model") ||
-          message.toLowerCase().includes("rate limit") ||
-          message.toLowerCase().includes("quota") ||
-          message.toLowerCase().includes("capacity"));
-
-      if (shouldFallback) continue;
-      throw providerError;
-    }
-  }
-
-  if (lastError) throw lastError;
-  const exhausted = new Error("OpenRouter fallback chain exhausted.") as Error & {
-    status: number;
-  };
-  exhausted.status = 500;
-  throw exhausted;
 }
 
 function sanitizePlatforms(
@@ -385,47 +278,12 @@ function buildSystemPrompt(params: {
     .join("\n");
 }
 
-function selectModel(
-  qualityMode: QualityMode,
-  providerMode: "anthropic" | "openrouter" | "template",
-  providerModel?: string
-): string {
-  if (providerMode === "openrouter") {
-    if (qualityMode === "premium") {
-      return buildOpenRouterModelChain({
-        quality: "premium",
-        preferred: process.env.BRAINDUMP_MODEL_PREMIUM?.trim() || providerModel,
-      });
-    }
-
-    if (qualityMode === "balanced") {
-      return buildOpenRouterModelChain({
-        quality: "balanced",
-        preferred: process.env.BRAINDUMP_MODEL_BALANCED?.trim() || providerModel,
-      });
-    }
-
-    return buildOpenRouterModelChain({
-      quality: "economy",
-      preferred: process.env.BRAINDUMP_MODEL_ECONOMY?.trim() || providerModel,
-    });
-  }
-
-  const economy =
-    process.env.BRAINDUMP_MODEL_ECONOMY?.trim() ||
-    "claude-3-5-haiku-latest";
-  const balanced =
-    process.env.BRAINDUMP_MODEL_BALANCED?.trim() ||
-    providerModel ||
-    "claude-sonnet-4-5-20250929";
-  const premium =
-    process.env.BRAINDUMP_MODEL_PREMIUM?.trim() ||
-    providerModel ||
-    "claude-sonnet-4-5-20250929";
-
-  if (qualityMode === "economy") return economy;
-  if (qualityMode === "premium") return premium;
-  return balanced;
+function selectModelForCostEstimate(qualityMode: QualityMode): string {
+  if (qualityMode === "economy")
+    return process.env.BRAINDUMP_MODEL_ECONOMY?.trim() || "claude-3-5-haiku-latest";
+  if (qualityMode === "premium")
+    return process.env.BRAINDUMP_MODEL_PREMIUM?.trim() || "claude-sonnet-4-5-20250929";
+  return process.env.BRAINDUMP_MODEL_BALANCED?.trim() || "claude-sonnet-4-5-20250929";
 }
 
 function normalizeQualityMode(value?: string): QualityMode {
@@ -706,6 +564,41 @@ export async function POST(request: NextRequest) {
     businessProfile = settings.businessProfile as BusinessProfile;
   }
 
+  // --- Creative Intelligence Integration ---
+  const primaryPlatform = requestedPlatforms[0] as CreativePlatform;
+  const creativeInsights = await loadCreativeInsights({
+    supabase: session.supabase,
+    organizationId: session.organizationId,
+    platform: primaryPlatform,
+    objective,
+  });
+
+  const creativeAngles = generateCreativeAngles({
+    input: rawInput,
+    platform: primaryPlatform,
+    objective,
+    insights: creativeInsights,
+  });
+
+  const creativeBrief = buildCreativeBrief({
+    input: rawInput,
+    platform: primaryPlatform,
+    objective,
+    angles: creativeAngles.slice(0, 2),
+    insights: creativeInsights,
+    businessProfile: businessProfile
+      ? {
+          name: businessProfile.name,
+          description: businessProfile.description,
+          industry: businessProfile.industry,
+          tones: businessProfile.tones,
+          targetAudience: businessProfile.targetAudience,
+          usps: Array.isArray(businessProfile.usps) ? businessProfile.usps : [],
+        }
+      : undefined,
+  });
+  // --- End Creative Intelligence ---
+
   const urls = extractUrls(rawInput);
   const urlResults =
     urls.length > 0
@@ -728,7 +621,13 @@ export async function POST(request: NextRequest) {
     .map((result) => `SOURCE: ${result.url}\n${result.content}`)
     .join("\n\n---\n\n");
 
-  const provider = resolveAIProviderForTask("braindump");
+  const hasAnyProvider = [
+    process.env.ANTHROPIC_API_KEY,
+    process.env.OPENAI_API_KEY,
+    process.env.GOOGLE_AI_API_KEY,
+    process.env.OPENROUTER_API_KEY,
+  ].some((k) => k?.trim());
+
   const deterministicFallback = (warning?: string) =>
     buildDeterministicBrainDump({
       rawInput: rawInput + (urlContext ? `\n\n${urlContext}` : ""),
@@ -777,7 +676,7 @@ export async function POST(request: NextRequest) {
     "AI disabled or unavailable, deterministic mode used."
   );
 
-  if (provider.mode === "template" || !provider.apiKey) {
+  if (!hasAnyProvider) {
     await setIntentCache({
       supabase: session.supabase,
       organizationId: session.organizationId,
@@ -801,7 +700,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       mode: "deterministic",
       success: true,
-      metadata: { reason: "provider_template_mode", objective },
+      metadata: { reason: "no_provider_available", objective },
     });
 
     return NextResponse.json(deterministicPayload);
@@ -816,8 +715,8 @@ export async function POST(request: NextRequest) {
 
   const baseQualityMode = qualityMode;
   const escalatedQualityMode = effectiveQualityMode({ requested: qualityMode, escalated: true });
-  const baseModel = selectModel(baseQualityMode, provider.mode, provider.model);
-  const premiumModel = selectModel("premium", provider.mode, provider.model);
+  const baseModel = selectModelForCostEstimate(baseQualityMode);
+  const premiumModel = selectModelForCostEstimate("premium");
 
   const baseMaxTokens = estimateMaxTokens({
     platformCount: requestedPlatforms.length,
@@ -832,18 +731,25 @@ export async function POST(request: NextRequest) {
     qualityMode: escalatedQualityMode,
   });
 
-  const baseSystemPrompt = buildSystemPrompt({
+  const baseSystemPromptRaw = buildSystemPrompt({
     platforms: requestedPlatforms,
     businessProfile,
     language,
     qualityMode: baseQualityMode,
   });
-  const premiumSystemPrompt = buildSystemPrompt({
+  const premiumSystemPromptRaw = buildSystemPrompt({
     platforms: requestedPlatforms,
     businessProfile,
     language,
     qualityMode: escalatedQualityMode,
   });
+
+  // Inject creative brief into system prompts
+  const creativeSuffix = creativeBrief.creativeBriefPrompt
+    ? `\n\n--- CREATIVE INTELLIGENCE BRIEF ---\n${creativeBrief.creativeBriefPrompt}`
+    : "";
+  const baseSystemPrompt = baseSystemPromptRaw + creativeSuffix;
+  const premiumSystemPrompt = premiumSystemPromptRaw + creativeSuffix;
 
   const userMessage = [
     `RAW_INPUT:\n"""${rawInput.slice(0, 5000)}"""`,
@@ -983,49 +889,16 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
-    let modelText = "";
-    let resolvedModel = model;
-
-    // Use multi-model router for providers that ContentAIService doesn't support
-    const multiModelConfig = resolveEffectiveProvider("braindump");
-    const useMultiModelDirect = multiModelConfig.provider === "google" || multiModelConfig.provider === "openai";
-
-    if (useMultiModelDirect) {
-      // Route through multi-model router for Google/OpenAI native support
-      const aiResult = await routeAICall({
-        task: "braindump",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        maxTokens,
-      });
-      modelText = aiResult.text;
-      resolvedModel = aiResult.model;
-    } else if (provider.mode === "openrouter") {
-      const completion = await createOpenRouterCompletion({
-        apiKey: provider.apiKey!,
-        baseUrl: provider.baseUrl,
-        model,
-        maxTokens,
-        systemPrompt,
-        userMessage,
-      });
-      modelText = completion.text;
-      resolvedModel = completion.model;
-    } else {
-      const client = new Anthropic({ apiKey: provider.apiKey! });
-      const response = await client.messages.create({
-        model,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }],
-      });
-
-      const textBlock = response.content.find((block) => block.type === "text");
-      modelText = textBlock && textBlock.type === "text" ? textBlock.text : "";
-      resolvedModel = model;
-    }
+    const aiResult = await routeAICall({
+      task: "braindump",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      maxTokens,
+    });
+    const modelText = aiResult.text;
+    const resolvedModel = aiResult.model;
 
     if (!modelText.trim()) {
       const payload = deterministicFallback("Model response had no text block. Deterministic fallback used.");
@@ -1049,20 +922,19 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         routeKey: ROUTE_KEY,
         intentHash,
-        provider: provider.mode,
+        provider: aiResult.provider,
         model: resolvedModel,
         mode: "ai",
         inputTokens: estimatedInputTokens,
         outputTokens: 0,
         estimatedCostUsd: 0,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: aiResult.latencyMs,
         success: false,
         errorCode: "missing_text_block",
         metadata: {
           fallback: "deterministic",
           objective,
           objectiveValueConfig: valueConfig,
-          modelChain: provider.mode === "openrouter" ? model : undefined,
           roiGate: roiDecision,
         },
       });
@@ -1095,20 +967,19 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         routeKey: ROUTE_KEY,
         intentHash,
-        provider: provider.mode,
+        provider: aiResult.provider,
         model: resolvedModel,
         mode: "ai",
         inputTokens: estimatedInputTokens,
         outputTokens: 0,
         estimatedCostUsd: 0,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: aiResult.latencyMs,
         success: false,
         errorCode: "invalid_schema",
         metadata: {
           fallback: "deterministic",
           objective,
           objectiveValueConfig: valueConfig,
-          modelChain: provider.mode === "openrouter" ? model : undefined,
           roiGate: roiDecision,
         },
       });
@@ -1120,9 +991,8 @@ export async function POST(request: NextRequest) {
       platforms: normalizedPlatforms,
       meta: {
         mode: "ai",
-        provider: provider.mode,
+        provider: aiResult.provider,
         model: resolvedModel,
-        modelChain: provider.mode === "openrouter" ? model : undefined,
         maxTokens,
         qualityMode: tunedQualityMode,
         urlContextCount: fetchedUrls.length,
@@ -1131,6 +1001,11 @@ export async function POST(request: NextRequest) {
         objective,
         objectiveValueConfig: valueConfig,
         roiGate: roiDecision,
+        creativeBrief: {
+          topPerformers: creativeBrief.topPerformers.length,
+          avoidPatterns: creativeBrief.avoidPatterns.length,
+          anglesGenerated: creativeAngles.length,
+        },
       },
     };
 
@@ -1140,7 +1015,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
+      provider: aiResult.provider,
       model: resolvedModel,
       response: responsePayload,
       estimatedCostUsd,
@@ -1153,13 +1028,13 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
+      provider: aiResult.provider,
       model: resolvedModel,
       mode: "ai",
-      inputTokens: estimatedInputTokens,
-      outputTokens: estimatedOutputTokens,
+      inputTokens: aiResult.inputTokens || estimatedInputTokens,
+      outputTokens: aiResult.outputTokens || estimatedOutputTokens,
       estimatedCostUsd,
-      latencyMs: Date.now() - startedAt,
+      latencyMs: aiResult.latencyMs,
       success: true,
       metadata: {
         qualityMode: tunedQualityMode,
@@ -1169,7 +1044,6 @@ export async function POST(request: NextRequest) {
         escalationCandidate: escalated,
         objective,
         objectiveValueConfig: valueConfig,
-        modelChain: provider.mode === "openrouter" ? model : undefined,
         baselineScore,
         projectedPremiumScore,
         roiGate: roiDecision,
@@ -1179,11 +1053,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(responsePayload);
   } catch (error) {
     const status =
-      error instanceof Anthropic.APIError
-        ? error.status
-        : typeof error === "object" && error !== null && "status" in error && typeof (error as { status?: unknown }).status === "number"
-          ? (error as { status: number }).status
-          : null;
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? (error as { status: number }).status
+        : null;
     const payload = deterministicFallback(
       status
         ? `AI temporarily unavailable (${status}). Deterministic fallback used.`
@@ -1209,8 +1084,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model,
+      provider: "router",
+      model: "unknown",
       mode: "ai",
       inputTokens: estimatedInputTokens,
       outputTokens: 0,

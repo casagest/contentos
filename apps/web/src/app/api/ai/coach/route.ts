@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ContentAIService } from "@contentos/content-engine";
 import type { Platform, Post } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
-import { buildOpenRouterModelChain, resolveAIProvider } from "@/lib/ai/provider";
+import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicCoach } from "@/lib/ai/deterministic";
 import {
   buildIntentCacheKey,
@@ -110,7 +109,6 @@ export async function POST(request: NextRequest) {
     topPosts: topPerformingPosts,
   });
 
-  const provider = resolveAIProvider();
   const contextFingerprint = buildContextFingerprint(recentPosts, topPerformingPosts);
   const intentHash = buildIntentCacheKey(ROUTE_KEY, {
     question,
@@ -153,7 +151,14 @@ export async function POST(request: NextRequest) {
     },
   };
 
-  if (provider.mode === "template" || !provider.apiKey) {
+  const hasAnyProvider = [
+    process.env.ANTHROPIC_API_KEY,
+    process.env.OPENAI_API_KEY,
+    process.env.GOOGLE_AI_API_KEY,
+    process.env.OPENROUTER_API_KEY,
+  ].some((k) => k?.trim());
+
+  if (!hasAnyProvider) {
     await setIntentCache({
       supabase: session.supabase,
       organizationId: session.organizationId,
@@ -177,7 +182,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       mode: "deterministic",
       success: true,
-      metadata: { reason: "provider_template_mode" },
+      metadata: { reason: "no_provider_available" },
     });
 
     return NextResponse.json(deterministicPayload);
@@ -189,32 +194,6 @@ export async function POST(request: NextRequest) {
     recentPosts,
     threshold: escalationThreshold,
   });
-
-  const economyModel =
-    provider.mode === "openrouter"
-      ? buildOpenRouterModelChain({
-          quality: "economy",
-          preferred:
-            process.env.AI_MODEL_COACH_ECONOMY?.trim() ||
-            process.env.AI_MODEL_COACH?.trim() ||
-            provider.model,
-        })
-      : process.env.AI_MODEL_COACH_ECONOMY?.trim() ||
-        process.env.AI_MODEL_COACH?.trim() ||
-        "claude-3-5-haiku-latest";
-  const premiumModel =
-    provider.mode === "openrouter"
-      ? buildOpenRouterModelChain({
-          quality: "premium",
-          preferred:
-            process.env.AI_MODEL_COACH_PREMIUM?.trim() ||
-            process.env.AI_MODEL_COACH?.trim() ||
-            provider.model,
-        })
-      : process.env.AI_MODEL_COACH_PREMIUM?.trim() ||
-        provider.model ||
-        "claude-sonnet-4-5-20250929";
-  const model = shouldEscalate ? premiumModel : economyModel;
 
   const recentPostsContext = recentPosts
     .slice(0, 8)
@@ -232,7 +211,7 @@ export async function POST(request: NextRequest) {
     380;
   const estimatedOutputTokens = 900;
   const estimatedCostUsd = estimateAnthropicCostUsd(
-    model,
+    shouldEscalate ? "claude-sonnet-4-5-20250929" : "claude-3-5-haiku-latest",
     estimatedInputTokens,
     estimatedOutputTokens
   );
@@ -290,29 +269,64 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
-    const service = new ContentAIService({
-      apiKey: provider.apiKey,
-      model,
-      provider: provider.mode === "openrouter" ? "openrouter" : "anthropic",
-      baseUrl: provider.baseUrl,
+    const platformContext = body.platform ? `Platform focus: ${body.platform}\n\n` : "";
+    const postsContext = recentPostsContext
+      ? `Recent posts (platform|engagement|content):\n${recentPostsContext}\n\n`
+      : "";
+    const topContext = topPostsContext
+      ? `Top performing posts (platform|engagement|content):\n${topPostsContext}\n\n`
+      : "";
+
+    const aiResult = await routeAICall({
+      task: "coach",
+      messages: [
+        {
+          role: "system",
+          content: `You are a senior social media strategist and coach. Analyze the user's question in the context of their posting history and provide actionable, data-driven recommendations.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "answer": string,
+  "recommendations": [string],
+  "actionItems": [{ "task": string, "priority": "high"|"medium"|"low" }],
+  "metrics": { "currentAvgEngagement": number, "projectedImprovement": string }
+}`,
+        },
+        {
+          role: "user",
+          content: `${platformContext}${postsContext}${topContext}Question: ${question}`,
+        },
+      ],
+      maxTokens: estimatedOutputTokens,
     });
 
-    const aiResult = await service.chat({
-      organizationId: session.organizationId,
-      platform: body.platform,
-      question,
-      recentPosts,
-      topPerformingPosts,
-    });
-    const resolvedModel = service.getLastResolvedModel() || model;
+    let parsed;
+    try {
+      const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch {
+      parsed = null;
+    }
+
+    if (!parsed || typeof parsed.answer !== "string") {
+      const payload = {
+        ...deterministic,
+        meta: {
+          mode: "deterministic",
+          provider: aiResult.provider,
+          model: aiResult.model,
+          warning: "AI response could not be parsed. Deterministic fallback used.",
+        },
+      };
+      return NextResponse.json(payload);
+    }
 
     const responsePayload = {
-      ...aiResult,
+      ...parsed,
       meta: {
         mode: "ai",
-        provider: provider.mode,
-        model: resolvedModel,
-        modelChain: provider.mode === "openrouter" ? model : undefined,
+        provider: aiResult.provider,
+        model: aiResult.model,
         escalated: shouldEscalate,
       },
     };
@@ -323,8 +337,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model: resolvedModel,
+      provider: aiResult.provider,
+      model: aiResult.model,
       response: responsePayload,
       estimatedCostUsd,
       ttlMs: CACHE_TTL_MS,
@@ -336,18 +350,17 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model: resolvedModel,
+      provider: aiResult.provider,
+      model: aiResult.model,
       mode: "ai",
-      inputTokens: estimatedInputTokens,
-      outputTokens: estimatedOutputTokens,
+      inputTokens: aiResult.inputTokens || estimatedInputTokens,
+      outputTokens: aiResult.outputTokens || estimatedOutputTokens,
       estimatedCostUsd,
-      latencyMs: Date.now() - startedAt,
+      latencyMs: aiResult.latencyMs,
       success: true,
       metadata: {
         escalated: shouldEscalate,
         avgEngagement: averageEngagement(recentPosts),
-        modelChain: provider.mode === "openrouter" ? model : undefined,
       },
     });
 
@@ -390,8 +403,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: provider.mode,
-      model,
+      provider: "router",
+      model: "unknown",
       mode: "ai",
       inputTokens: estimatedInputTokens,
       outputTokens: 0,
