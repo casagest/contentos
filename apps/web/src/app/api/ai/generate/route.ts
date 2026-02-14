@@ -405,7 +405,7 @@ export async function POST(request: NextRequest) {
     520 +
     Math.max(1, platforms.length) * 280 +
     estimateTokensFromText(userVoiceDescription || "");
-  const estimatedOutputTokens = Math.max(1, platforms.length) * 920;
+  const estimatedOutputTokens = Math.max(2048, Math.max(1, platforms.length) * 1500);
   const economyCostUsd = estimateAnthropicCostUsd(
     economyModelRef,
     estimatedInputTokens,
