@@ -7,8 +7,8 @@
 //   - Update metacognitive state per organization (Bayesian smoothed)
 //   - Process in batches with per-org error isolation
 //
-// Runs as: POST (has side effects: DELETE + UPSERT)
-// Auth: timing-safe CRON_SECRET comparison
+// Runs as: GET (Vercel Cron) + POST (manual trigger)
+// Auth: timing-safe CRON_SECRET comparison via shared cron-auth
 // Caller: Vercel Cron / external scheduler
 //
 // Architecture notes:
@@ -18,8 +18,8 @@
 // ============================================================================
 
 import { NextResponse } from "next/server";
-import * as crypto from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/service";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { consolidateOrganization } from "@/lib/ai/memory-consolidation";
 import {
   extractEntitiesRuleBased,
@@ -42,48 +42,25 @@ const PRIOR_MEAN = 0.5;
 const PRIOR_STRENGTH = 3.0;
 
 // ---------------------------------------------------------------------------
-// Auth: timing-safe comparison (prevents timing attacks on secret)
+// Route Handlers — GET (Vercel Cron) + POST (manual trigger)
 // ---------------------------------------------------------------------------
 
-function verifySecret(provided: string | null, expected: string): boolean {
-  if (!provided) return false;
-
-  const a = Buffer.from(provided, "utf8");
-  const b = Buffer.from(expected, "utf8");
-
-  if (a.length !== b.length) {
-    // Still do comparison to maintain constant time
-    crypto.timingSafeEqual(a, Buffer.alloc(a.length));
-    return false;
-  }
-
-  return crypto.timingSafeEqual(a, b);
+// Vercel crons call GET — delegate to shared handler
+export async function GET(request: Request) {
+  return handleConsolidation(request);
 }
 
-// ---------------------------------------------------------------------------
-// Route Handler (POST — has side effects)
-// ---------------------------------------------------------------------------
-
+// Keep POST for manual/external triggers
 export async function POST(request: Request) {
-  // Validate environment
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    console.error("cron_config_missing: CRON_SECRET not set");
-    return new NextResponse("Server configuration error", { status: 500 });
-  }
+  return handleConsolidation(request);
+}
 
-  // Auth
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
-
-  if (!verifySecret(token, cronSecret)) {
+async function handleConsolidation(request: Request) {
+  if (!verifyCronSecret(request)) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // Create admin client (service_role bypasses RLS)
-  const supabaseAdmin = createServiceClient();
+  const supabase = createServiceClient();
 
   const startTime = Date.now();
   const stats = {
@@ -99,7 +76,7 @@ export async function POST(request: Request) {
 
   try {
     // 1) Garbage Collection (batched, non-blocking)
-    const gcEpisodicResult = await supabaseAdmin.rpc(
+    const gcEpisodicResult = await supabase.rpc(
       "gc_episodic_memory_batch",
       { p_batch_size: 10000 }
     );
@@ -107,7 +84,7 @@ export async function POST(request: Request) {
       stats.gcEpisodic = gcEpisodicResult.data[0].deleted_count ?? 0;
     }
 
-    const gcWorkingResult = await supabaseAdmin.rpc(
+    const gcWorkingResult = await supabase.rpc(
       "gc_working_memory_batch",
       { p_batch_size: 10000 }
     );
@@ -116,7 +93,7 @@ export async function POST(request: Request) {
     }
 
     // 2) Fetch active organizations (paginated)
-    const { data: orgs, error: orgErr } = await supabaseAdmin
+    const { data: orgs, error: orgErr } = await supabase
       .from("organizations")
       .select("id")
       .limit(ORG_BATCH_SIZE);
@@ -138,7 +115,7 @@ export async function POST(request: Request) {
 
       const results = await Promise.allSettled(
         chunk.map((org) =>
-          updateMetacognitiveState(supabaseAdmin, org.id)
+          updateMetacognitiveState(supabase, org.id)
         )
       );
 
@@ -176,7 +153,7 @@ export async function POST(request: Request) {
       const consolidationResults = await Promise.allSettled(
         chunk.map((org) =>
           consolidateOrganization({
-            supabase: supabaseAdmin as any,
+            supabase: supabase as any,
             organizationId: org.id,
           })
         )
@@ -199,7 +176,7 @@ export async function POST(request: Request) {
       const entityResults = await Promise.allSettled(
         chunk.map(async (org) => {
           // Fetch recent episodic summaries
-          const { data: memories } = await supabaseAdmin
+          const { data: memories } = await supabase
             .from("episodic_memory")
             .select("summary")
             .eq("organization_id", org.id)
@@ -216,7 +193,7 @@ export async function POST(request: Request) {
 
           if (entities.length > 0) {
             const result = await batchUpsertEntities({
-              supabase: supabaseAdmin as any,
+              supabase: supabase as any,
               organizationId: org.id,
               entities,
             });
