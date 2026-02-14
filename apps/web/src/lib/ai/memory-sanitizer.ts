@@ -225,11 +225,11 @@ export function buildMemoryPromptFragment(
 ): string {
   const nowIso = new Date().toISOString();
 
-  // Optional PII masking: mask before formatting (query-time only)
-  const effectiveContext =
-    options?.enablePIIMasking
-      ? maskContextPII(context, options.piiCategories).maskedContext
-      : context;
+  // PII masking ON by default — opt out with enablePIIMasking: false
+  const shouldMask = options?.enablePIIMasking !== false;
+  const effectiveContext = shouldMask
+    ? maskContextPII(context, options?.piiCategories).maskedContext
+    : context;
 
   const episodic = formatEpisodic(effectiveContext.episodic, orgId);
   const semantic = formatSemantic(effectiveContext.semantic);
