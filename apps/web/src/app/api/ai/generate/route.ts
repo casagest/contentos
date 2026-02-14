@@ -1,3 +1,4 @@
+import { jsonrepair } from "jsonrepair";
 import { NextRequest, NextResponse } from "next/server";
 import type { Platform, Language } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
@@ -594,7 +595,7 @@ JSON structure:
         cleanText = cleanText.substring(0, lastBrace + 1);
       }
 
-      parsed = JSON.parse(cleanText);
+      parsed = JSON.parse(jsonrepair(cleanText));
     } catch (e) {
       parseError = e instanceof Error ? e.message : String(e);
       parsed = null;
