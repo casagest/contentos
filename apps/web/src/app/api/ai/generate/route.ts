@@ -542,66 +542,67 @@ Return ONLY valid JSON with this exact structure:
     });
 
     let parsed;
+    let parseError = "";
     try {
-      // Step 1: Strip markdown code blocks if present
-      let cleanText = aiResult.text;
+      let cleanText = aiResult.text || "";
+
+      // Step 1: Strip markdown code blocks
       const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (codeBlockMatch) {
         cleanText = codeBlockMatch[1].trim();
       }
 
-      // Step 1b: If text starts with a key (no outer braces), wrap in {}
-      const trimmedText = cleanText.trimStart();
-      if (trimmedText.startsWith("\"") && trimmedText.includes("\"platformVersions\"")) {
-        cleanText = "{ " + cleanText + " }";
+      // Step 2: Remove BOM and control characters (except newlines/tabs)
+      cleanText = cleanText.replace(/^\uFEFF/, "").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+
+      // Step 3: If no outer braces but has platformVersions key, wrap
+      if (!cleanText.startsWith("{") && cleanText.includes("\"platformVersions\"")) {
+        cleanText = "{" + cleanText + "}";
       }
 
-      // Step 2: Try direct parse first (cleanest path)
+      // Step 4: Fix common JSON issues from LLMs
+      // Remove trailing commas before } or ]
+      cleanText = cleanText.replace(/,\s*([\]}])/g, "$1");
+      // Remove any trailing text after last }
+      const lastBrace = cleanText.lastIndexOf("}");
+      if (lastBrace !== -1 && lastBrace < cleanText.length - 1) {
+        cleanText = cleanText.substring(0, lastBrace + 1);
+      }
+
+      // Step 5: Try direct parse
       try {
         parsed = JSON.parse(cleanText);
-      } catch {
-        // Step 3: Extract JSON object with balanced braces
+      } catch (e) {
+        parseError = `Direct parse failed: ${e instanceof Error ? e.message : String(e)}`;
+
+        // Step 6: Try balanced brace extraction as fallback
         const jsonStart = cleanText.indexOf("{");
         if (jsonStart !== -1) {
           let depth = 0;
           let jsonEnd = -1;
-          let inString = false;
-          let escapeNext = false;
-          
           for (let i = jsonStart; i < cleanText.length; i++) {
-            const char = cleanText[i];
-            
-            if (escapeNext) {
-              escapeNext = false;
-              continue;
-            }
-            
-            if (char === '\\') {
-              escapeNext = true;
-              continue;
-            }
-            
-            if (char === '"') {
-              inString = !inString;
-              continue;
-            }
-            
-            if (!inString) {
-              if (char === "{") depth++;
-              else if (char === "}") {
-                depth--;
-                if (depth === 0) { jsonEnd = i; break; }
-              }
+            if (cleanText[i] === "{") depth++;
+            else if (cleanText[i] === "}") {
+              depth--;
+              if (depth === 0) { jsonEnd = i; break; }
             }
           }
-          
           if (jsonEnd !== -1) {
-            parsed = JSON.parse(cleanText.substring(jsonStart, jsonEnd + 1));
+            const extracted = cleanText.substring(jsonStart, jsonEnd + 1);
+            // Also fix trailing commas in extracted text
+            const fixedExtracted = extracted.replace(/,\s*([\]}])/g, "$1");
+            try {
+              parsed = JSON.parse(fixedExtracted);
+              parseError = ""; // cleared - extraction worked
+            } catch (e2) {
+              parseError += ` | Extraction also failed: ${e2 instanceof Error ? e2.message : String(e2)}`;
+            }
           }
         }
       }
-    } catch {
+    } catch (e) {
       parsed = null;
+      parseError = `Outer catch: ${e instanceof Error ? e.message : String(e)}`;
     }
 
     if (!parsed || !parsed.platformVersions) {
@@ -614,7 +615,9 @@ Return ONLY valid JSON with this exact structure:
           warning: "AI response could not be parsed. Deterministic fallback used.",
           debug: {
             rawLength: aiResult.text?.length || 0,
-            rawPreview: aiResult.text?.substring(0, 500) || "",
+            rawFirst500: aiResult.text?.substring(0, 500) || "",
+            rawLast200: aiResult.text?.substring(Math.max(0, (aiResult.text?.length || 0) - 200)) || "",
+            parseError,
             parsedKeys: parsed ? Object.keys(parsed) : null,
           },
         },
