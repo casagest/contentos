@@ -558,6 +558,8 @@ Return ONLY valid JSON with this exact structure:
       // Step 3: If text starts with a key (no outer braces), wrap in {}
       const trimmedForCheck = cleanText.trim();
       if (trimmedForCheck.startsWith("\"") && trimmedForCheck.includes("\"platformVersions\"")) {
+      // Step 3: If no outer braces but has platformVersions key, wrap
+      if (!cleanText.startsWith("{") && cleanText.includes("\"platformVersions\"")) {
         cleanText = "{" + cleanText + "}";
       }
 
@@ -594,6 +596,11 @@ Return ONLY valid JSON with this exact structure:
                 depth--;
                 if (depth === 0) { jsonEnd = i; break; }
               }
+          for (let i = jsonStart; i < cleanText.length; i++) {
+            if (cleanText[i] === "{") depth++;
+            else if (cleanText[i] === "}") {
+              depth--;
+              if (depth === 0) { jsonEnd = i; break; }
             }
           }
           if (jsonEnd !== -1) {
