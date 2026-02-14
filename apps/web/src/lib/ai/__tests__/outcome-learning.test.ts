@@ -695,8 +695,11 @@ describe("outcome-learning", () => {
 
       expect(updateFn).toHaveBeenCalled();
       const data = updateFn.mock.calls[0][0];
+      // existing sample_size (5) + 1 new post = 6
       expect(data.sample_size).toBe(6);
+      // existing total_engagement (20) + new engagement_rate (4.0) = 24
       expect(data.total_engagement).toBeCloseTo(24, 2);
+      // 24 / 6 = 4.0
       expect(data.avg_engagement).toBeCloseTo(4, 2);
     });
 
