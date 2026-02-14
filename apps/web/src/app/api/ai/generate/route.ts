@@ -550,6 +550,12 @@ Return ONLY valid JSON with this exact structure:
         cleanText = codeBlockMatch[1].trim();
       }
 
+      // Step 1b: If text starts with a key (no outer braces), wrap in {}
+      const trimmedText = cleanText.trimStart();
+      if (trimmedText.startsWith("\"") && trimmedText.includes("\"platformVersions\"")) {
+        cleanText = "{ " + cleanText + " }";
+      }
+
       // Step 2: Try direct parse first (cleanest path)
       try {
         parsed = JSON.parse(cleanText);

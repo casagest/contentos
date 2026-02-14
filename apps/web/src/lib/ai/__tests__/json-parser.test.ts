@@ -14,6 +14,12 @@ export function parseAIJsonResponse(text: string): any {
       cleanText = codeBlockMatch[1].trim();
     }
 
+    // Step 1b: If text starts with a key (no outer braces), wrap in {}
+    const trimmedText = cleanText.trimStart();
+    if (trimmedText.startsWith("\"") && trimmedText.includes("\"platformVersions\"")) {
+      cleanText = "{ " + cleanText + " }";
+    }
+
     // Step 2: Try direct parse first (cleanest path)
     try {
       parsed = JSON.parse(cleanText);
@@ -229,6 +235,26 @@ Let me know if you need any adjustments!`;
     const input = "";
     const result = parseAIJsonResponse(input);
     expect(result).toBeNull();
+  });
+
+  it("handles JSON without outer braces (missing {})", () => {
+    const input = `"platformVersions": {
+    "facebook": {
+      "text": "content here..."
+    }
+  }`;
+    const result = parseAIJsonResponse(input);
+    expect(result).toBeTruthy();
+    expect(result.platformVersions).toBeDefined();
+    expect(result.platformVersions.facebook.text).toBe("content here...");
+  });
+
+  it("handles JSON without outer braces inside markdown code block", () => {
+    const input = '```json\n  "platformVersions": {\n    "facebook": {\n      "text": "content here..."\n    }\n  }\n```';
+    const result = parseAIJsonResponse(input);
+    expect(result).toBeTruthy();
+    expect(result.platformVersions).toBeDefined();
+    expect(result.platformVersions.facebook.text).toBe("content here...");
   });
 
   it("handles JSON with newlines and whitespace", () => {
