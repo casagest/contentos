@@ -23,13 +23,36 @@ export function parseAIJsonResponse(text: string): any {
       if (jsonStart !== -1) {
         let depth = 0;
         let jsonEnd = -1;
+        let inString = false;
+        let escapeNext = false;
+        
         for (let i = jsonStart; i < cleanText.length; i++) {
-          if (cleanText[i] === "{") depth++;
-          else if (cleanText[i] === "}") {
-            depth--;
-            if (depth === 0) { jsonEnd = i; break; }
+          const char = cleanText[i];
+          
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escapeNext = true;
+            continue;
+          }
+          
+          if (char === '"') {
+            inString = !inString;
+            continue;
+          }
+          
+          if (!inString) {
+            if (char === "{") depth++;
+            else if (char === "}") {
+              depth--;
+              if (depth === 0) { jsonEnd = i; break; }
+            }
           }
         }
+        
         if (jsonEnd !== -1) {
           parsed = JSON.parse(cleanText.substring(jsonStart, jsonEnd + 1));
         }

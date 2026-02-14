@@ -102,6 +102,8 @@ describe("url-safety (SSRF Guard)", () => {
       expect(r.ok).toBe(false);
     });
 
+    // NOTE: Test skipped due to DNS resolution issues in sandboxed environment (pre-existing)
+    // TODO: Re-enable when environment supports DNS resolution or mock DNS calls
     it.skip("allows public domains", async () => {
       const r = await isUrlSafeForFetch("https://example.com/");
       expect(r.ok).toBe(true);
