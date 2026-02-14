@@ -109,7 +109,10 @@ export async function updateUserName(name: string) {
     return { error: `Eroare la salvare: ${error.message}` };
   }
 
-  revalidatePath("/settings");
+  // NOTE: Do NOT call revalidatePath("/settings") here.
+  // ProfileSection already tracks the name in local state.
+  // revalidatePath remounts ALL client components on the page,
+  // which resets BusinessProfileForm's unsaved state (data loss).
   return { success: true };
 }
 
