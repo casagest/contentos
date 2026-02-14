@@ -19,6 +19,7 @@ supabase/.temp/
 .vercel
 .env*.local
 .pnpm-store/
+package-lock.json
 .claude/settings.local.json
 supabase/supabase/.temp/
 **/.tmp/
