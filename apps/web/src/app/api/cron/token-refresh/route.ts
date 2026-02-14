@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { TikTokAdapter } from "@contentos/content-engine/platforms/tiktok";
 import { LinkedInAdapter } from "@contentos/content-engine/platforms/linkedin";
 
@@ -20,10 +21,7 @@ const META_GRAPH_API = "https://graph.facebook.com/v21.0";
 const REFRESH_WINDOW_DAYS = 7;
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

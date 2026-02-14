@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import {
   logOutcomeForPost,
   refreshCreativeMemoryFromPost,
@@ -25,10 +26,7 @@ const SYNC_WINDOW_DAYS = 14;
 const MAX_POSTS_PER_RUN = 100;
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
