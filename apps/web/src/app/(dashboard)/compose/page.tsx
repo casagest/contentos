@@ -661,6 +661,14 @@ export default function ComposePage() {
             </div>
           )}
 
+          {/* Warning banner for deterministic fallback */}
+          {typeof generationMeta?.warning === "string" && generationMeta.warning && (
+            <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3 text-xs text-yellow-400 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <span>{String(generationMeta.warning)}</span>
+            </div>
+          )}
+
           {/* Platform results */}
           {selectedPlatforms.map((platformId) => {
             const platform = platforms.find((p) => p.id === platformId);
@@ -693,6 +701,15 @@ export default function ComposePage() {
                         v{result.selectedVariant}
                       </span>
                     )}
+                    {generationMeta?.mode === "ai" ? (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">
+                        ✨ AI
+                      </span>
+                    ) : generationMeta?.mode === "deterministic" ? (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
+                        ⚡ Template
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     onClick={() => copyToClipboard(result.text, platformId)}

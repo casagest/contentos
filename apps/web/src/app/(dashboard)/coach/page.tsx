@@ -15,6 +15,8 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  mode?: "ai" | "deterministic";
+  warning?: string;
 }
 
 const suggestions = [
@@ -73,6 +75,8 @@ export default function CoachPage() {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: answerText,
+        mode: data.meta?.mode === "ai" ? "ai" : data.meta?.mode === "deterministic" ? "deterministic" : undefined,
+        warning: typeof data.meta?.warning === "string" ? data.meta.warning : undefined,
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
@@ -156,7 +160,25 @@ export default function CoachPage() {
                     : "bg-white/[0.04] border border-white/[0.06] text-gray-300"
                 }`}
               >
+                {msg.role === "assistant" && msg.mode && (
+                  <div className="mb-2">
+                    {msg.mode === "ai" ? (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">
+                        ✨ AI
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
+                        ⚡ Template
+                      </span>
+                    )}
+                  </div>
+                )}
                 {msg.content}
+                {msg.warning && (
+                  <div className="mt-2 pt-2 border-t border-white/[0.06] text-[10px] text-yellow-400/70">
+                    ⚠️ {msg.warning}
+                  </div>
+                )}
               </div>
               {msg.role === "user" && (
                 <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center flex-shrink-0">

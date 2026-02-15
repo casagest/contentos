@@ -17,6 +17,7 @@ import {
 
 const ROUTE_KEY = "coach:v3";
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const ERROR_CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface CoachBody {
   question?: string;
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       response: deterministicPayload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
@@ -270,7 +271,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       response: payload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
@@ -425,7 +426,7 @@ Return ONLY valid JSON with this exact structure:
       model: "template",
       response: payload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({

@@ -17,6 +17,7 @@ import {
 
 const ROUTE_KEY = "score:v3";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const ERROR_CACHE_TTL_MS = 5 * 60 * 1000;
 const VALID_PLATFORMS: Platform[] = ["facebook", "instagram", "tiktok", "youtube"];
 
 interface ScoreBody {
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       response: deterministicPayload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       response: payload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
@@ -344,7 +345,7 @@ Return ONLY valid JSON with this exact structure:
       model: "template",
       response: payload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
