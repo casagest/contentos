@@ -19,12 +19,14 @@ import {
   LogOut,
   ChevronRight,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/dashboard/business", label: "Dashboard", icon: LayoutDashboard },
   { href: "/coach", label: "AI Coach", icon: MessageSquareText },
+  { href: "/create", label: "Creator", icon: Sparkles },
   { href: "/compose", label: "Composer", icon: PenTool },
   { href: "/analyze", label: "Scorer", icon: BarChart3 },
   { href: "/analytics", label: "Analytics", icon: TrendingUp },
