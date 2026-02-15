@@ -3,6 +3,7 @@ import type { Platform, Post } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicCoach } from "@/lib/ai/deterministic";
+import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import {
   buildIntentCacheKey,
   decidePaidAIAccess,
@@ -311,6 +312,8 @@ export async function POST(request: NextRequest) {
           role: "system",
           content: `You are a senior social media strategist and coach. Analyze the user's question in the context of their posting history and provide actionable, data-driven recommendations.${businessContext}
 
+${JSON_FORMAT_RULES}
+
 Return ONLY valid JSON with this exact structure:
 {
   "answer": string,
@@ -323,17 +326,18 @@ Return ONLY valid JSON with this exact structure:
           role: "user",
           content: `${platformContext}${postsContext}${topContext}Question: ${question}`,
         },
+        {
+          role: "assistant",
+          content: "{",
+        },
       ],
       maxTokens: estimatedOutputTokens,
     });
 
-    let parsed;
-    try {
-      const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-    } catch {
-      parsed = null;
-    }
+    // Prepend the opening brace used as assistant prefill
+    aiResult.text = "{" + (aiResult.text || "");
+
+    const parsed = parseAIJson(aiResult.text);
 
     if (!parsed || typeof parsed.answer !== "string") {
       const payload = {

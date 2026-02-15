@@ -1,8 +1,8 @@
-import { jsonrepair } from "jsonrepair";
 import { NextRequest, NextResponse } from "next/server";
 import type { Platform, Language } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
+import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import { buildDeterministicGeneration } from "@/lib/ai/deterministic";
 import {
   type AIObjective,
@@ -554,7 +554,7 @@ ${hashtagInstruction}
 ${emojiInstruction}
 
 ${enhancedVoiceDescription ? `Brand voice & creative brief:\n${enhancedVoiceDescription}\n` : ""}
-CRITICAL: Your response must be RAW JSON only. No markdown. No backticks. No code blocks. No explanation text. Start with { and end with }. Use \\n for line breaks inside text values, never real newlines.
+${JSON_FORMAT_RULES}
 
 JSON structure:
 {
@@ -580,46 +580,10 @@ JSON structure:
       maxTokens: estimatedOutputTokens,
     });
 
-    // Prepend the opening brace that was used as prefill
+    // Prepend the opening brace that was used as assistant prefill
     aiResult.text = "{" + (aiResult.text || "");
 
-    let parsed;
-    let parseError = "";
-    try {
-      let cleanText = aiResult.text || "";
-
-      // Strip markdown code blocks if present
-      const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (codeBlockMatch) {
-        cleanText = codeBlockMatch[1].trim();
-      }
-
-      // Remove BOM
-      cleanText = cleanText.replace(/^\uFEFF/, "");
-
-      // Ensure starts with {
-      cleanText = cleanText.trim();
-      if (!cleanText.startsWith("{")) {
-        cleanText = "{" + cleanText;
-      }
-
-      // NUCLEAR FIX: Replace ALL real newlines with spaces (Claude should use \\n for intentional breaks)
-      cleanText = cleanText.replace(/\r?\n/g, " ").replace(/\r/g, " ");
-
-      // Fix trailing commas
-      cleanText = cleanText.replace(/,\s*([\]}])/g, "$1");
-
-      // Trim after last }
-      const lastBrace = cleanText.lastIndexOf("}");
-      if (lastBrace !== -1) {
-        cleanText = cleanText.substring(0, lastBrace + 1);
-      }
-
-      parsed = JSON.parse(jsonrepair(cleanText));
-    } catch (e) {
-      parseError = e instanceof Error ? e.message : String(e);
-      parsed = null;
-    }
+    const parsed = parseAIJson(aiResult.text);
 
     if (!parsed || !parsed.platformVersions) {
       const payload = {
@@ -633,7 +597,6 @@ JSON structure:
             rawLength: aiResult.text?.length || 0,
             rawFirst500: aiResult.text?.substring(0, 500) || "",
             rawLast200: aiResult.text?.substring(Math.max(0, (aiResult.text?.length || 0) - 200)) || "",
-            parseError,
           },
         },
       };
