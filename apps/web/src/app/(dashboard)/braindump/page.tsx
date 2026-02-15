@@ -609,12 +609,23 @@ export default function BrainDumpPage() {
             <div className="flex items-center gap-2 px-1">
               <Sparkles className="w-4 h-4 text-brand-400" />
               <span className="text-sm font-medium text-brand-300">Continut generat</span>
-              {typeof results.meta?.mode === "string" && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-gray-400">
-                  {results.meta.mode}
+              {results.meta?.mode === "ai" ? (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">
+                  ✨ AI
                 </span>
-              )}
+              ) : results.meta?.mode === "deterministic" ? (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
+                  ⚡ Template
+                </span>
+              ) : null}
             </div>
+
+            {typeof results.meta?.warning === "string" && results.meta.warning && (
+              <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3 text-xs text-yellow-400 flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>{results.meta.warning}</span>
+              </div>
+            )}
 
             {results.platforms.facebook && <FacebookCard data={results.platforms.facebook} />}
             {results.platforms.instagram && <InstagramCard data={results.platforms.instagram} />}

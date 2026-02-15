@@ -24,6 +24,8 @@ interface ScoreResult {
   metrics: { name: string; score: number; weight: number; explanation: string; suggestion?: string; status: "good" | "warning" | "bad" }[];
   summary: string;
   improvements: string[];
+  mode?: "ai" | "deterministic";
+  warning?: string;
 }
 
 export default function AnalyzePage() {
@@ -61,6 +63,8 @@ export default function AnalyzePage() {
           status: m.score >= 70 ? "good" as const : m.score >= 50 ? "warning" as const : "bad" as const,
         })),
         improvements: data.improvements,
+        mode: data.meta?.mode === "ai" ? "ai" : data.meta?.mode === "deterministic" ? "deterministic" : undefined,
+        warning: typeof data.meta?.warning === "string" ? data.meta.warning : undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
@@ -182,7 +186,26 @@ export default function AnalyzePage() {
                     {result.overallScore}/100
                   </span>
                 </p>
+                <div className="mt-2">
+                  {result.mode === "ai" ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">
+                      ✨ AI
+                    </span>
+                  ) : result.mode === "deterministic" ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
+                      ⚡ Template
+                    </span>
+                  ) : null}
+                </div>
               </div>
+
+              {/* Warning */}
+              {result.warning && (
+                <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3 text-xs text-yellow-400 flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <span>{result.warning}</span>
+                </div>
+              )}
 
               {/* Summary */}
               {result.summary && (

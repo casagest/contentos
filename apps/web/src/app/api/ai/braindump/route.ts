@@ -42,6 +42,7 @@ const FETCH_TIMEOUT_MS = 10_000;
 const VALID_PLATFORMS = ["facebook", "instagram", "tiktok", "youtube"] as const;
 const ROUTE_KEY = "braindump:v4";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const ERROR_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type BrainDumpPlatform = (typeof VALID_PLATFORMS)[number];
 type Language = "ro" | "en";
@@ -650,7 +651,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       response: deterministicPayload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
@@ -822,7 +823,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       response: payload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
@@ -880,7 +881,7 @@ export async function POST(request: NextRequest) {
         model: "template",
         response: payload,
         estimatedCostUsd: 0,
-        ttlMs: CACHE_TTL_MS,
+        ttlMs: ERROR_CACHE_TTL_MS,
       });
 
       await logAIUsageEvent({
@@ -925,7 +926,7 @@ export async function POST(request: NextRequest) {
         model: "template",
         response: payload,
         estimatedCostUsd: 0,
-        ttlMs: CACHE_TTL_MS,
+        ttlMs: ERROR_CACHE_TTL_MS,
       });
 
       await logAIUsageEvent({
@@ -1042,7 +1043,7 @@ export async function POST(request: NextRequest) {
       model: "template",
       response: payload,
       estimatedCostUsd: 0,
-      ttlMs: CACHE_TTL_MS,
+      ttlMs: ERROR_CACHE_TTL_MS,
     });
 
     await logAIUsageEvent({
