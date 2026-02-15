@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   MessageSquareText,
   PenTool,
+  Wand2,
   BarChart3,
   CalendarCheck,
   Clock,
@@ -25,13 +26,12 @@ import { useState } from "react";
 const navItems = [
   { href: "/dashboard/business", label: "Dashboard", icon: LayoutDashboard },
   { href: "/coach", label: "AI Coach", icon: MessageSquareText },
-  { href: "/compose", label: "Composer", icon: PenTool },
+  { href: "/create", label: "Creează", icon: Wand2 },
   { href: "/analyze", label: "Scorer", icon: BarChart3 },
   { href: "/analytics", label: "Analytics", icon: TrendingUp },
   { href: "/calendar", label: "Calendar", icon: CalendarCheck },
   { href: "/history", label: "Post History", icon: Clock },
   { href: "/research", label: "Research", icon: Search },
-  { href: "/braindump", label: "Brain Dump", icon: Brain },
   { href: "/inspiration", label: "Inspirație", icon: Lightbulb },
 ];
 

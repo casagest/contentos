@@ -3,6 +3,11 @@ import type { Platform, ContentType, Language } from "@contentos/content-engine"
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicScore } from "@/lib/ai/deterministic";
+import {
+  fetchCognitiveContextV4,
+  trackMemoryAccess,
+} from "@/lib/ai/cognitive-memory";
+import { buildMemoryPromptFragment } from "@/lib/ai/memory-sanitizer";
 import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import {
   buildIntentCacheKey,
@@ -220,6 +225,22 @@ export async function POST(request: NextRequest) {
 
   const startedAt = Date.now();
 
+  // ── Cognitive Memory (NON-FATAL) ──
+  let memoryFragment = "";
+  try {
+    const ctxResult = await fetchCognitiveContextV4({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      platform: platform || null,
+    });
+    if (ctxResult.ok) {
+      memoryFragment = buildMemoryPromptFragment(ctxResult.value, session.organizationId);
+      trackMemoryAccess({ supabase: session.supabase, organizationId: session.organizationId, context: ctxResult.value }).catch(() => {});
+    }
+  } catch {
+    // Silent
+  }
+
   try {
     const aiResult = await routeAICall({
       task: "score",
@@ -227,6 +248,7 @@ export async function POST(request: NextRequest) {
         {
           role: "system",
           content: `You are a senior social media content analyst. Score the following ${platform} ${contentType} content on a 0-100 scale. Evaluate: hook strength, clarity, CTA effectiveness, platform fit, emotional resonance, visual description quality, hashtag strategy, content length optimization, and overall engagement potential.${scoreBusinessContext}
+${memoryFragment ? `\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}\n` : ""}
 
 ${JSON_FORMAT_RULES}
 
