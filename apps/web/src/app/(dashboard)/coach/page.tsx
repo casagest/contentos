@@ -53,10 +53,16 @@ export default function CoachPage() {
     setIsLoading(true);
 
     try {
+      // Send last 10 messages as conversation history for contextual coaching
+      const history = messages.slice(-10).map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.content,
+      }));
+
       const response = await fetch("/api/ai/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: text.trim() }),
+        body: JSON.stringify({ question: text.trim(), conversationHistory: history }),
       });
 
       if (!response.ok) {

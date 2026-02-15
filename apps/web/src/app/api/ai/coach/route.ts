@@ -22,6 +22,7 @@ const ERROR_CACHE_TTL_MS = 5 * 60 * 1000;
 interface CoachBody {
   question?: string;
   platform?: Platform;
+  conversationHistory?: Array<{ role: string; content: string }>;
 }
 
 function averageEngagement(posts: Post[]): number {
@@ -77,6 +78,18 @@ export async function POST(request: NextRequest) {
   const question = body.question?.trim() || "";
   if (!question) {
     return NextResponse.json({ error: "Intrebarea nu poate fi goala." }, { status: 400 });
+  }
+
+  // Extract conversation history from UI (last 10 messages for context)
+  const rawHistory = Array.isArray(body.conversationHistory) ? body.conversationHistory : [];
+  const conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+  for (const msg of rawHistory.slice(-10)) {
+    if (msg && typeof msg.content === "string" && msg.content.trim()) {
+      conversationHistory.push({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content.substring(0, 2000),
+      });
+    }
   }
 
   let recentPosts: Post[] = [];
@@ -306,12 +319,11 @@ export async function POST(request: NextRequest) {
       ? `Top performing posts (platform|engagement|content):\n${topPostsContext}\n\n`
       : "";
 
-    const aiResult = await routeAICall({
-      task: "coach",
-      messages: [
-        {
-          role: "system",
-          content: `You are a senior social media strategist and coach. Analyze the user's question in the context of their posting history and provide actionable, data-driven recommendations.${businessContext}
+    // Build messages: system → conversation history → current question → assistant prefill
+    const aiMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      {
+        role: "system",
+        content: `You are a senior social media strategist and coach. Analyze the user's question in the context of their posting history and provide actionable, data-driven recommendations.${businessContext}
 
 ${JSON_FORMAT_RULES}
 
@@ -322,16 +334,26 @@ Return ONLY valid JSON with this exact structure:
   "actionItems": [{ "task": string, "priority": "high"|"medium"|"low" }],
   "metrics": { "currentAvgEngagement": number, "projectedImprovement": string }
 }`,
-        },
-        {
-          role: "user",
-          content: `${platformContext}${postsContext}${topContext}Question: ${question}`,
-        },
-        {
-          role: "assistant",
-          content: "{",
-        },
-      ],
+      },
+    ];
+
+    // Add conversation history for multi-turn context
+    for (const msg of conversationHistory) {
+      aiMessages.push({ role: msg.role, content: msg.content });
+    }
+
+    // Current question with context
+    aiMessages.push({
+      role: "user",
+      content: `${platformContext}${postsContext}${topContext}Question: ${question}`,
+    });
+
+    // Assistant prefill for JSON output
+    aiMessages.push({ role: "assistant", content: "{" });
+
+    const aiResult = await routeAICall({
+      task: "coach",
+      messages: aiMessages,
       maxTokens: estimatedOutputTokens,
     });
 
