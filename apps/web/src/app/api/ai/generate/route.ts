@@ -20,6 +20,14 @@ import {
 import { selectBestVariantWithBandit } from "@/lib/ai/outcome-learning";
 import { classifyIntent } from "@/lib/ai/intent-classifier";
 import {
+  fetchCognitiveContextV4,
+  assessContextQuality,
+  trackMemoryAccess,
+} from "@/lib/ai/cognitive-memory";
+import {
+  buildMemoryPromptFragment,
+} from "@/lib/ai/memory-sanitizer";
+import {
   loadCreativeInsights,
   generateCreativeAngles,
   buildCreativeBrief,
@@ -537,6 +545,26 @@ export async function POST(request: NextRequest) {
 
   const startedAt = Date.now();
 
+  // ── Cognitive Memory (NON-FATAL: failure doesn't block generation) ──
+  let memoryFragment = "";
+  let cognitiveTemperature: number | null = null;
+  try {
+    const ctxResult = await fetchCognitiveContextV4({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      platform: platforms[0] || null,
+    });
+    if (ctxResult.ok) {
+      const ctx = ctxResult.value;
+      memoryFragment = buildMemoryPromptFragment(ctx, session.organizationId);
+      cognitiveTemperature = ctx.metacognitive.calculated_temperature ?? null;
+      // Fire-and-forget: track which memories were accessed
+      trackMemoryAccess({ supabase: session.supabase, organizationId: session.organizationId, context: ctx }).catch(() => {});
+    }
+  } catch {
+    // Silent: cognitive memory is non-critical
+  }
+
   try {
     const platformsList = platforms.join(", ");
     const hashtagInstruction = includeHashtags ? "Include relevant hashtags." : "Do NOT include hashtags.";
@@ -555,6 +583,7 @@ ${hashtagInstruction}
 ${emojiInstruction}
 
 ${enhancedVoiceDescription ? `Brand voice & creative brief:\n${enhancedVoiceDescription}\n` : ""}
+${memoryFragment ? `Cognitive memory (past performance, patterns, strategies):\n${memoryFragment}\n` : ""}
 ${JSON_FORMAT_RULES}
 
 JSON structure:
@@ -671,6 +700,33 @@ JSON structure:
         roiGate: roiDecision,
       },
     });
+
+    // ── Record episodic memory (fire-and-forget) ──
+    void Promise.resolve(
+      session.supabase
+        .schema("contentos")
+        .from("episodic_memory")
+        .insert({
+          organization_id: session.organizationId,
+          event_type: "post_success",
+          content: {
+            summary: `Generated ${platforms.join(", ")} content: "${input.slice(0, 100)}"`,
+            text: input.slice(0, 500),
+            platforms,
+            tone,
+            objective,
+            score: averageScore(responsePayload.platformVersions || {}),
+          },
+          context: {
+            platform: platforms[0],
+            route: "generate",
+            provider: responsePayload.meta?.provider,
+            model: responsePayload.meta?.model,
+          },
+          importance_score: 0.6,
+          decay_rate: 0.05,
+        })
+    ).catch(() => {});
 
     return NextResponse.json(responsePayload);
   } catch (error) {
