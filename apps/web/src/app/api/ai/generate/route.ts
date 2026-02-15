@@ -708,7 +708,7 @@ JSON structure:
         .from("episodic_memory")
         .insert({
           organization_id: session.organizationId,
-          event_type: "post_success",
+          event_type: "content_created",
           content: {
             summary: `Generated ${platforms.join(", ")} content: "${input.slice(0, 100)}"`,
             text: input.slice(0, 500),
