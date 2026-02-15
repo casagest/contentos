@@ -66,6 +66,7 @@ import { getIndustryConfig, INDUSTRY_CONFIGS } from "@/lib/dashboard/industry-co
 import type { IndustryConfig, KpiConfig, FunnelStage } from "@/lib/dashboard/industry-config";
 import type { BusinessProfile, Industry } from "@contentos/database";
 import { saveKpiValues, quickSetIndustry } from "./actions";
+import MemoryHealth from "@/app/(dashboard)/components/memory-health";
 
 interface SocialAccountSummary {
   id: string;
@@ -1088,6 +1089,9 @@ export default function BusinessDashboardPage() {
           />
         ))}
       </div>
+
+      {/* AI Memory Health */}
+      <MemoryHealth />
 
       {/* Engagement Overview */}
       <EngagementOverview data={analyticsData} />
