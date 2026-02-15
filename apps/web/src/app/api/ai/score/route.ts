@@ -49,6 +49,30 @@ export async function POST(request: NextRequest) {
   const contentType = (body.contentType || "text") as ContentType;
   const language = (body.language || "ro") as Language;
 
+  // Load business profile for context-aware scoring
+  let scoreBusinessContext = "";
+  const { data: orgData } = await session.supabase
+    .from("organizations")
+    .select("settings")
+    .eq("id", session.organizationId)
+    .single();
+
+  const orgSettings = orgData?.settings as Record<string, unknown> | null;
+  if (orgSettings?.businessProfile) {
+    const bp = orgSettings.businessProfile as Record<string, unknown>;
+    const bpName = typeof bp.name === "string" ? bp.name : "";
+    if (bpName) {
+      const lines = [`Business context for scoring:`];
+      lines.push(`- Business: ${bpName}`);
+      if (typeof bp.industry === "string") lines.push(`- Industry: ${bp.industry}`);
+      if (typeof bp.targetAudience === "string" && bp.targetAudience) lines.push(`- Target audience: ${bp.targetAudience}`);
+      const tones = Array.isArray(bp.tones) ? bp.tones.filter((t): t is string => typeof t === "string") : [];
+      if (tones.length) lines.push(`- Tones: ${tones.join(", ")}`);
+      if (typeof bp.usps === "string" && bp.usps.trim()) lines.push(`- USPs: ${bp.usps}`);
+      scoreBusinessContext = "\n\n" + lines.join("\n");
+    }
+  }
+
   const deterministic = buildDeterministicScore({ content, platform, contentType });
 
   const intentHash = buildIntentCacheKey(ROUTE_KEY, {
@@ -200,7 +224,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are a senior social media content analyst. Score the following ${platform} ${contentType} content on a 0-100 scale. Evaluate: hook strength, clarity, CTA effectiveness, platform fit, emotional resonance, visual description quality, hashtag strategy, content length optimization, and overall engagement potential.
+          content: `You are a senior social media content analyst. Score the following ${platform} ${contentType} content on a 0-100 scale. Evaluate: hook strength, clarity, CTA effectiveness, platform fit, emotional resonance, visual description quality, hashtag strategy, content length optimization, and overall engagement potential.${scoreBusinessContext}
 
 Return ONLY valid JSON with this exact structure:
 {
