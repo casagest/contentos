@@ -23,3 +23,6 @@ package-lock.json
 .claude/settings.local.json
 supabase/supabase/.temp/
 **/.tmp/
+
+# Pi/Ralph working files
+.ralph/
