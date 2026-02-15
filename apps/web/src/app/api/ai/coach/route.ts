@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
     estimateTokensFromText(recentPostsContext) +
     estimateTokensFromText(topPostsContext) +
     380;
-  const estimatedOutputTokens = 900;
+  const estimatedOutputTokens = 2048;
   const estimatedCostUsd = estimateAnthropicCostUsd(
     shouldEscalate ? "claude-sonnet-4-5-20250929" : "claude-3-5-haiku-latest",
     estimatedInputTokens,
