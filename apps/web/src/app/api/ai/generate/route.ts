@@ -268,7 +268,11 @@ export async function POST(request: NextRequest) {
       industry: typeof bp.industry === "string" ? bp.industry : undefined,
       tones: Array.isArray(bp.tones) ? bp.tones.filter((t): t is string => typeof t === "string") : undefined,
       targetAudience: typeof bp.targetAudience === "string" ? bp.targetAudience : undefined,
-      usps: Array.isArray(bp.usps) ? bp.usps.filter((u): u is string => typeof u === "string") : undefined,
+      usps: Array.isArray(bp.usps)
+        ? bp.usps.filter((u): u is string => typeof u === "string")
+        : typeof bp.usps === "string" && bp.usps.trim()
+          ? bp.usps.split(/[,;\n]+/).map((s: string) => s.trim()).filter(Boolean)
+          : undefined,
     };
   }
 
@@ -384,14 +388,30 @@ export async function POST(request: NextRequest) {
   // Reuse org settings already loaded for creative brief
   const settings = orgSettings;
   let userVoiceDescription: string | undefined;
+  let brandGuidelinesBlock = "";
   if (settings?.businessProfile) {
-    const profile = settings.businessProfile as { description?: string };
-    userVoiceDescription = profile.description;
+    const profile = settings.businessProfile as Record<string, unknown>;
+    userVoiceDescription = typeof profile.description === "string" ? profile.description : undefined;
+
+    const avoidPhrases = typeof profile.avoidPhrases === "string" ? profile.avoidPhrases.trim() : "";
+    const preferredPhrases = typeof profile.preferredPhrases === "string" ? profile.preferredPhrases.trim() : "";
+    const compliance = Array.isArray(profile.compliance)
+      ? profile.compliance.filter((c): c is string => typeof c === "string").join(", ")
+      : typeof profile.compliance === "string" ? profile.compliance : "";
+    const bpLanguage = typeof profile.language === "string" ? profile.language : "";
+
+    const lines: string[] = [];
+    if (avoidPhrases) lines.push(`Fraze de EVITAT (nu folosi niciodata): ${avoidPhrases}`);
+    if (preferredPhrases) lines.push(`Fraze PREFERATE (foloseste cand e relevant): ${preferredPhrases}`);
+    if (compliance) lines.push(`Reguli de conformitate: ${compliance}`);
+    if (bpLanguage) lines.push(`Limba continutului: ${bpLanguage === "ro" ? "Romana" : bpLanguage}`);
+    if (lines.length) brandGuidelinesBlock = "\n" + lines.join("\n");
   }
 
   // Combine voice description with creative brief for genius-level output
   const enhancedVoiceDescription = [
     userVoiceDescription || "",
+    brandGuidelinesBlock,
     "",
     creativeBrief.creativeBriefPrompt,
   ].filter(Boolean).join("\n");
