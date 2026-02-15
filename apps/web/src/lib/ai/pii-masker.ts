@@ -232,7 +232,7 @@ export function maskContextPII(
 
   const maskedEpisodic = context.episodic.map((e) => ({
     ...e,
-    summary: track(maskPII(e.summary, opts)),
+    summary: track(maskPII(e.summary ?? "", opts)),
   }));
 
   const maskedSemantic = context.semantic.map((s) => ({

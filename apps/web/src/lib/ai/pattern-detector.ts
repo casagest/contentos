@@ -68,13 +68,9 @@ export async function detectFrequencyPatterns(params: {
 
   let query = supabase
     .from("episodic_memory")
-    .select("event_type, platform, importance, created_at")
+    .select("event_type, context, importance_score, created_at")
     .eq("organization_id", organizationId)
     .gte("created_at", sinceIso);
-
-  if (params.platform) {
-    query = query.eq("platform", params.platform);
-  }
 
   const { data, error } = await query;
 
@@ -95,9 +91,16 @@ export async function detectFrequencyPatterns(params: {
   >();
 
   for (const row of data) {
-    const key = `${row.event_type}::${row.platform ?? "all"}`;
+    const rowPlatform = typeof row.context === "object" && row.context !== null
+      ? (row.context as Record<string, unknown>).platform as string | null
+      : null;
+
+    // Filter by platform if specified
+    if (params.platform && rowPlatform && rowPlatform !== params.platform) continue;
+
+    const key = `${row.event_type}::${rowPlatform ?? "all"}`;
     const existing = groups.get(key);
-    const importance = Number(row.importance ?? 0.5);
+    const importance = Number(row.importance_score ?? 0.5);
 
     if (existing) {
       existing.count++;
@@ -106,7 +109,7 @@ export async function detectFrequencyPatterns(params: {
       groups.set(key, {
         count: 1,
         totalImportance: importance,
-        platform: row.platform ?? null,
+        platform: rowPlatform ?? null,
       });
     }
   }
@@ -347,7 +350,7 @@ export async function detectLLMPatterns(params: {
     .slice(0, 50) // Cap to prevent excessive token usage
     .map(
       (e, i) =>
-        `${i + 1}. [${e.event_type}${e.platform ? `/${e.platform}` : ""}] ${e.summary}`
+        `${i + 1}. [${e.event_type}${e.platform || (e.context as Record<string, unknown>)?.platform ? `/${e.platform || (e.context as Record<string, unknown>)?.platform}` : ""}] ${e.summary || (typeof e.content === "object" ? (e.content as Record<string, unknown>)?.summary ?? (e.content as Record<string, unknown>)?.text ?? "" : e.content ?? "")}`
     )
     .join("\n");
 
@@ -563,7 +566,7 @@ export async function runDetectionPipeline(params: {
   const sinceIso = new Date(Date.now() - 30 * 86_400_000).toISOString();
   const { data: recentEpisodic } = await supabase
     .from("episodic_memory")
-    .select("id, summary, event_type, platform, importance, created_at, strength, recall_count, ease_factor, half_life_days, composite_score")
+    .select("id, content, context, event_type, importance_score, created_at, strength, recall_count, ease_factor, half_life_days")
     .eq("organization_id", organizationId)
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false })

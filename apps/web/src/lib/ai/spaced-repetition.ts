@@ -251,7 +251,7 @@ export async function getReviewQueue(params: {
 
   let query = supabase
     .from("episodic_memory")
-    .select("id, summary, strength, last_recalled_at, next_review_at")
+    .select("id, content, strength, last_recalled_at, next_review_at")
     .eq("organization_id", organizationId)
     .not("next_review_at", "is", null)
     .lte("next_review_at", new Date().toISOString())
@@ -283,7 +283,7 @@ export async function getReviewQueue(params: {
 
     return {
       id: row.id,
-      summary: row.summary,
+      summary: row.content?.summary ?? row.content?.text ?? JSON.stringify(row.content).slice(0, 200),
       strength: row.strength ?? DEFAULT_STRENGTH,
       daysSinceReview: Math.round(daysSinceReview * 100) / 100,
       nextReviewAt: row.next_review_at,

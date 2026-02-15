@@ -55,10 +55,16 @@ export type EventType = (typeof EVENT_TYPES)[number];
 
 export const EpisodicEntrySchema = z.object({
   id: z.string().uuid().optional(),
-  summary: z.string(),
+  // RPC returns "summary" (aliased from content jsonb), DB has "content" (jsonb)
+  summary: z.string().optional(),
+  content: z.union([z.string(), z.record(z.unknown())]).optional(),
   event_type: z.string(),
+  // RPC returns "platform" (aliased from context->>'platform'), DB has "context" (jsonb)
   platform: z.string().nullable().optional(),
+  context: z.record(z.unknown()).optional(),
+  // RPC returns "importance" (aliased from importance_score), DB has "importance_score"
   importance: z.number().min(0).max(1).optional(),
+  importance_score: z.number().min(0).max(1).optional(),
   created_at: z.string().optional(),
   current_weight: z.number().optional(),
 });
