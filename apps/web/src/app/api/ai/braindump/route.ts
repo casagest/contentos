@@ -1050,7 +1050,7 @@ export async function POST(request: NextRequest) {
         .from("episodic_memory")
         .insert({
           organization_id: session.organizationId,
-          event_type: "post_success",
+          event_type: "content_created",
           content: {
             summary: `Brain dump content for ${requestedPlatforms.join(", ")}: "${rawInput.slice(0, 100)}"`,
             text: rawInput.slice(0, 500),
