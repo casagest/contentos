@@ -3,6 +3,11 @@ import type { Platform, Post } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicCoach } from "@/lib/ai/deterministic";
+import {
+  fetchCognitiveContextV4,
+  trackMemoryAccess,
+} from "@/lib/ai/cognitive-memory";
+import { buildMemoryPromptFragment } from "@/lib/ai/memory-sanitizer";
 import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import {
   buildIntentCacheKey,
@@ -310,6 +315,22 @@ export async function POST(request: NextRequest) {
 
   const startedAt = Date.now();
 
+  // ── Cognitive Memory (NON-FATAL) ──
+  let memoryFragment = "";
+  try {
+    const ctxResult = await fetchCognitiveContextV4({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      platform: body.platform || null,
+    });
+    if (ctxResult.ok) {
+      memoryFragment = buildMemoryPromptFragment(ctxResult.value, session.organizationId);
+      trackMemoryAccess({ supabase: session.supabase, organizationId: session.organizationId, context: ctxResult.value }).catch(() => {});
+    }
+  } catch {
+    // Silent
+  }
+
   try {
     const platformContext = body.platform ? `Platform focus: ${body.platform}\n\n` : "";
     const postsContext = recentPostsContext
@@ -324,7 +345,7 @@ export async function POST(request: NextRequest) {
       {
         role: "system",
         content: `You are a senior social media strategist and coach. Analyze the user's question in the context of their posting history and provide actionable, data-driven recommendations.${businessContext}
-
+${memoryFragment ? `\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}\n` : ""}
 ${JSON_FORMAT_RULES}
 
 Return ONLY valid JSON with this exact structure:
