@@ -54,15 +54,20 @@ export default function AnalyzePage() {
 
       const data = await response.json();
 
+      const metrics = Array.isArray(data.metrics) ? data.metrics : [];
       setResult({
-        overallScore: data.overallScore,
-        grade: data.grade,
-        summary: data.summary,
-        metrics: data.metrics.map((m: { name: string; score: number; weight: number; explanation: string; suggestion?: string }) => ({
-          ...m,
-          status: m.score >= 70 ? "good" as const : m.score >= 50 ? "warning" as const : "bad" as const,
+        overallScore: data.overallScore ?? 0,
+        grade: data.grade ?? "C",
+        summary: data.summary ?? "",
+        metrics: metrics.map((m: { name?: string; score?: number; weight?: number; explanation?: string; feedback?: string; suggestion?: string }) => ({
+          name: m.name ?? "Unknown",
+          score: m.score ?? 0,
+          weight: m.weight ?? 1,
+          explanation: m.explanation ?? m.feedback ?? "",
+          suggestion: m.suggestion,
+          status: (m.score ?? 0) >= 70 ? "good" as const : (m.score ?? 0) >= 50 ? "warning" as const : "bad" as const,
         })),
-        improvements: data.improvements,
+        improvements: Array.isArray(data.improvements) ? data.improvements : [],
         mode: data.meta?.mode === "ai" ? "ai" : data.meta?.mode === "deterministic" ? "deterministic" : undefined,
         warning: typeof data.meta?.warning === "string" ? data.meta.warning : undefined,
       });
