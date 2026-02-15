@@ -4,6 +4,7 @@ import { scrapeUrlContent } from "@/lib/scrape";
 import { expiresAtIso, hashUrl, SCRAPE_CACHE_TTL_MS } from "@/lib/url-cache";
 import { routeAICall, resolveEffectiveProvider } from "@/lib/ai/multi-model-router";
 import { buildDeterministicBrainDump } from "@/lib/ai/deterministic";
+import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import {
   type AIObjective,
   buildIntentCacheKey,
@@ -104,46 +105,6 @@ function estimateMaxTokens(params: {
     contextBudget;
 
   return Math.max(2000, Math.min(8192, raw));
-}
-
-function parseModelJson(rawText: string): Record<string, unknown> {
-  let text = rawText.trim();
-
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]) {
-    text = fenced[1].trim();
-  }
-
-  try {
-    return JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    // continue
-  }
-
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    const candidate = text.slice(firstBrace, lastBrace + 1);
-    try {
-      return JSON.parse(candidate) as Record<string, unknown>;
-    } catch {
-      // continue
-    }
-
-    // repair by closing unbalanced braces/brackets
-    let repaired = candidate;
-    const openBraces = (repaired.match(/\{/g) || []).length;
-    const closeBraces = (repaired.match(/\}/g) || []).length;
-    const openBrackets = (repaired.match(/\[/g) || []).length;
-    const closeBrackets = (repaired.match(/\]/g) || []).length;
-
-    for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += "]";
-    for (let i = 0; i < openBraces - closeBraces; i++) repaired += "}";
-
-    return JSON.parse(repaired) as Record<string, unknown>;
-  }
-
-  throw new Error("No JSON object found in model response.");
 }
 
 function sanitizePlatforms(
@@ -263,6 +224,8 @@ function buildSystemPrompt(params: {
     "3) Generate only requested platforms.",
     "4) Keep hooks practical and clear. Include CTA and platform-specific hashtags/tags.",
     "5) If medical/dental context exists, avoid absolute claims and guaranteed outcomes.",
+    "",
+    JSON_FORMAT_RULES,
     "",
     "JSON_SCHEMA:",
     "{",
@@ -894,9 +857,13 @@ export async function POST(request: NextRequest) {
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
+        { role: "assistant", content: "{" },
       ],
       maxTokens,
     });
+
+    // Prepend the opening brace used as assistant prefill
+    aiResult.text = "{" + (aiResult.text || "");
     const modelText = aiResult.text;
     const resolvedModel = aiResult.model;
 
@@ -942,8 +909,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(payload);
     }
 
-    const parsed = parseModelJson(modelText);
-    const normalizedPlatforms = sanitizePlatforms(parsed, requestedPlatforms);
+    const parsed = parseAIJson(modelText);
+    const normalizedPlatforms = parsed ? sanitizePlatforms(parsed, requestedPlatforms) : {};
 
     if (!Object.keys(normalizedPlatforms).length) {
       const payload = deterministicFallback("Model response did not match schema. Deterministic fallback used.");

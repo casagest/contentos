@@ -3,6 +3,7 @@ import type { Platform, ContentType, Language } from "@contentos/content-engine"
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicScore } from "@/lib/ai/deterministic";
+import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import {
   buildIntentCacheKey,
   decidePaidAIAccess,
@@ -226,6 +227,8 @@ export async function POST(request: NextRequest) {
           role: "system",
           content: `You are a senior social media content analyst. Score the following ${platform} ${contentType} content on a 0-100 scale. Evaluate: hook strength, clarity, CTA effectiveness, platform fit, emotional resonance, visual description quality, hashtag strategy, content length optimization, and overall engagement potential.${scoreBusinessContext}
 
+${JSON_FORMAT_RULES}
+
 Return ONLY valid JSON with this exact structure:
 {
   "overallScore": number,
@@ -240,17 +243,18 @@ Return ONLY valid JSON with this exact structure:
           role: "user",
           content: `Language: ${language}\nPlatform: ${platform}\nContent type: ${contentType}\n\nContent:\n${content}`,
         },
+        {
+          role: "assistant",
+          content: "{",
+        },
       ],
       maxTokens: estimatedOutputTokens,
     });
 
-    let parsed;
-    try {
-      const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-    } catch {
-      parsed = null;
-    }
+    // Prepend the opening brace used as assistant prefill
+    aiResult.text = "{" + (aiResult.text || "");
+
+    const parsed = parseAIJson(aiResult.text);
 
     // Fallback to deterministic if JSON parsing fails
     if (!parsed || typeof parsed.overallScore !== "number") {
