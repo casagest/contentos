@@ -24,6 +24,11 @@ import {
   type IntentClassification,
 } from "@/lib/ai/intent-classifier";
 import {
+  fetchCognitiveContextV4,
+  trackMemoryAccess,
+} from "@/lib/ai/cognitive-memory";
+import { buildMemoryPromptFragment } from "@/lib/ai/memory-sanitizer";
+import {
   processBrainDumpInput,
   buildBrainDumpAnswerSystemPrompt,
   buildEnrichedGenerationPrompt,
@@ -852,11 +857,31 @@ export async function POST(request: NextRequest) {
 
   const startedAt = Date.now();
 
+  // ── Cognitive Memory (NON-FATAL) ──
+  let memoryFragment = "";
+  try {
+    const ctxResult = await fetchCognitiveContextV4({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      platform: requestedPlatforms[0] || null,
+    });
+    if (ctxResult.ok) {
+      memoryFragment = buildMemoryPromptFragment(ctxResult.value, session.organizationId);
+      trackMemoryAccess({ supabase: session.supabase, organizationId: session.organizationId, context: ctxResult.value }).catch(() => {});
+    }
+  } catch {
+    // Silent: cognitive memory is non-critical
+  }
+
+  const enrichedSystemPrompt = memoryFragment
+    ? `${systemPrompt}\n\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}`
+    : systemPrompt;
+
   try {
     const aiResult = await routeAICall({
       task: "braindump",
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: enrichedSystemPrompt },
         { role: "user", content: userMessage },
         { role: "assistant", content: "{" },
       ],
@@ -1017,6 +1042,31 @@ export async function POST(request: NextRequest) {
         roiGate: roiDecision,
       },
     });
+
+    // ── Record episodic memory (fire-and-forget) ──
+    void Promise.resolve(
+      session.supabase
+        .schema("contentos")
+        .from("episodic_memory")
+        .insert({
+          organization_id: session.organizationId,
+          event_type: "post_success",
+          content: {
+            summary: `Brain dump content for ${requestedPlatforms.join(", ")}: "${rawInput.slice(0, 100)}"`,
+            text: rawInput.slice(0, 500),
+            platforms: requestedPlatforms,
+            objective: body.objective,
+          },
+          context: {
+            platform: requestedPlatforms[0],
+            route: "braindump",
+            provider: responsePayload.meta?.provider,
+            model: responsePayload.meta?.model,
+          },
+          importance_score: 0.6,
+          decay_rate: 0.05,
+        })
+    ).catch(() => {});
 
     return NextResponse.json(responsePayload);
   } catch (error) {
