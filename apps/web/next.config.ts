@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
+  // Performance optimizations
+  experimental: {
+    // Optimize package imports — only bundle what's actually used
+    optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
+  },
+  // Compress responses
+  compress: true,
+  // PoweredBy header is noise
+  poweredByHeader: false,
 };
 
 export default nextConfig;

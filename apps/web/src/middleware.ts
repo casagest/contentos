@@ -1,7 +1,45 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Paths that need NO auth check at all (public pages, completely skip Supabase)
+const PUBLIC_PATHS = ["/login", "/register", "/reset-password", "/privacy", "/terms", "/gdpr"];
+
+// Protected paths that redirect to login if not authenticated
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/coach",
+  "/compose",
+  "/analyze",
+  "/analytics",
+  "/calendar",
+  "/history",
+  "/research",
+  "/braindump",
+  "/inspiration",
+  "/settings",
+  "/onboarding",
+  "/create",
+];
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Fast path: skip auth entirely for public pages, API, and assets
+  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isApi = pathname.startsWith("/api/");
+  if (isPublic || isApi) {
+    return NextResponse.next();
+  }
+
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+  const isLandingPage = pathname === "/";
+
+  // If neither protected nor landing, skip auth
+  if (!isProtected && !isLandingPage) {
+    return NextResponse.next();
+  }
+
+  // Only now create Supabase client and check auth
   const supabaseResponse = NextResponse.next({
     request: { headers: request.headers },
   });
@@ -14,7 +52,13 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+        setAll(
+          cookiesToSet: {
+            name: string;
+            value: string;
+            options?: Record<string, unknown>;
+          }[]
+        ) {
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options as never)
           );
@@ -28,45 +72,15 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protected routes — redirect to login if not authenticated
-  const protectedPaths = [
-    "/dashboard",
-    "/coach",
-    "/compose",
-    "/analyze",
-    "/analytics",
-    "/calendar",
-    "/history",
-    "/research",
-    "/braindump",
-    "/inspiration",
-    "/settings",
-    "/onboarding",
-  ];
-  const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // Redirect authenticated users away from auth pages
-  const authPaths = ["/login", "/register", "/reset-password"];
-  const isAuthPage = authPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (isAuthPage && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
   // Redirect authenticated users from landing page to dashboard
-  if (request.nextUrl.pathname === "/" && user) {
+  if (isLandingPage && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
