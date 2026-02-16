@@ -1,4 +1,4 @@
-﻿import { isUrlSafeForFetch, safeFetch } from "@/lib/url-safety";
+import { isUrlSafeForFetch, safeFetch } from "@/lib/url-safety";
 
 export type ScrapeSource = "firecrawl" | "fallback";
 
@@ -86,6 +86,33 @@ function stripHtmlToText(html: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Clean up Firecrawl markdown output.
+ * Even with onlyMainContent:true, Firecrawl sometimes returns JS snippets,
+ * cookie banners, HTML tags, and other noise. This function strips them out.
+ */
+function cleanMarkdownContent(md: string): string {
+  let text = md;
+  // Remove inline HTML tags that leak through markdown
+  text = text.replace(/<script[\s\S]*?<\/script>/gi, "");
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, "");
+  text = text.replace(/<[^>]+>/g, "");
+  // Remove JS-like code blocks (var, function, const, let, document., window.)
+  text = text.replace(/```[\s\S]*?```/g, "");
+  text = text.replace(/\b(var|let|const|function|document\.|window\.|addEventListener|querySelector|createElement)\b[^.\n]*[;\n]/g, "");
+  // Remove cookie consent / GDPR boilerplate
+  text = text.replace(/(?:accept(?:ă)?|accept all|cookie|gdpr|privacy policy|terms of service)[\s\S]{0,200}(?:accept|reject|close|dismiss|ok|da|nu)\b/gi, "");
+  // Remove URLs that look like asset paths (CSS, JS, images)
+  text = text.replace(/https?:\/\/[^\s]+\.(css|js|woff2?|ttf|eot|svg|ico)\b[^\s]*/g, "");
+  // Remove lines that are mostly special characters (likely code/markup artifacts)
+  text = text.replace(/^[^a-zA-Z\u00C0-\u024F]{20,}$/gm, "");
+  // Collapse excessive blank lines
+  text = text.replace(/\n{4,}/g, "\n\n\n");
+  // Collapse excessive spaces
+  text = text.replace(/[ \t]{3,}/g, " ");
+  return text.trim();
+}
+
 function parseFirecrawlPayload(
   url: string,
   payload: unknown,
@@ -106,7 +133,8 @@ function parseFirecrawlPayload(
     asString(root.markdown) ??
     "";
 
-  const content = markdown.trim().slice(0, maxChars);
+  const cleaned = cleanMarkdownContent(markdown);
+  const content = cleaned.slice(0, maxChars);
   if (!content) return null;
 
   return {
