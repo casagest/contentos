@@ -16,6 +16,7 @@
 // ============================================================================
 
 import { type CognitiveError, type Result, Ok, Err } from "./types";
+import { estimateAnthropicCostUsd, logAIUsageEvent } from "./governor";
 
 // ---------------------------------------------------------------------------
 // Configuration (lazy — validated at call time to avoid build-time crashes)
@@ -101,6 +102,14 @@ export interface LLMResponse {
   };
 }
 
+/** Optional governor tracking context — pass to track LLM costs in budget */
+export interface LLMTrackingContext {
+  supabase: unknown;
+  organizationId: string;
+  userId: string;
+  routeKey: string;
+}
+
 /**
  * Call OpenAI with timeout, retry, and circuit breaker.
  *
@@ -114,7 +123,8 @@ export interface LLMResponse {
  *   - Timeout — already waited long enough
  */
 export async function callLLM(
-  request: LLMRequest
+  request: LLMRequest,
+  tracking?: LLMTrackingContext
 ): Promise<Result<LLMResponse, CognitiveError>> {
   // 1) Circuit breaker check
   const circuitCheck = checkCircuit();
@@ -142,6 +152,28 @@ export async function callLLM(
 
     if (result.ok) {
       recordSuccess();
+      // Track usage in governor budget system (non-fatal)
+      if (tracking) {
+        const costUsd = estimateAnthropicCostUsd(
+          request.model,
+          result.value.usage.promptTokens,
+          result.value.usage.completionTokens
+        );
+        logAIUsageEvent({
+          supabase: tracking.supabase as Parameters<typeof logAIUsageEvent>[0]["supabase"],
+          organizationId: tracking.organizationId,
+          userId: tracking.userId,
+          routeKey: tracking.routeKey,
+          intentHash: `llm-${tracking.routeKey}-${Date.now()}`,
+          provider: "openai",
+          model: result.value.model,
+          mode: "ai",
+          inputTokens: result.value.usage.promptTokens,
+          outputTokens: result.value.usage.completionTokens,
+          estimatedCostUsd: costUsd,
+          success: true,
+        }).catch(() => {}); // Non-fatal
+      }
       return result;
     } else {
       lastError = result.error;

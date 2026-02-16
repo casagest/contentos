@@ -119,7 +119,7 @@ export async function POST(request: Request) {
 
   const model = shouldEscalate ? "gpt-4o" : "gpt-4o-mini";
 
-  // 6) Call LLM (with timeout, retry, circuit breaker)
+  // 6) Call LLM (with timeout, retry, circuit breaker + governor tracking)
   const llmResult = await callLLM({
     model,
     temperature,
@@ -128,6 +128,11 @@ export async function POST(request: Request) {
       { role: "user", content: objective },
     ],
     maxTokens: 1000,
+  }, {
+    supabase,
+    organizationId,
+    userId: session.user.id,
+    routeKey: "generate-cognitive",
   });
 
   if (!llmResult.ok) {
