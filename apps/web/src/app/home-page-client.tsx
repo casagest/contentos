@@ -206,21 +206,21 @@ const plans = [
   },
 ];
 
-const testimonials = [
+const earlyAdopters = [
   {
-    name: "Alexandra Popescu",
-    role: "Content Creator, 120K followers",
-    text: "De când folosesc ContentOS, engagement-ul meu pe Instagram a crescut cu 40%. AI-ul chiar înțelege cum vorbim noi, românii.",
+    icon: "🏥",
+    label: "Clinici Dentare",
+    text: "Calendar complet de postări medicale cu conformitate CMSR, Before/After, testimoniale pacienți.",
   },
   {
-    name: "Mihai Ionescu",
-    role: "Marketing Manager, Agenție Digitală",
-    text: "Am redus timpul de creare conținut de la 3 ore la 30 de minute per client. Algorithm Scorer-ul e game changer.",
+    icon: "🍽️",
+    label: "Restaurante",
+    text: "Conținut food photography, meniu zilnic, promoții sezoniere, stories behind-the-scenes.",
   },
   {
-    name: "Dr. Ana Dumitrescu",
-    role: "Medic Dentist, Clinica DentaVita",
-    text: "Nu știam cum să fac conținut pentru clinică. ContentOS mi-a generat un calendar complet de postări, toate pe românește corect.",
+    icon: "💪",
+    label: "Fitness & Beauty",
+    text: "Transformări, workout tips, rutine de beauty, promoții pachete — totul optimizat per platformă.",
   },
 ];
 
@@ -638,41 +638,46 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
+      {/* ── Early Adopters / Use Cases ── */}
       <section className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <FadeIn>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-3 sm:mb-4">
-            Ce spun utilizatorii
+            Pentru cine e ContentOS?
           </h2>
           <p className="text-sm sm:text-base text-gray-400 text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
-            Creatori și business-uri din România care folosesc ContentOS.
+            Orice business din România care vrea conținut profesional fără agenție.
           </p>
         </FadeIn>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          {testimonials.map((t, i) => (
-            <FadeIn key={t.name} delay={i * 120}>
+          {earlyAdopters.map((item, i) => (
+            <FadeIn key={item.label} delay={i * 120}>
               <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 h-full flex flex-col">
                 <div className="flex-1">
-                  <div className="flex gap-1 mb-3 sm:mb-4">
-                    {[...Array(5)].map((_, j) => (
-                      <span key={j} className="text-yellow-400 text-sm">
-                        ★
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-300 leading-relaxed mb-5 sm:mb-6 italic">
-                    &ldquo;{t.text}&rdquo;
+                  <div className="text-3xl mb-3">{item.icon}</div>
+                  <h3 className="text-lg font-semibold text-white mb-2">{item.label}</h3>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    {item.text}
                   </p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.role}</p>
                 </div>
               </div>
             </FadeIn>
           ))}
         </div>
+
+        <FadeIn delay={400}>
+          <div className="mt-10 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-500/20">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
+              <span className="text-sm text-gray-300">
+                Beta deschis — <span className="text-white font-medium">locuri limitate</span>
+              </span>
+            </div>
+          </div>
+        </FadeIn>
       </section>
 
       {/* ── FAQ ── */}
