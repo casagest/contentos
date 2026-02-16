@@ -288,13 +288,15 @@ function KpiCard({
 // ============================================================
 // Funnel Visualization
 // ============================================================
-function FunnelVisualization({ stages }: { stages: FunnelStage[] }) {
+function FunnelVisualization({ stages, counts }: { stages: FunnelStage[]; counts?: Record<string, number> }) {
+  const hasData = counts && Object.values(counts).some(v => v > 0);
   return (
     <div className="space-y-2">
       {stages.map((stage, i) => {
         const Icon = getIcon(stage.icon);
-        const widthPercent = 100 - (i / (stages.length - 1)) * 40;
-        const placeholderCount = Math.max(10 - i * 2, 1);
+        const count = counts?.[stage.id] ?? 0;
+        const maxCount = hasData ? Math.max(...stages.map(s => counts?.[s.id] ?? 0), 1) : 1;
+        const widthPercent = hasData ? Math.max((count / maxCount) * 100, 8) : 100 - (i / (stages.length - 1)) * 40;
 
         return (
           <div key={stage.id} className="group">
@@ -308,7 +310,7 @@ function FunnelVisualization({ stages }: { stages: FunnelStage[] }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-white">{stage.label}</span>
-                  <span className="text-xs text-gray-500">{placeholderCount}</span>
+                  <span className="text-xs text-gray-500">{hasData ? count : "—"}</span>
                 </div>
                 <div className="h-6 bg-white/[0.03] rounded-lg overflow-hidden">
                   <div
@@ -1110,7 +1112,7 @@ export default function BusinessDashboardPage() {
                 <Target className="w-4 h-4 text-brand-400" />
                 Funnel de Conversie
               </h2>
-              <span className="text-[10px] text-gray-600">Estimare</span>
+              <span className="text-[10px] text-gray-600">Conectează conturile pentru date reale</span>
             </div>
             <FunnelVisualization stages={config.funnelStages} />
           </div>
