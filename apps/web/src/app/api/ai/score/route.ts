@@ -76,6 +76,10 @@ export async function POST(request: NextRequest) {
       const tones = Array.isArray(bp.tones) ? bp.tones.filter((t): t is string => typeof t === "string") : [];
       if (tones.length) lines.push(`- Tones: ${tones.join(", ")}`);
       if (typeof bp.usps === "string" && bp.usps.trim()) lines.push(`- USPs: ${bp.usps}`);
+      if (typeof bp.avoidPhrases === "string" && bp.avoidPhrases.trim()) lines.push(`- Phrases to AVOID: ${bp.avoidPhrases}`);
+      if (typeof bp.preferredPhrases === "string" && bp.preferredPhrases.trim()) lines.push(`- Preferred phrases: ${bp.preferredPhrases}`);
+      const compliance = Array.isArray(bp.compliance) ? bp.compliance.filter((c): c is string => typeof c === "string") : [];
+      if (compliance.length) lines.push(`- Compliance rules: ${compliance.join(", ")}`);
       scoreBusinessContext = "\n\n" + lines.join("\n");
     }
   }
