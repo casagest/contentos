@@ -465,6 +465,84 @@ function IndustryTips({ tips }: { tips: string[] }) {
 }
 
 // ============================================================
+// Autopilot Card
+// ============================================================
+function AutopilotCard() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ generated: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/ai/autopilot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postsCount: 7, platforms: ["facebook", "instagram"] }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Eroare la generare.");
+        return;
+      }
+      setResult({ generated: data.generated });
+    } catch {
+      setError("Eroare de rețea. Încearcă din nou.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl bg-gradient-to-br from-brand-600/20 to-purple-600/20 border border-brand-500/20 p-5">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+          <Rocket className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-white">Autopilot</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Generează 7 postări pentru toată săptămâna cu un click
+          </p>
+        </div>
+      </div>
+
+      {result ? (
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <span className="text-sm text-emerald-400">
+            {result.generated} postări generate! Verifică în{" "}
+            <Link href="/calendar" className="underline hover:text-emerald-300">Calendar</Link>.
+          </span>
+        </div>
+      ) : error ? (
+        <p className="text-sm text-red-400 mb-3">{error}</p>
+      ) : null}
+
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        className="w-full py-2.5 rounded-lg bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-400 hover:to-purple-400 text-white text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Generez postările...
+          </>
+        ) : (
+          <>
+            <Sparkles className="w-4 h-4" />
+            Generează Săptămâna
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
 // Quick Actions
 // ============================================================
 function QuickActions() {
@@ -1209,6 +1287,9 @@ export default function BusinessDashboardPage() {
             </h2>
             <IndustryTips tips={config.contentTips} />
           </div>
+
+          {/* Autopilot CTA */}
+          <AutopilotCard />
 
           {/* Quick Actions */}
           <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
