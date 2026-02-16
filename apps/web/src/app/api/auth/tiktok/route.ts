@@ -32,7 +32,8 @@ export async function GET() {
     path: "/",
   });
 
-  const redirectUri = `${(process.env.NEXT_PUBLIC_APP_URL || "").trim()}/api/auth/tiktok/callback`;
+  const { getAppUrl } = await import("@/lib/app-url");
+  const redirectUri = `${getAppUrl()}/api/auth/tiktok/callback`;
 
   const params = new URLSearchParams({
     client_key: clientKey,

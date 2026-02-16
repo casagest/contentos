@@ -63,7 +63,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(settingsUrl("error=config_missing"));
     }
 
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/facebook/callback`;
+    const { getAppUrl } = await import("@/lib/app-url");
+    const redirectUri = `${getAppUrl()}/api/auth/facebook/callback`;
 
     // --- Step 1: Exchange code for short-lived token ---
     const tokenParams = new URLSearchParams({
