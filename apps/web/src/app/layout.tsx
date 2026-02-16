@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
@@ -64,6 +65,7 @@ export default function RootLayout({
       <body className="min-h-screen font-sans">
         {children}
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
