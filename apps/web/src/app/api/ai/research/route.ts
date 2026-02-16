@@ -1,8 +1,8 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { ContentAIService } from "@contentos/content-engine";
+import { NextRequest, NextResponse } from "next/server";
 import type { ContentType, Platform } from "@contentos/content-engine";
 import { getSessionUserWithOrg } from "@/lib/auth";
-import { buildOpenRouterModelChain, resolveAIProvider, resolveAIProviderForTask } from "@/lib/ai/provider";
+import { routeAICall } from "@/lib/ai/multi-model-router";
+import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import { scrapeUrlContent } from "@/lib/scrape";
 import { expiresAtIso, hashUrl, RESEARCH_CACHE_TTL_MS, SCRAPE_CACHE_TTL_MS } from "@/lib/url-cache";
 import {
@@ -440,7 +440,6 @@ export async function POST(request: NextRequest) {
     }
 
     const deterministic = deterministicResearchSnapshot(username, scraped.content);
-    const aiProvider = resolveAIProviderForTask("research");
     const startedAt = Date.now();
 
     let final: ComputedResearchResult = {
@@ -455,44 +454,24 @@ export async function POST(request: NextRequest) {
       warning: undefined as string | undefined,
     };
 
-    const baseResearchModel =
-      aiProvider.mode === "openrouter"
-        ? buildOpenRouterModelChain({
-            quality: "economy",
-            preferred:
-              process.env.AI_MODEL_RESEARCH_ECONOMY?.trim() ||
-              process.env.AI_MODEL_RESEARCH?.trim() ||
-              aiProvider.model,
-          })
-        : process.env.AI_MODEL_RESEARCH_ECONOMY?.trim() ||
-          process.env.AI_MODEL_RESEARCH?.trim() ||
-          aiProvider.model ||
-          "claude-3-5-haiku-latest";
-    const premiumResearchModel =
-      aiProvider.mode === "openrouter"
-        ? buildOpenRouterModelChain({
-            quality: "premium",
-            preferred:
-              process.env.AI_MODEL_RESEARCH_PREMIUM?.trim() ||
-              process.env.AI_MODEL_RESEARCH?.trim() ||
-              aiProvider.model,
-          })
-        : process.env.AI_MODEL_RESEARCH_PREMIUM?.trim() ||
-          aiProvider.model ||
-          "claude-sonnet-4-5-20250929";
-    const shouldEscalate = scraped.content.length > 8500;
-    const model = shouldEscalate ? premiumResearchModel : baseResearchModel;
-
     const estimatedInputTokens =
       estimateTokensFromText(scraped.content.slice(0, 10_000)) +
       estimateTokensFromText(username) +
       380;
     const estimatedOutputTokens = 900;
     const estimatedCostUsd = estimateAnthropicCostUsd(
-      model,
+      "claude-3-5-haiku-latest",
       estimatedInputTokens,
       estimatedOutputTokens
     );
+
+    // Check if any AI provider is available
+    const hasAnyProvider = [
+      process.env.ANTHROPIC_API_KEY,
+      process.env.OPENAI_API_KEY,
+      process.env.GOOGLE_AI_API_KEY,
+      process.env.OPENROUTER_API_KEY,
+    ].some((k) => k?.trim());
 
     const budget = await decidePaidAIAccess({
       supabase: session.supabase,
@@ -500,7 +479,7 @@ export async function POST(request: NextRequest) {
       estimatedAdditionalCostUsd: estimatedCostUsd,
     });
 
-    if (aiProvider.mode === "template" || !aiProvider.apiKey) {
+    if (!hasAnyProvider) {
       final = {
         ...final,
         warning: "AI indisponibil sau dezactivat. Am folosit analiza deterministica.",
@@ -516,7 +495,7 @@ export async function POST(request: NextRequest) {
         model: "template",
         mode: "deterministic",
         success: true,
-        metadata: { reason: "provider_template_mode" },
+        metadata: { reason: "no_provider_available" },
       });
     } else if (!budget.allowed) {
       final = {
@@ -543,28 +522,66 @@ export async function POST(request: NextRequest) {
       });
     } else {
       try {
-        const service = new ContentAIService({
-          apiKey: aiProvider.apiKey,
-          model,
-          provider: aiProvider.mode === "openrouter" ? "openrouter" : "anthropic",
-          baseUrl: aiProvider.baseUrl,
+        const posts = buildSyntheticPosts(scraped.content);
+        const postsSummary = posts
+          .map(
+            (p) =>
+              `[${p.contentType}] Engagement: ${p.engagement}% | ${p.publishedAt.toISOString().split("T")[0]}\n"${p.text.substring(0, 200)}"`
+          )
+          .join("\n\n");
+
+        const aiResult = await routeAICall({
+          task: "research",
+          messages: [
+            {
+              role: "system",
+              content: `Ești expert în analiza conturilor de social media.
+Analizezi contul @${username} pe ${platform}.
+Oferă o analiză detaliată a strategiei lor de conținut.
+
+${JSON_FORMAT_RULES}
+
+Return ONLY valid JSON with this exact structure:
+{
+  "summary": "Rezumat general al contului",
+  "contentStrategy": "Strategia lor principală de conținut",
+  "topTopics": ["topic 1", "topic 2"],
+  "bestPostingTimes": ["Luni 10:00", "Joi 19:00"],
+  "hashtagStrategy": "Cum folosesc hashtag-urile",
+  "toneAnalysis": "Tonul și vocea brand-ului",
+  "recommendations": ["Ce poți învăța de la ei 1", "..."],
+  "whatToLearn": ["Tactică specifică de aplicat 1", "..."]
+}`,
+            },
+            {
+              role: "user",
+              content: `Analizează contul @${username} bazat pe aceste postări:\n\n${postsSummary}`,
+            },
+            {
+              role: "assistant",
+              content: "{",
+            },
+          ],
+          maxTokens: estimatedOutputTokens,
         });
 
-        const posts = buildSyntheticPosts(scraped.content);
-        const aiAnalysis = await service.analyzeAccount({ username, platform, posts });
-        const resolvedModel = service.getLastResolvedModel() || model;
+        // Prepend opening brace from assistant prefill
+        aiResult.text = "{" + (aiResult.text || "");
+        const parsed = parseAIJson(aiResult.text);
 
-        final = {
-          username,
-          platform,
-          summary: aiAnalysis.summary,
-          contentStrategy: aiAnalysis.contentStrategy,
-          topTopics: aiAnalysis.topTopics,
-          bestPostingTimes: aiAnalysis.bestPostingTimes,
-          recommendations: aiAnalysis.recommendations,
-          mode: "ai",
-          warning: undefined,
-        };
+        if (parsed && typeof parsed.summary === "string") {
+          final = {
+            username,
+            platform,
+            summary: parsed.summary,
+            contentStrategy: typeof parsed.contentStrategy === "string" ? parsed.contentStrategy : deterministic.contentStrategy,
+            topTopics: Array.isArray(parsed.topTopics) ? parsed.topTopics.filter((t): t is string => typeof t === "string") : deterministic.topTopics,
+            bestPostingTimes: Array.isArray(parsed.bestPostingTimes) ? parsed.bestPostingTimes.filter((t): t is string => typeof t === "string") : deterministic.bestPostingTimes,
+            recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.filter((r): r is string => typeof r === "string") : deterministic.recommendations,
+            mode: "ai",
+            warning: undefined,
+          };
+        }
 
         await logAIUsageEvent({
           supabase: session.supabase,
@@ -572,18 +589,16 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           routeKey: ROUTE_KEY,
           intentHash,
-          provider: aiProvider.mode,
-          model: resolvedModel,
+          provider: aiResult.provider,
+          model: aiResult.model,
           mode: "ai",
-          inputTokens: estimatedInputTokens,
-          outputTokens: estimatedOutputTokens,
+          inputTokens: aiResult.inputTokens || estimatedInputTokens,
+          outputTokens: aiResult.outputTokens || estimatedOutputTokens,
           estimatedCostUsd,
-          latencyMs: Date.now() - startedAt,
+          latencyMs: aiResult.latencyMs,
           success: true,
           metadata: {
             scrapedSource: scraped.source,
-            escalated: shouldEscalate,
-            modelChain: aiProvider.mode === "openrouter" ? model : undefined,
           },
         });
       } catch (error) {
@@ -609,8 +624,8 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           routeKey: ROUTE_KEY,
           intentHash,
-          provider: aiProvider.mode,
-          model,
+          provider: "router",
+          model: "unknown",
           mode: "ai",
           inputTokens: estimatedInputTokens,
           outputTokens: 0,

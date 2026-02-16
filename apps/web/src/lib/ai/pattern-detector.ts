@@ -26,7 +26,7 @@ import type {
   TemporalPattern,
 } from "./types";
 import { Ok, Err } from "./types";
-import { callLLM } from "./llm-client";
+import { callLLM, type LLMTrackingContext } from "./llm-client";
 import {
   decidePaidAIAccess,
   estimateTokensFromText,
@@ -416,7 +416,12 @@ Rules:
       },
     ],
     maxTokens: 800,
-  });
+  }, {
+    supabase,
+    organizationId,
+    userId: "",
+    routeKey: "pattern-detector",
+  } as LLMTrackingContext);
 
   const latencyMs = Date.now() - startMs;
 

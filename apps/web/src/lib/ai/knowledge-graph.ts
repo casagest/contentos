@@ -29,7 +29,7 @@ import type {
   RelationshipWithNames,
 } from "./types";
 import { Ok, Err } from "./types";
-import { callLLM } from "./llm-client";
+import { callLLM, type LLMTrackingContext } from "./llm-client";
 import {
   decidePaidAIAccess,
   estimateTokensFromText,
@@ -216,7 +216,12 @@ Rules:
       },
     ],
     maxTokens: 600,
-  });
+  }, {
+    supabase,
+    organizationId,
+    userId: "",
+    routeKey: "knowledge-graph",
+  } as LLMTrackingContext);
 
   const latencyMs = Date.now() - startMs;
 
