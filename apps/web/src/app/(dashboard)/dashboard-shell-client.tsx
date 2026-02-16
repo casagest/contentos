@@ -25,13 +25,19 @@ import { useState } from "react";
 
 const navItems = [
   { href: "/dashboard/business", label: "Dashboard", icon: LayoutDashboard },
+  // — Creează —
+  { href: "/braindump", label: "Brain Dump", icon: Brain },
+  { href: "/compose", label: "Compune", icon: PenTool },
+  { href: "/create", label: "Creează Rapid", icon: Wand2 },
+  // — AI —
   { href: "/coach", label: "AI Coach", icon: MessageSquareText },
-  { href: "/create", label: "Creează", icon: Wand2 },
-  { href: "/analyze", label: "Scorer", icon: BarChart3 },
-  { href: "/analytics", label: "Analytics", icon: TrendingUp },
+  { href: "/analyze", label: "Scorer Algoritmic", icon: BarChart3 },
+  // — Monitorizare —
+  { href: "/analytics", label: "Analiză", icon: TrendingUp },
   { href: "/calendar", label: "Calendar", icon: CalendarCheck },
-  { href: "/history", label: "Post History", icon: Clock },
-  { href: "/research", label: "Research", icon: Search },
+  { href: "/history", label: "Istoric Postări", icon: Clock },
+  // — Cercetare —
+  { href: "/research", label: "Cercetare", icon: Search },
   { href: "/inspiration", label: "Inspirație", icon: Lightbulb },
 ];
 
