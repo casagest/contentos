@@ -26,7 +26,8 @@ export async function GET() {
     path: "/",
   });
 
-  const redirectUri = `${(process.env.NEXT_PUBLIC_APP_URL || "").trim()}/api/auth/linkedin/callback`;
+  const { getAppUrl } = await import("@/lib/app-url");
+  const redirectUri = `${getAppUrl()}/api/auth/linkedin/callback`;
 
   const params = new URLSearchParams({
     response_type: "code",

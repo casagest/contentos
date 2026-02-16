@@ -36,7 +36,8 @@ export async function POST() {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const { getAppUrl } = await import("@/lib/app-url");
+    const appUrl = getAppUrl();
 
     const session = await getStripe().billingPortal.sessions.create({
       customer: org.stripe_customer_id,

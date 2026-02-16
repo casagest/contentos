@@ -59,7 +59,8 @@ export async function GET(request: NextRequest) {
     }
 
     const adapter = new LinkedInAdapter({ clientId, clientSecret });
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/linkedin/callback`;
+    const { getAppUrl } = await import("@/lib/app-url");
+    const redirectUri = `${getAppUrl()}/api/auth/linkedin/callback`;
 
     // Exchange code for tokens
     const tokens = await adapter.exchangeCodeForTokens(code, redirectUri);
