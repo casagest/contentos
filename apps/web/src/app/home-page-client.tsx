@@ -26,7 +26,7 @@ function FadeIn({
           obs.disconnect();
         }
       },
-      { threshold: 0.1, rootMargin: "-30px" }
+      { threshold: 0, rootMargin: "50px" }
     );
     obs.observe(el);
     return () => obs.disconnect();
