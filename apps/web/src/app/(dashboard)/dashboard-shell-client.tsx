@@ -172,13 +172,11 @@ export default function DashboardShellClient({
                     }`}
                   >
                     {/* Active indicator bar */}
-                    {active && (
-                      <motion.div
-                        layoutId="sidebar-active"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-brand-400"
-                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                      />
-                    )}
+                    <div
+                      className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-brand-400 transition-all duration-200 ${
+                        active ? "h-5 opacity-100" : "h-0 opacity-0"
+                      }`}
+                    />
                     <Icon className={`w-[16px] h-[16px] shrink-0 transition-colors ${
                       active ? "text-brand-400" : "text-gray-600 group-hover/item:text-gray-400"
                     }`} />
@@ -276,16 +274,13 @@ export default function DashboardShellClient({
           </Link>
         </div>
 
-        {/* Page content with transition */}
-        <motion.div
+        {/* Page content — CSS animation (lighter than Framer Motion per-route) */}
+        <div
           key={pathname}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className="max-w-6xl mx-auto p-6 md:p-8"
+          className="max-w-6xl mx-auto p-6 md:p-8 dashboard-fade-in"
         >
           {children}
-        </motion.div>
+        </div>
       </main>
     </div>
   );
