@@ -11,8 +11,8 @@ import {
   Share2,
   Eye,
   Award,
-  Loader2,
 } from "lucide-react";
+import { CountUp, Skeleton, FadeIn, GlowCard } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
 interface PostStats {
@@ -132,8 +132,23 @@ export default function MiniReporting({ className = "" }: { className?: string }
 
   if (loading) {
     return (
-      <div className={`rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 flex items-center justify-center ${className}`}>
-        <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
+      <div className={`rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden ${className}`}>
+        <div className="p-4 border-b border-white/[0.04]">
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/[0.04]">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-[#0a0a0a] p-3 flex flex-col items-center gap-2">
+              <Skeleton className="w-4 h-4 rounded" />
+              <Skeleton className="h-6 w-12" />
+              <Skeleton className="h-2 w-16" />
+            </div>
+          ))}
+        </div>
+        <div className="p-4 space-y-2">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+        </div>
       </div>
     );
   }
@@ -149,8 +164,9 @@ export default function MiniReporting({ className = "" }: { className?: string }
   };
 
   return (
-    <div className={`rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden ${className}`}>
-      <div className="p-4 border-b border-white/[0.06]">
+    <FadeIn>
+    <div className={`rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden hover:border-white/[0.08] transition-colors ${className}`}>
+      <div className="p-4 border-b border-white/[0.04]">
         <div className="flex items-center gap-2 mb-1">
           <BarChart3 className="w-4 h-4 text-brand-400" />
           <h3 className="text-sm font-medium text-white">Raport Rapid</h3>
@@ -160,24 +176,24 @@ export default function MiniReporting({ className = "" }: { className?: string }
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/[0.04]">
-        <div className="bg-[#0a0a0a] p-3 text-center">
-          <FileText className="w-3.5 h-3.5 text-gray-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-white">{stats.thisMonthPosts}</p>
+        <div className="bg-[#08080D] p-3 text-center">
+          <FileText className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <p className="text-lg font-bold text-white"><CountUp value={stats.thisMonthPosts} duration={1} /></p>
           <p className="text-[10px] text-gray-500">Postări luna asta</p>
         </div>
-        <div className="bg-[#0a0a0a] p-3 text-center">
-          <ThumbsUp className="w-3.5 h-3.5 text-gray-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-white">{stats.totalLikes}</p>
+        <div className="bg-[#08080D] p-3 text-center">
+          <ThumbsUp className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <p className="text-lg font-bold text-white"><CountUp value={stats.totalLikes} /></p>
           <p className="text-[10px] text-gray-500">Like-uri total</p>
         </div>
-        <div className="bg-[#0a0a0a] p-3 text-center">
-          <MessageCircle className="w-3.5 h-3.5 text-gray-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-white">{stats.totalComments}</p>
+        <div className="bg-[#08080D] p-3 text-center">
+          <MessageCircle className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <p className="text-lg font-bold text-white"><CountUp value={stats.totalComments} /></p>
           <p className="text-[10px] text-gray-500">Comentarii</p>
         </div>
-        <div className="bg-[#0a0a0a] p-3 text-center">
-          <TrendingUp className="w-3.5 h-3.5 text-gray-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-white">{stats.avgEngagement}</p>
+        <div className="bg-[#08080D] p-3 text-center">
+          <TrendingUp className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <p className="text-lg font-bold text-white"><CountUp value={stats.avgEngagement} /></p>
           <p className="text-[10px] text-gray-500">Eng. mediu/post</p>
         </div>
       </div>
@@ -262,5 +278,6 @@ export default function MiniReporting({ className = "" }: { className?: string }
         )}
       </div>
     </div>
+    </FadeIn>
   );
 }
