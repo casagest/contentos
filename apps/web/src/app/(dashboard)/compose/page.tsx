@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
@@ -445,8 +446,16 @@ export default function ComposePage() {
       </div>
 
       {/* ============ PHASE 1: INPUT ============ */}
+      <AnimatePresence mode="wait">
       {phase === "input" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div
+          key="input"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+        >
           <div className="space-y-4">
             {/* Content input */}
             <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
@@ -633,12 +642,19 @@ export default function ComposePage() {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* ============ PHASE 2: EXPLORE ANGLES ============ */}
       {phase === "explore" && (
-        <div className="space-y-4">
+        <motion.div
+          key="explore"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-4"
+        >
           {/* Input summary bar */}
           <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
@@ -738,12 +754,19 @@ export default function ComposePage() {
               <span>{error}</span>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* ============ PHASE 3: GENERATED RESULTS ============ */}
       {phase === "generate" && (
-        <div className="space-y-4">
+        <motion.div
+          key="generate"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-4"
+        >
           {/* Selected angle summary */}
           {selectedAngleId && angles.length > 0 && (
             <div className="rounded-xl bg-brand-600/5 border border-brand-500/20 p-3 flex items-center justify-between">
@@ -920,8 +943,9 @@ export default function ComposePage() {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
