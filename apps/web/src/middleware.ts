@@ -18,7 +18,6 @@ const PROTECTED_PREFIXES = [
   "/inspiration",
   "/settings",
   "/onboarding",
-  "/create",
 ];
 
 export async function middleware(request: NextRequest) {

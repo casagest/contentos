@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   MessageSquareText,
   PenTool,
-  Wand2,
   BarChart3,
   CalendarCheck,
   Clock,
@@ -24,11 +23,10 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: "/dashboard/business", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   // — Creează —
   { href: "/braindump", label: "Brain Dump", icon: Brain },
   { href: "/compose", label: "Compune", icon: PenTool },
-  { href: "/create", label: "Creează Rapid", icon: Wand2 },
   // — AI —
   { href: "/coach", label: "AI Coach", icon: MessageSquareText },
   { href: "/analyze", label: "Scorer Algoritmic", icon: BarChart3 },
@@ -50,7 +48,7 @@ export default function DashboardShellClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (href: string) => {
-    if (href === "/dashboard/business")
+    if (href === "/dashboard")
       return pathname === "/dashboard" || pathname.startsWith("/dashboard");
     return pathname.startsWith(href);
   };
