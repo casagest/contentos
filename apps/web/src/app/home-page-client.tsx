@@ -292,67 +292,128 @@ export default function HomePageClient() {
       </nav>
 
       {/* ── Hero (dark section) ── */}
-      <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-28 px-6 text-center overflow-hidden">
-        {/* Subtle gradient glow */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[400px] bg-orange-500/8 rounded-full blur-[120px]" />
+      <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-28 px-6 overflow-hidden">
+        {/* Gradient mesh background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.08)_0%,transparent_70%)] top-[-10%] left-[10%] blur-[80px] animate-[pulse_8s_ease-in-out_infinite]" />
+          <div className="absolute w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.05)_0%,transparent_70%)] bottom-[-10%] right-[5%] blur-[80px] animate-[pulse_12s_ease-in-out_infinite_3s]" />
+          <div className="absolute w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.04)_0%,transparent_70%)] top-[40%] left-[60%] blur-[60px] animate-[pulse_10s_ease-in-out_infinite_6s]" />
+          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        </div>
 
-        <div className="relative max-w-4xl mx-auto">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-white leading-[1.05] tracking-tight mb-6">
-            Conținut Viral Cu{" "}
-            <span className="text-orange-400">Un Click</span>
-          </h1>
+        <div className="relative max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+          {/* Left — Text */}
+          <div className="flex-1 text-center lg:text-left">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] tracking-tight mb-6">
+              Creează Conținut{" "}
+              <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">Care Convertește</span>
+            </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Crește-ți audiența, engagement-ul și vinde mai mult cu cel mai
-            puternic tool AI de conținut creat pentru România.
-          </p>
+            <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed">
+              Platforma AI care transformă orice idee în conținut optimizat per platformă. Brain dump → postări virale în 2 minute.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/register"
-              className="w-full sm:w-auto px-10 py-4 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-lg transition-all shadow-lg shadow-orange-500/30 hover:shadow-orange-400/50 hover:-translate-y-0.5 active:translate-y-0 tracking-wide"
-            >
-              ÎNCEARCĂ GRATUIT
-            </Link>
-            <Link
-              href="#cum-functioneaza"
-              className="w-full sm:w-auto px-10 py-4 rounded-xl border-2 border-gray-600 hover:border-gray-400 text-gray-300 hover:text-white font-bold text-lg transition-all hover:-translate-y-0.5"
-            >
-              Vezi cum funcționează
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+              <Link
+                href="/register"
+                className="group relative w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold text-base transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
+              >
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <span className="relative flex items-center gap-2 justify-center">
+                  Începe Gratuit
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                </span>
+              </Link>
+              <Link
+                href="#cum-functioneaza"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/20 text-gray-400 hover:text-white font-semibold text-base transition-all hover:-translate-y-0.5"
+              >
+                Vezi cum funcționează
+              </Link>
+            </div>
+
+            {/* Social proof */}
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5 sm:gap-8">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {["bg-orange-400", "bg-blue-400", "bg-emerald-400", "bg-pink-400", "bg-purple-400"].map((color, i) => (
+                    <div key={i} className={`w-7 h-7 rounded-full ${color} border-2 border-surface-ground flex items-center justify-center text-white text-[9px] font-bold`}>
+                      {["A", "M", "R", "I", "D"][i]}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-sm text-gray-500"><span className="text-white font-semibold">2,400+</span> creatori</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className="w-3.5 h-3.5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-sm text-gray-500"><span className="text-white font-semibold">4.9</span>/5</span>
+              </div>
+              <span className="text-sm text-gray-500"><span className="text-white font-semibold">1M+</span> postări</span>
+            </div>
           </div>
 
-          {/* Social proof */}
-          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {["bg-orange-400", "bg-blue-400", "bg-emerald-400", "bg-pink-400", "bg-purple-400"].map((color, i) => (
-                  <div
-                    key={i}
-                    className={`w-8 h-8 rounded-full ${color} border-2 border-surface-ground flex items-center justify-center text-white text-[10px] font-bold`}
-                  >
-                    {["A", "M", "R", "I", "D"][i]}
+          {/* Right — Floating UI Mockup */}
+          <div className="relative w-full max-w-md lg:max-w-lg shrink-0 animate-[pulse_6s_ease-in-out_infinite]" style={{ animationName: "none" }}>
+            {/* Main card */}
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-5 shadow-2xl shadow-black/30">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold">B</div>
+                  <div>
+                    <div className="text-sm font-semibold text-white">Brain Dump</div>
+                    <div className="text-[10px] text-white/40">3 platforme selectate</div>
                   </div>
-                ))}
+                </div>
+                <div className="flex gap-1">
+                  {[{ c: "bg-blue-500", l: "Fb" }, { c: "bg-pink-500", l: "Ig" }, { c: "bg-gray-600", l: "Tk" }].map((p) => (
+                    <span key={p.l} className={`${p.c} px-1.5 py-0.5 rounded text-[9px] font-bold text-white`}>{p.l}</span>
+                  ))}
+                </div>
               </div>
-              <span className="text-sm text-gray-400">
-                <span className="text-white font-semibold">500+</span> creatori activi
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="flex gap-0.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg key={star} className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
+              {/* Fake content lines */}
+              <div className="space-y-2 mb-4">
+                <div className="h-2.5 bg-white/[0.06] rounded-full w-full" />
+                <div className="h-2.5 bg-white/[0.06] rounded-full w-4/5" />
+                <div className="h-2.5 bg-white/[0.06] rounded-full w-3/5" />
               </div>
-              <span className="text-sm text-gray-400">
-                <span className="text-white font-semibold">4.9</span>/5 rating
-              </span>
+              {/* Score row */}
+              <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                    <span className="text-green-400 font-extrabold text-sm">92</span>
+                  </div>
+                  <span className="text-[10px] text-white/40">Scor</span>
+                </div>
+                <div className="flex-1" />
+                <div className="flex gap-1">
+                  {["#viral", "#trending", "#ContentOS"].map((tag) => (
+                    <span key={tag} className="px-1.5 py-0.5 rounded text-[8px] bg-orange-500/10 text-orange-400/80 border border-orange-500/20">{tag}</span>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-400">
-              <span className="text-white font-semibold">10,000+</span> postări generate
+
+            {/* Floating mini-cards */}
+            <div className="absolute -top-4 -right-4 rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-lg px-3 py-2 shadow-lg animate-[pulse_4s_ease-in-out_infinite]">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <span className="text-[10px] text-green-400 font-semibold">Optimizat AI</span>
+              </div>
+            </div>
+            <div className="absolute -bottom-3 -left-3 rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-lg px-3 py-2 shadow-lg animate-[pulse_5s_ease-in-out_infinite_2s]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-orange-400 text-sm">⚡</span>
+                <span className="text-[10px] text-white/60 font-medium">2 min / postare</span>
+              </div>
             </div>
           </div>
         </div>
