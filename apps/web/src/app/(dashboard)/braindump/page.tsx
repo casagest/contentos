@@ -6,26 +6,30 @@ import MediaUpload from "../compose/media-upload";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
 import { useUser } from "@/components/providers/user-provider";
+import { ScoreRing } from "@/components/ui/score-ring";
+import { PhoneFrame } from "@/components/ui/phone-frame";
+import { FacebookPostMock, InstagramPostMock, TikTokPostMock } from "@/components/ui/platform-post-mock";
 import {
   Brain,
-  Wand2,
   RotateCcw,
   Copy,
   Check,
   Sparkles,
   AlertCircle,
-  CalendarPlus,
   Hash,
   Lightbulb,
-  TrendingUp,
   Clock,
   Volume2,
   Type,
   Send,
-  MessageCircle,
-  HelpCircle,
-  ChevronDown,
   Save,
+  TrendingUp,
+  Zap,
+  MessageSquare,
+  Target,
+  Bookmark,
+  Plus,
+  ArrowUp,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -90,38 +94,71 @@ interface ClarificationQuestion {
 }
 
 type Objective = "engagement" | "reach" | "leads" | "saves";
+type Phase = "idle" | "generating" | "done";
 
-// ─── Platform Config ────────────────────────────────────────────────────────
+// ─── Config ─────────────────────────────────────────────────────────────────
 
-const PLATFORM_CONFIG = {
-  facebook: { label: "Facebook", color: "bg-blue-500", textColor: "text-blue-400" },
-  instagram: { label: "Instagram", color: "bg-pink-500", textColor: "text-pink-400" },
-  tiktok: { label: "TikTok", color: "bg-gray-500", textColor: "text-foreground/80" },
-  youtube: { label: "YouTube", color: "bg-red-500", textColor: "text-red-400" },
-};
+const PLATFORMS = [
+  { id: "facebook", label: "Fb", color: "#1877F2", dotClass: "bg-blue-500" },
+  { id: "instagram", label: "Ig", color: "#E4405F", dotClass: "bg-pink-500" },
+  { id: "tiktok", label: "Tk", color: "#00f2ea", dotClass: "bg-gray-500" },
+  { id: "youtube", label: "Yt", color: "#FF0000", dotClass: "bg-red-500" },
+] as const;
 
-const platforms = [
-  { id: "facebook", label: "Facebook", color: "bg-blue-500" },
-  { id: "instagram", label: "Instagram", color: "bg-pink-500" },
-  { id: "tiktok", label: "TikTok", color: "bg-gray-600" },
-  { id: "youtube", label: "YouTube", color: "bg-red-500" },
+const OBJECTIVES: { id: Objective; label: string; icon: typeof TrendingUp }[] = [
+  { id: "engagement", label: "Engagement", icon: TrendingUp },
+  { id: "reach", label: "Reach", icon: Zap },
+  { id: "leads", label: "Leads", icon: Target },
+  { id: "saves", label: "Saves", icon: Bookmark },
 ];
 
-const objectives: { id: Objective; label: string }[] = [
-  { id: "engagement", label: "Engagement" },
-  { id: "reach", label: "Reach" },
-  { id: "leads", label: "Leads" },
-  { id: "saves", label: "Saves" },
+const QUICK_ACTIONS = [
+  {
+    icon: MessageSquare,
+    label: "Testimonial client",
+    sub: "Poveste reală, emoțională",
+    prompt: "Creează un testimonial al unui client mulțumit, cu emoție și rezultate concrete",
+  },
+  {
+    icon: Lightbulb,
+    label: "Post educativ",
+    sub: "Explică simplu un concept",
+    prompt: "Creează un post educativ care explică pe înțelesul tuturor un concept din industria mea",
+  },
+  {
+    icon: TrendingUp,
+    label: "Behind the scenes",
+    sub: "Arată procesul din culise",
+    prompt: "Arată procesul din spatele scenei al echipei mele, cum lucrăm și ce ne diferențiază",
+  },
+  {
+    icon: Target,
+    label: "Ofertă cu CTA",
+    sub: "Promovare cu call-to-action",
+    prompt: "Promovează o ofertă specială cu call-to-action puternic și urgență",
+  },
+  {
+    icon: Sparkles,
+    label: "Social proof",
+    sub: "Recenzii și rezultate",
+    prompt: "Post bazat pe recenzii și testimoniale reale ale clienților noștri",
+  },
+  {
+    icon: Brain,
+    label: "FAQ audiență",
+    sub: "Răspunsuri la întrebări frecvente",
+    prompt: "Răspunde la cele mai frecvente întrebări pe care le primim de la clienți",
+  },
 ];
 
-// ─── Platform Cards ─────────────────────────────────────────────────────────
+// ─── Sub-components ─────────────────────────────────────────────────────────
 
 function HashtagList({ tags }: { tags: string[] }) {
   if (!tags.length) return null;
   return (
     <div className="flex flex-wrap gap-1.5 mt-2">
       {tags.map((tag) => (
-        <span key={tag} className="px-2 py-0.5 rounded-md text-[10px] bg-brand-600/10 text-brand-400 border border-brand-500/20">
+        <span key={tag} className="px-2 py-0.5 rounded-md text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20">
           {tag.startsWith("#") ? tag : `#${tag}`}
         </span>
       ))}
@@ -132,7 +169,7 @@ function HashtagList({ tags }: { tags: string[] }) {
 function TipsList({ tips }: { tips: string[] }) {
   if (!tips.length) return null;
   return (
-    <div className="mt-3 pt-3 border-t border-border space-y-1">
+    <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1">
       {tips.map((tip, i) => (
         <p key={i} className="text-[11px] text-muted-foreground flex items-start gap-1.5">
           <Lightbulb className="w-3 h-3 mt-0.5 shrink-0 text-amber-500/60" />
@@ -143,7 +180,7 @@ function TipsList({ tips }: { tips: string[] }) {
   );
 }
 
-function CopyButton({ text, label }: { text: string; label: string }) {
+function InlineCopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     await navigator.clipboard.writeText(text);
@@ -151,29 +188,31 @@ function CopyButton({ text, label }: { text: string; label: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button
-      onClick={copy}
-      className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground hover:text-white bg-muted hover:bg-muted transition"
-    >
+    <button onClick={copy} className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition">
       {copied ? <><Check className="w-3 h-3 text-green-400" /> Copiat</> : <><Copy className="w-3 h-3" /> {label}</>}
     </button>
   );
 }
 
+function getScore(result: FacebookResult | InstagramResult | TikTokResult | YouTubeResult): number {
+  if ("estimatedEngagement" in result) {
+    return result.estimatedEngagement === "Viral Potential" ? 92 : result.estimatedEngagement === "High" ? 85 : 72;
+  }
+  return 78;
+}
+
+// ─── Platform Detail Cards ──────────────────────────────────────────────────
+
 function FacebookCard({ data }: { data: FacebookResult }) {
   return (
-    <div className="rounded-xl bg-card border border-border p-4">
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-blue-500" />
           <span className="text-sm font-medium text-white">Facebook</span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-            data.estimatedEngagement === "High" || data.estimatedEngagement === "Viral Potential"
-              ? "bg-green-500/10 text-green-400"
-              : "bg-input text-muted-foreground"
-          }`}>{data.estimatedEngagement}</span>
+          <ScoreRing score={getScore(data)} size={28} />
         </div>
-        <CopyButton text={data.content} label="Copiaza" />
+        <InlineCopyButton text={data.content} label="Copiază" />
       </div>
       <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.content}</p>
       <HashtagList tags={data.hashtags} />
@@ -184,18 +223,19 @@ function FacebookCard({ data }: { data: FacebookResult }) {
 
 function InstagramCard({ data }: { data: InstagramResult }) {
   return (
-    <div className="rounded-xl bg-card border border-border p-4">
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-pink-500" />
           <span className="text-sm font-medium text-white">Instagram</span>
+          <ScoreRing score={getScore(data)} size={28} />
           {data.bestTimeToPost && (
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" /> {data.bestTimeToPost}
             </span>
           )}
         </div>
-        <CopyButton text={data.caption} label="Copiaza" />
+        <InlineCopyButton text={data.caption} label="Copiază" />
       </div>
       <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.caption}</p>
       {data.altText && <p className="text-[10px] text-muted-foreground mt-2">Alt: {data.altText}</p>}
@@ -207,16 +247,17 @@ function InstagramCard({ data }: { data: InstagramResult }) {
 
 function TikTokCard({ data }: { data: TikTokResult }) {
   return (
-    <div className="rounded-xl bg-card border border-border p-4">
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-gray-500" />
           <span className="text-sm font-medium text-white">TikTok</span>
+          <ScoreRing score={getScore(data)} size={28} />
         </div>
-        <CopyButton text={`${data.hook}\n\n${data.script}`} label="Copiaza" />
+        <InlineCopyButton text={`${data.hook}\n\n${data.script}`} label="Copiază" />
       </div>
-      <div className="bg-muted rounded-lg p-2.5 mb-2">
-        <span className="text-[10px] text-brand-400 uppercase tracking-wider">Hook</span>
+      <div className="bg-white/[0.04] rounded-lg p-2.5 mb-2 border border-white/[0.06]">
+        <span className="text-[10px] text-orange-400 uppercase tracking-wider font-medium">Hook</span>
         <p className="text-sm text-white font-medium mt-0.5">{data.hook}</p>
       </div>
       <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.script}</p>
@@ -233,16 +274,17 @@ function TikTokCard({ data }: { data: TikTokResult }) {
 
 function YouTubeCard({ data }: { data: YouTubeResult }) {
   return (
-    <div className="rounded-xl bg-card border border-border p-4">
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500" />
           <span className="text-sm font-medium text-white">YouTube</span>
+          <ScoreRing score={getScore(data)} size={28} />
         </div>
-        <CopyButton text={`${data.title}\n\n${data.description}`} label="Copiaza" />
+        <InlineCopyButton text={`${data.title}\n\n${data.description}`} label="Copiază" />
       </div>
-      <div className="bg-muted rounded-lg p-2.5 mb-2">
-        <span className="text-[10px] text-brand-400 uppercase tracking-wider">Titlu</span>
+      <div className="bg-white/[0.04] rounded-lg p-2.5 mb-2 border border-white/[0.06]">
+        <span className="text-[10px] text-orange-400 uppercase tracking-wider font-medium">Titlu</span>
         <p className="text-sm text-white font-medium mt-0.5">{data.title}</p>
       </div>
       <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.description}</p>
@@ -257,85 +299,73 @@ function YouTubeCard({ data }: { data: YouTubeResult }) {
   );
 }
 
-function SkeletonCard() {
-  return (
-    <div className="rounded-xl bg-card border border-border p-4 animate-pulse">
-      <div className="h-3 w-24 bg-input rounded mb-3" />
-      <div className="space-y-2">
-        <div className="h-2.5 bg-muted rounded w-full" />
-        <div className="h-2.5 bg-muted rounded w-4/5" />
-        <div className="h-2.5 bg-muted rounded w-3/5" />
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── Chat History ───────────────────────────────────────────────────────────
 
 const CHAT_HISTORY_KEY = "contentos:braindump:history";
-const MAX_HISTORY_MESSAGES = 50;
+const MAX_HISTORY = 50;
 
-function loadChatHistory(): ConversationMessage[] {
+function loadHistory(): ConversationMessage[] {
   try {
     if (typeof window === "undefined") return [];
     const saved = localStorage.getItem(CHAT_HISTORY_KEY);
     if (!saved) return [];
     const parsed = JSON.parse(saved);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.slice(-MAX_HISTORY_MESSAGES);
+    return Array.isArray(parsed) ? parsed.slice(-MAX_HISTORY) : [];
   } catch {
     return [];
   }
 }
 
-function saveChatHistory(messages: ConversationMessage[]) {
+function saveHistory(msgs: ConversationMessage[]) {
   try {
     if (typeof window === "undefined") return;
-    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages.slice(-MAX_HISTORY_MESSAGES)));
-  } catch {
-    // silent — storage full or unavailable
-  }
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(msgs.slice(-MAX_HISTORY)));
+  } catch { /* silent */ }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═════════════════════════════════════════════════════════════════════════════
+
 export default function BrainDumpPage() {
-  // Chat state — persisted in localStorage
-  const [messages, setMessages] = useState<ConversationMessage[]>(() => loadChatHistory());
+  // ── State ──
+  const [messages, setMessages] = useState<ConversationMessage[]>(() => loadHistory());
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [phase, setPhase] = useState<Phase>(() => (loadHistory().some((m) => m.metadata?.isGeneration) ? "done" : "idle"));
+  const [progress, setProgress] = useState(0);
+  const [visiblePlatforms, setVisiblePlatforms] = useState<string[]>([]);
 
-  // Persist chat history on message changes
-  useEffect(() => {
-    if (messages.length > 0) saveChatHistory(messages);
-  }, [messages]);
-
-  // Config state
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["facebook", "instagram"]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["facebook", "instagram", "tiktok"]);
   const [objective, setObjective] = useState<Objective>("engagement");
-  const [qualityMode, setQualityMode] = useState<"economy" | "balanced" | "premium">("economy");
-
-  // Media state
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const { user: currentUser } = useUser();
-  const organizationId = currentUser?.organizationId || "";
-  const isDental = currentUser?.industry?.toLowerCase().includes("dental") || currentUser?.industry?.toLowerCase().includes("stomatolog") || false;
 
-  // Results state
   const [results, setResults] = useState<AIResponse | null>(null);
   const [clarifications, setClarifications] = useState<ClarificationQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState<string | null>(null);
 
+  const { user: currentUser } = useUser();
+  const organizationId = currentUser?.organizationId || "";
+  const isDental = currentUser?.industry?.toLowerCase().includes("dental") || currentUser?.industry?.toLowerCase().includes("stomatolog") || false;
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Persist history
+  useEffect(() => {
+    if (messages.length > 0) saveHistory(messages);
+  }, [messages]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, results]);
 
+  // ── Handlers ──
   const togglePlatform = (id: string) => {
     setSelectedPlatforms((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+      prev.includes(id) ? (prev.length > 1 ? prev.filter((p) => p !== id) : prev) : [...prev, id]
     );
   };
 
@@ -347,15 +377,29 @@ export default function BrainDumpPage() {
     setIsProcessing(true);
     setError(null);
     setClarifications([]);
+    setPhase("generating");
+    setProgress(0);
+    setVisiblePlatforms([]);
 
-    const userMessage: ConversationMessage = {
+    const userMsg: ConversationMessage = {
       id: `msg_${Date.now()}_user`,
       role: "user",
       content: input,
     };
-
-    const updatedMessages = [...messages, userMessage];
+    const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
+
+    // Progress simulation
+    let p = 0;
+    const progressInterval = setInterval(() => {
+      p += Math.random() * 6 + 2;
+      if (p >= 95) { p = 95; clearInterval(progressInterval); }
+      setProgress(Math.min(p, 95));
+
+      if (p > 20) setVisiblePlatforms((v) => [...new Set([...v, selectedPlatforms[0] ?? "facebook"])]);
+      if (p > 45 && selectedPlatforms.length > 1) setVisiblePlatforms((v) => [...new Set([...v, selectedPlatforms[1] ?? "instagram"])]);
+      if (p > 70 && selectedPlatforms.length > 2) setVisiblePlatforms((v) => [...new Set([...v, selectedPlatforms[2] ?? "tiktok"])]);
+    }, 200);
 
     try {
       const response = await fetch("/api/ai/braindump", {
@@ -365,12 +409,14 @@ export default function BrainDumpPage() {
           rawInput: input,
           platforms: selectedPlatforms,
           language: "ro",
-          qualityMode,
+          qualityMode: "economy",
           objective,
           conversationMode: true,
           conversationHistory: messages,
         }),
       });
+
+      clearInterval(progressInterval);
 
       if (!response.ok) {
         const err = await response.json();
@@ -379,66 +425,49 @@ export default function BrainDumpPage() {
 
       const data = await response.json();
 
-      // Handle conversational responses
+      // Conversation response
       if (data.type === "conversation") {
+        setProgress(100);
         if (data.action === "answer" && data.messages) {
-          const aiMessages = (data.messages as ConversationMessage[]).filter(
-            (m) => m.role === "assistant"
-          );
-          const lastAiMessage = aiMessages[aiMessages.length - 1];
-          if (lastAiMessage) {
-            setMessages([...updatedMessages, lastAiMessage]);
-          }
-          return;
+          const aiMsgs = (data.messages as ConversationMessage[]).filter((m) => m.role === "assistant");
+          const last = aiMsgs[aiMsgs.length - 1];
+          if (last) setMessages([...updatedMessages, last]);
         }
-
         if (data.action === "clarify") {
-          const aiMessages = (data.messages as ConversationMessage[]).filter(
-            (m) => m.role === "assistant"
-          );
-          const lastAiMessage = aiMessages[aiMessages.length - 1];
-          if (lastAiMessage) {
-            setMessages([...updatedMessages, lastAiMessage]);
-          }
-          if (data.clarifications) {
-            setClarifications(data.clarifications);
-          }
-          return;
+          const aiMsgs = (data.messages as ConversationMessage[]).filter((m) => m.role === "assistant");
+          const last = aiMsgs[aiMsgs.length - 1];
+          if (last) setMessages([...updatedMessages, last]);
+          if (data.clarifications) setClarifications(data.clarifications);
         }
+        setPhase("idle");
+        return;
       }
 
-      // Handle generation results (standard brain dump response)
-      const aiResponse: AIResponse = {
-        platforms: data.platforms || {},
-        meta: data.meta,
-      };
-
+      // Generation result
+      setProgress(100);
+      const aiResponse: AIResponse = { platforms: data.platforms || {}, meta: data.meta };
       setResults(aiResponse);
+      setVisiblePlatforms(selectedPlatforms);
 
-      const assistantMessage: ConversationMessage = {
+      const assistantMsg: ConversationMessage = {
         id: `msg_${Date.now()}_gen`,
         role: "assistant",
-        content: "Am generat continut pentru platformele selectate!",
+        content: "Am generat conținut pentru platformele selectate!",
         metadata: { isGeneration: true, platforms: selectedPlatforms },
       };
-      setMessages([...updatedMessages, assistantMessage]);
+      setMessages([...updatedMessages, assistantMsg]);
+      setTimeout(() => setPhase("done"), 500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Eroare necunoscuta");
+      clearInterval(progressInterval);
+      setError(err instanceof Error ? err.message : "Eroare necunoscută");
+      setPhase("idle");
     } finally {
       setIsProcessing(false);
     }
-  }, [inputText, messages, selectedPlatforms, qualityMode, objective, isProcessing]);
+  }, [inputText, messages, selectedPlatforms, objective, isProcessing]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const handleClarificationClick = (option: string) => {
-    setInputText(option);
-    sendMessage(option);
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
   const saveDraft = async () => {
@@ -446,43 +475,34 @@ export default function BrainDumpPage() {
     setSavingDraft(true);
     setDraftSaved(null);
     try {
-      const firstPlatform = selectedPlatforms[0];
-      const platformData = results.platforms;
-      const fb = platformData.facebook;
-      const ig = platformData.instagram;
-      const body = fb?.content || ig?.caption || "";
-      const hashtags = fb?.hashtags || ig?.hashtags || [];
-
-      const platformVersions: Record<string, unknown> = {};
-      if (fb) platformVersions.facebook = fb;
-      if (ig) platformVersions.instagram = ig;
-      if (platformData.tiktok) platformVersions.tiktok = platformData.tiktok;
-      if (platformData.youtube) platformVersions.youtube = platformData.youtube;
+      const p = results.platforms;
+      const body = p.facebook?.content || p.instagram?.caption || "";
+      const hashtags = p.facebook?.hashtags || p.instagram?.hashtags || [];
+      const versions: Record<string, unknown> = {};
+      if (p.facebook) versions.facebook = p.facebook;
+      if (p.instagram) versions.instagram = p.instagram;
+      if (p.tiktok) versions.tiktok = p.tiktok;
+      if (p.youtube) versions.youtube = p.youtube;
 
       const res = await fetch("/api/drafts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: body.slice(0, 60).split("\n")[0],
-          body,
-          hashtags,
+          body, hashtags,
           target_platforms: selectedPlatforms,
-          platform_versions: platformVersions,
+          platform_versions: versions,
           media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
           ai_suggestions: { meta: results.meta || {} },
           source: "braindump",
         }),
       });
-
       if (res.ok) {
         setDraftSaved("Draft salvat! Mergi la Calendar pentru a programa.");
         setTimeout(() => setDraftSaved(null), 4000);
       }
-    } catch {
-      // silent
-    } finally {
-      setSavingDraft(false);
-    }
+    } catch { /* silent */ }
+    finally { setSavingDraft(false); }
   };
 
   const startOver = () => {
@@ -491,199 +511,190 @@ export default function BrainDumpPage() {
     setClarifications([]);
     setError(null);
     setInputText("");
+    setPhase("idle");
+    setProgress(0);
+    setVisiblePlatforms([]);
     try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch { /* silent */ }
   };
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
-      {/* Top controls */}
-      {messages.length > 0 && (
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={startOver}
-            className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white bg-muted hover:bg-accent transition flex items-center gap-1.5"
-          >
-            <RotateCcw className="w-3 h-3" /> Start nou
-          </button>
-        </div>
-      )}
+  // ── Helpers for phone mocks ──
+  function buildMockData(platform: string): { text: string; score: number; likes: string; comments: string; shares?: string } {
+    const p = results?.platforms;
+    if (platform === "facebook" && p?.facebook) {
+      return { text: p.facebook.content, score: getScore(p.facebook), likes: "2.4K", comments: "187", shares: "342" };
+    }
+    if (platform === "instagram" && p?.instagram) {
+      return { text: p.instagram.caption, score: getScore(p.instagram), likes: "1.8K", comments: "94" };
+    }
+    if (platform === "tiktok" && p?.tiktok) {
+      return { text: `${p.tiktok.hook}\n\n${p.tiktok.script}`, score: getScore(p.tiktok), likes: "12.3K", comments: "891" };
+    }
+    return { text: "Se generează conținut...", score: 0, likes: "—", comments: "—" };
+  }
 
-      {/* Config bar */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="flex gap-1.5" role="group" aria-label="Selectează platforme">
-          {platforms.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => togglePlatform(p.id)}
-              role="switch"
-              aria-checked={selectedPlatforms.includes(p.id)}
-              aria-label={`${p.label} ${selectedPlatforms.includes(p.id) ? "activat" : "dezactivat"}`}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition ${
-                selectedPlatforms.includes(p.id)
-                  ? "bg-accent text-white border border-brand-500/30"
-                  : "bg-card text-muted-foreground border border-border hover:border-border"
-              }`}
-            >
-              <div className={`w-1.5 h-1.5 rounded-full ${p.color}`} aria-hidden="true" />
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div className="h-4 w-px bg-white/10" aria-hidden="true" />
-        <div className="flex gap-1.5" role="group" aria-label="Selectează obiectiv">
-          {objectives.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => setObjective(o.id)}
-              role="radio"
-              aria-checked={objective === o.id}
-              className={`px-2 py-1 rounded-lg text-[10px] border transition ${
-                objective === o.id
-                  ? "bg-brand-600/20 text-brand-300 border-brand-500/40"
-                  : "bg-muted text-muted-foreground border-border hover:text-foreground/80"
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  return (
+    <div className="relative min-h-[calc(100vh-8rem)] flex flex-col">
+      {/* ── Background mesh ── */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.06)_0%,transparent_70%)] top-[-10%] left-[10%] blur-[80px] animate-mesh-move" />
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.04)_0%,transparent_70%)] bottom-[10%] right-[5%] blur-[80px] animate-mesh-move-2" />
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
       </div>
 
-      {/* Media Upload */}
-      {organizationId && (
-        <div className="mb-3">
-          <MediaUpload
-            mediaUrls={mediaUrls}
-            onChange={setMediaUrls}
-            organizationId={organizationId}
-            maxImages={10}
-          />
-        </div>
-      )}
+      {/* ════ IDLE STATE — Quick Actions ════ */}
+      {phase === "idle" && messages.length === 0 && !results && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="flex-1 flex flex-col items-center justify-center px-4 pb-48"
+        >
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-center bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent mb-3">
+            Ce vrei să creezi?
+          </h1>
+          <p className="text-muted-foreground text-sm mb-10 text-center max-w-md">
+            Scrie orice idee. AI-ul cunoaște industria ta, audiența și fiecare platformă.
+          </p>
 
-      {/* Chat area */}
-      <div className="flex-1 overflow-y-auto rounded-xl bg-card/50 border border-border p-4 space-y-3 mb-3">
-        {messages.length === 0 && !results && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Brain className="w-14 h-14 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-sm mb-2">
-              Scrie orice ai in minte
-            </p>
-            <p className="text-muted-foreground text-xs max-w-md">
-              Poti sa pui o intrebare, sa arunci o idee vaga, sau sa dai un text complet.
-              AI-ul va detecta ce vrei si va raspunde inteligent.
-            </p>
-            <div className="flex flex-wrap gap-2 mt-4">
-              {[
-                "Vreau sa postez ceva interesant pe social media",
-                "Cum sa cresc engagement-ul pe Instagram?",
-                "Top 5 idei de continut pentru aceasta saptamana",
-                "Vreau sa promovez o oferta speciala",
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => {
-                    setInputText(suggestion);
-                    sendMessage(suggestion);
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground bg-muted border border-border hover:border-border hover:text-foreground/80 transition text-left"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Messages */}
-        <AnimatePresence mode="popLayout">
-        {messages.map((msg) => (
-          <motion.div
-            key={msg.id}
-            initial={{ opacity: 0, y: 12, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            layout
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                msg.role === "user"
-                  ? "bg-brand-600/15 text-white border border-brand-500/20 rounded-br-md"
-                  : "bg-muted text-foreground/80 border border-border rounded-bl-md"
-              }`}
-            >
-              {msg.role === "assistant" && (
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Sparkles className="w-3 h-3 text-brand-400" />
-                  <span className="text-[10px] text-brand-400 font-medium">ContentOS AI</span>
-                </div>
-              )}
-              <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-            </div>
-          </motion.div>
-        ))}
-        </AnimatePresence>
-
-        {/* Clarification buttons */}
-        {clarifications.length > 0 && (
-          <div className="flex flex-wrap gap-2 pl-4">
-            {clarifications.map((c) => (
-              <div key={c.id} className="space-y-1.5">
-                {c.options ? (
-                  c.options.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => handleClarificationClick(option)}
-                      className="block px-3 py-1.5 rounded-lg text-xs text-foreground/80 bg-muted border border-border hover:border-brand-500/30 hover:text-white transition"
-                    >
-                      {option}
-                    </button>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground italic">{c.question}</p>
-                )}
-              </div>
+          {/* Quick actions grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-w-[640px] w-full">
+            {QUICK_ACTIONS.map((q) => (
+              <button
+                key={q.label}
+                onClick={() => { setInputText(q.prompt); setTimeout(() => inputRef.current?.focus(), 100); }}
+                className="group bg-white/[0.015] border border-white/[0.04] rounded-2xl p-4 text-left transition-all hover:bg-white/[0.04] hover:border-white/[0.1] hover:-translate-y-0.5"
+              >
+                <q.icon className="w-5 h-5 text-orange-400/60 group-hover:text-orange-400 transition mb-2.5" />
+                <div className="text-white/80 text-[13px] font-semibold">{q.label}</div>
+                <div className="text-white/25 text-[11px] mt-0.5">{q.sub}</div>
+              </button>
             ))}
           </div>
-        )}
+        </motion.div>
+      )}
 
-        {/* Typing indicator */}
-        <AnimatePresence>
-        {isProcessing && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="flex justify-start"
-          >
-            <div className="bg-muted border border-border rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2.5">
-              <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-              <span className="text-xs text-muted-foreground">ContentOS gândește...</span>
+      {/* ════ GENERATING STATE — Progress + Phone Previews ════ */}
+      {phase === "generating" && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex-1 px-4 pt-4"
+        >
+          {/* Progress bar */}
+          <div className="max-w-[700px] mx-auto mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-muted-foreground font-medium">
+                Generez pentru {selectedPlatforms.length} platforme...
+              </span>
+              <span className="text-xs text-orange-400 font-semibold font-mono">
+                {Math.round(progress)}%
+              </span>
             </div>
-          </motion.div>
-        )}
-        </AnimatePresence>
+            <div className="h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 animate-progress-shimmer transition-[width] duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
 
-        {/* Results */}
-        {results && (
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center gap-2 px-1">
-              <Sparkles className="w-4 h-4 text-brand-400" />
-              <span className="text-sm font-medium text-brand-300">Continut generat</span>
-              {results.meta?.mode === "ai" ? (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">
-                  ✨ AI
-                </span>
-              ) : results.meta?.mode === "deterministic" ? (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
-                  ⚡ Template
-                </span>
-              ) : null}
+          {/* Phone frame previews */}
+          <div className="flex gap-5 justify-center flex-wrap pb-48">
+            {selectedPlatforms.map((platform, i) => (
+              visiblePlatforms.includes(platform) && (
+                <motion.div
+                  key={platform}
+                  initial={{ opacity: 0, y: 40, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: i * 0.15 }}
+                >
+                  <div className="flex items-center justify-between mb-2.5 px-1">
+                    <span className="text-xs font-semibold" style={{ color: PLATFORMS.find((p) => p.id === platform)?.color }}>
+                      ● {PLATFORMS.find((p) => p.id === platform)?.label}
+                    </span>
+                    <div className="w-6 h-6 rounded-full border-2 border-white/[0.06] border-t-orange-500 animate-spin" />
+                  </div>
+                  <PhoneFrame platform={platform as "facebook" | "instagram" | "tiktok" | "youtube"}>
+                    <div className="min-h-[480px] flex items-center justify-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-8 h-8 rounded-full border-2 border-white/[0.06] border-t-orange-500 animate-spin" />
+                        <span className="text-white/40 text-xs">Se generează...</span>
+                      </div>
+                    </div>
+                  </PhoneFrame>
+                </motion.div>
+              )
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ════ DONE STATE — Results ════ */}
+      {phase === "done" && results && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex-1 px-4 pt-2"
+        >
+          {/* Success bar */}
+          <div className="max-w-[700px] mx-auto mb-6 flex items-center gap-3 bg-green-500/[0.06] border border-green-500/[0.12] rounded-xl px-4 py-2.5">
+            <Sparkles className="w-4 h-4 text-green-400" />
+            <span className="text-sm text-green-300 font-medium">
+              {selectedPlatforms.length} versiuni generate · Adaptate per platformă
+            </span>
+            <div className="flex-1" />
+            <button
+              onClick={startOver}
+              className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-muted-foreground text-[11px] font-semibold hover:text-white transition"
+            >
+              ✦ Nou
+            </button>
+          </div>
+
+          {/* Phone frame previews row */}
+          <div className="flex gap-5 justify-center flex-wrap mb-8">
+            {selectedPlatforms.map((platform, i) => {
+              const mockData = buildMockData(platform);
+              return (
+                <motion.div
+                  key={platform}
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 }}
+                >
+                  <div className="flex items-center justify-between mb-2.5 px-1">
+                    <span className="text-xs font-semibold" style={{ color: PLATFORMS.find((p) => p.id === platform)?.color }}>
+                      ● {PLATFORMS.find((p) => p.id === platform)?.label}
+                    </span>
+                    <ScoreRing score={mockData.score} size={36} delay={i * 100} />
+                  </div>
+                  <PhoneFrame platform={platform as "facebook" | "instagram" | "tiktok" | "youtube"}>
+                    {platform === "facebook" && <FacebookPostMock data={mockData} />}
+                    {platform === "instagram" && <InstagramPostMock data={mockData} />}
+                    {platform === "tiktok" && <TikTokPostMock data={mockData} />}
+                    {platform === "youtube" && (
+                      <div className="min-h-[480px] flex items-center justify-center p-4">
+                        <p className="text-white/60 text-xs text-center">YouTube preview</p>
+                      </div>
+                    )}
+                  </PhoneFrame>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Detailed result cards */}
+          <div className="max-w-3xl mx-auto space-y-3 pb-48">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-orange-400" />
+              <span className="text-sm font-semibold text-white">Detalii conținut</span>
+              {results.meta?.mode === "ai" && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">✨ AI</span>
+              )}
             </div>
 
             {typeof results.meta?.warning === "string" && results.meta.warning && (
@@ -698,7 +709,6 @@ export default function BrainDumpPage() {
             {results.platforms.tiktok && <TikTokCard data={results.platforms.tiktok} />}
             {results.platforms.youtube && <YouTubeCard data={results.platforms.youtube} />}
 
-            {/* Content Checker */}
             <ContentChecker
               text={Object.values(results.platforms).map((p) => ("text" in p ? (p as { text: string }).text : "")).join("\n")}
               hashtags={Object.values(results.platforms).flatMap((p) => ("hashtags" in p ? (p as { hashtags: string[] }).hashtags : []))}
@@ -710,14 +720,15 @@ export default function BrainDumpPage() {
             ))}
 
             {/* Save draft */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2">
               <button
                 onClick={saveDraft}
                 disabled={savingDraft}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-40 text-white font-medium transition flex items-center justify-center gap-2 text-sm"
+                className="group relative flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 disabled:opacity-40 text-white font-semibold transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 flex items-center justify-center gap-2 text-sm overflow-hidden"
               >
-                <Save className="w-4 h-4" />
-                {savingDraft ? "Se salveaza..." : "Salveaza ca Draft"}
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <Save className="w-4 h-4 relative" />
+                <span className="relative">{savingDraft ? "Se salvează..." : "Salvează ca Draft"}</span>
               </button>
             </div>
             {draftSaved && (
@@ -726,53 +737,167 @@ export default function BrainDumpPage() {
               </div>
             )}
           </div>
-        )}
+        </motion.div>
+      )}
 
-        {/* Error */}
-        {error && (
-          <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+      {/* ════ Conversation messages (idle with history) ════ */}
+      {phase === "idle" && messages.length > 0 && !results && (
+        <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-48">
+          {messages.length > 0 && (
+            <div className="flex justify-end mb-2">
+              <button onClick={startOver} className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition flex items-center gap-1.5">
+                <RotateCcw className="w-3 h-3" /> Start nou
+              </button>
+            </div>
+          )}
 
-        <div ref={chatEndRef} />
-      </div>
+          <AnimatePresence mode="popLayout">
+            {messages.map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                layout
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                  msg.role === "user"
+                    ? "bg-orange-500/10 text-white border border-orange-500/20 rounded-br-md"
+                    : "bg-white/[0.03] text-foreground/80 border border-white/[0.06] rounded-bl-md"
+                }`}>
+                  {msg.role === "assistant" && (
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Sparkles className="w-3 h-3 text-orange-400" />
+                      <span className="text-[10px] text-orange-400 font-medium">ContentOS AI</span>
+                    </div>
+                  )}
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
-      {/* Input bar */}
-      <div className="rounded-xl bg-card border border-border p-3">
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={inputRef}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Scrie ideea, intrebarea sau textul brut..."
-            aria-label="Mesaj Brain Dump"
-            rows={2}
-            className="flex-1 bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none"
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={!inputText.trim() || isProcessing}
-            className="p-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white transition shrink-0"
-          >
-            {isProcessing ? (
-              <RotateCcw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </button>
+          {/* Clarifications */}
+          {clarifications.length > 0 && (
+            <div className="flex flex-wrap gap-2 pl-4">
+              {clarifications.map((c) => (
+                <div key={c.id} className="space-y-1.5">
+                  {c.options?.map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => { setInputText(opt); sendMessage(opt); }}
+                      className="block px-3 py-1.5 rounded-lg text-xs text-foreground/80 bg-white/[0.03] border border-white/[0.06] hover:border-orange-500/30 hover:text-white transition"
+                    >
+                      {opt}
+                    </button>
+                  )) ?? <p className="text-xs text-muted-foreground italic">{c.question}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> <span>{error}</span>
+            </div>
+          )}
+
+          <div ref={chatEndRef} />
         </div>
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
-          <div className="flex items-center gap-2">
-            <VoiceInput
-              onTranscript={(text) => setInputText((prev) => prev + (prev ? " " : "") + text)}
-              language="ro-RO"
-            />
-            <span className="text-[10px] text-muted-foreground">Shift+Enter pentru linie nouă</span>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+         FLOATING INPUT BAR
+         ═══════════════════════════════════════════════════════════════════ */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none" style={{ paddingLeft: "var(--sidebar-width, 0px)" }}>
+        <div className="pointer-events-auto px-6 pb-5 pt-8 bg-gradient-to-t from-background via-background/95 to-transparent">
+          <div className={`max-w-[640px] mx-auto bg-white/[0.03] border border-white/[0.07] rounded-2xl shadow-[0_-4px_40px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl ${phase === "idle" ? "animate-border-glow" : ""}`}>
+            {/* Platform toggles row */}
+            <div className="flex items-center gap-1 px-3 pt-3 pb-1">
+              {PLATFORMS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => togglePlatform(p.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                    selectedPlatforms.includes(p.id)
+                      ? "border-current/20"
+                      : "text-white/20 border-transparent"
+                  }`}
+                  style={selectedPlatforms.includes(p.id) ? { color: p.color, background: `${p.color}18`, borderColor: `${p.color}30` } : undefined}
+                >
+                  {p.label}
+                </button>
+              ))}
+              <div className="w-px h-4 bg-white/[0.06] mx-1" />
+              {OBJECTIVES.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setObjective(o.id)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                    objective === o.id
+                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                      : "text-white/20 border border-transparent hover:text-white/40"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Input row */}
+            <div className="flex items-end px-1.5 pb-1.5">
+              <div className="flex items-center gap-1 px-1">
+                {organizationId && (
+                  <MediaUpload
+                    mediaUrls={mediaUrls}
+                    onChange={setMediaUrls}
+                    organizationId={organizationId}
+                    maxImages={10}
+                  />
+                )}
+                <VoiceInput
+                  onTranscript={(text) => setInputText((prev) => prev + (prev ? " " : "") + text)}
+                  language="ro-RO"
+                />
+              </div>
+              <textarea
+                ref={inputRef}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Descrie postarea pe care o vrei..."
+                aria-label="Mesaj Brain Dump"
+                rows={1}
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none resize-none py-2 px-2 min-h-[34px] max-h-[100px]"
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = "34px";
+                  el.style.height = Math.min(el.scrollHeight, 100) + "px";
+                }}
+              />
+              <button
+                onClick={() => sendMessage()}
+                disabled={!inputText.trim() || isProcessing}
+                className={`w-[34px] h-[34px] rounded-xl flex items-center justify-center shrink-0 m-0.5 transition-all ${
+                  inputText.trim()
+                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-[0_2px_20px_rgba(249,115,22,0.4)] hover:shadow-[0_2px_30px_rgba(249,115,22,0.6)]"
+                    : "bg-white/[0.03] text-white/12"
+                }`}
+              >
+                {isProcessing ? (
+                  <RotateCcw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ArrowUp className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
-          <span className="text-[10px] text-muted-foreground">{inputText.length} caractere</span>
+          {/* Hint */}
+          <div className="max-w-[640px] mx-auto flex justify-center mt-1.5">
+            <span className="text-[10px] text-white/10">Enter generează · Shift+Enter linie nouă</span>
+          </div>
         </div>
       </div>
     </div>
