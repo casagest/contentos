@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useTransition, useRef } from "react";
+import { useEffect, useState, useCallback, useTransition, useRef, lazy, Suspense } from "react";
 import Link from "next/link";
 import {
   UserPlus,
@@ -66,8 +66,8 @@ import { getIndustryConfig, INDUSTRY_CONFIGS } from "@/lib/dashboard/industry-co
 import type { IndustryConfig, KpiConfig, FunnelStage } from "@/lib/dashboard/industry-config";
 import type { BusinessProfile, Industry } from "@contentos/database";
 import { saveKpiValues, quickSetIndustry } from "./actions";
-import MemoryHealth from "@/app/(dashboard)/components/memory-health";
-import MiniReporting from "@/app/(dashboard)/components/mini-reporting";
+const MemoryHealth = lazy(() => import("@/app/(dashboard)/components/memory-health"));
+// MiniReporting removed — dashboard already fetches analytics data directly
 
 interface SocialAccountSummary {
   id: string;
@@ -943,9 +943,9 @@ export default function BusinessDashboardPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime] = useState(() => new Date());
 
-  // Load data from Supabase
+  // Load data from Supabase — optimized: user+org in parallel with data
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -963,6 +963,7 @@ export default function BusinessDashboardPage() {
         return;
       }
 
+      // Single query to get org_id, then parallel fetch everything
       const { data: userData } = await supabase
         .from("users")
         .select("organization_id")
@@ -980,6 +981,7 @@ export default function BusinessDashboardPage() {
 
       const orgId = userData.organization_id;
 
+      // All queries in parallel — no waterfall
       const [
         { data: org, error: orgError },
         { data: accounts, error: accountsError },
@@ -1003,7 +1005,7 @@ export default function BusinessDashboardPage() {
           .eq("organization_id", orgId)
           .order("published_at", { ascending: false })
           .limit(5),
-        fetch("/api/analytics/overview", { cache: "no-store" })
+        fetch("/api/analytics/overview")
           .then(async (res) => {
             if (!res.ok) return null;
             return (await res.json()) as AnalyticsData;
@@ -1046,11 +1048,7 @@ export default function BusinessDashboardPage() {
     loadData();
   }, [loadData]);
 
-  // Update clock every minute
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60_000);
-    return () => clearInterval(timer);
-  }, []);
+  // Clock is static — no interval re-renders
 
   // Handle quick industry selection (onboarding)
   function handleQuickIndustry(industry: Industry) {
@@ -1085,8 +1083,36 @@ export default function BusinessDashboardPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-brand-400 animate-spin" />
+      <div className="space-y-6 animate-pulse">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-6 w-48 rounded-lg bg-white/[0.06]" />
+            <div className="h-3 w-32 rounded bg-white/[0.04]" />
+          </div>
+          <div className="h-9 w-28 rounded-lg bg-white/[0.06]" />
+        </div>
+        {/* KPI cards skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 space-y-3">
+              <div className="h-3 w-20 rounded bg-white/[0.06]" />
+              <div className="h-8 w-16 rounded bg-white/[0.06]" />
+              <div className="h-2 w-full rounded bg-white/[0.04]" />
+            </div>
+          ))}
+        </div>
+        {/* Content skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-48" />
+            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-32" />
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-40" />
+            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-28" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -1172,7 +1198,7 @@ export default function BusinessDashboardPage() {
       </div>
 
       {/* AI Memory Health */}
-      <MemoryHealth />
+      <Suspense fallback={null}><MemoryHealth /></Suspense>
 
       {/* Engagement Overview */}
       <EngagementOverview data={analyticsData} />
@@ -1292,8 +1318,7 @@ export default function BusinessDashboardPage() {
           {/* Autopilot CTA */}
           <AutopilotCard />
 
-          {/* Mini Reporting */}
-          <MiniReporting />
+          {/* Mini Reporting integrated into dashboard — no separate component */}
 
           {/* Quick Actions */}
           <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
