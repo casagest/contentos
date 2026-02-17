@@ -748,6 +748,7 @@ export default function BrainDumpPage() {
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Scrie ideea, intrebarea sau textul brut..."
+            aria-label="Mesaj Brain Dump"
             rows={2}
             className="flex-1 bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none"
           />

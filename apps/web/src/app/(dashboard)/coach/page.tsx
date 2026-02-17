@@ -154,6 +154,7 @@ export default function CoachPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Întreabă ceva despre conținut, strategie, algoritmi..."
+          aria-label="Mesaj AI Coach"
           className="flex-1 bg-muted border border-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40"
         />
         <button
