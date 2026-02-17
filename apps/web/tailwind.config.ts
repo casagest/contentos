@@ -50,6 +50,22 @@ const config: Config = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
+  			/* Surface hierarchy — semantic dark backgrounds */
+  			surface: {
+  				ground: 'hsl(var(--surface-ground))',
+  				sunken: 'hsl(var(--surface-sunken))',
+  				raised: 'hsl(var(--surface-raised))',
+  				overlay: 'hsl(var(--surface-overlay))',
+  				tooltip: 'hsl(var(--surface-tooltip))',
+  			},
+  			/* Landing page warm palette */
+  			landing: {
+  				warm: 'hsl(var(--landing-warm))',
+  				'warm-card': 'hsl(var(--landing-warm-card))',
+  				olive: 'hsl(var(--landing-olive))',
+  				dark: 'hsl(var(--landing-dark))',
+  				darkest: 'hsl(var(--landing-darkest))',
+  			},
   			brand: {
   				'50': '#EEF2FF',
   				'100': '#E0E7FF',
@@ -63,13 +79,6 @@ const config: Config = {
   				'900': '#312E81',
   				'950': '#1E1B4B'
   			},
-  			dental: {
-  				'50': '#F0FDF4',
-  				'100': '#DCFCE7',
-  				'500': '#22C55E',
-  				'600': '#16A34A',
-  				'700': '#15803D'
-  			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',
@@ -80,6 +89,15 @@ const config: Config = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			}
+  		},
+  		fontSize: {
+  			'display': ['var(--text-display)', { lineHeight: '1.1', fontWeight: '800' }],
+  			'heading-1': ['var(--text-heading-1)', { lineHeight: '1.2', fontWeight: '700' }],
+  			'heading-2': ['var(--text-heading-2)', { lineHeight: '1.3', fontWeight: '600' }],
+  			'heading-3': ['var(--text-heading-3)', { lineHeight: '1.4', fontWeight: '600' }],
+  			'body': ['var(--text-body)', { lineHeight: '1.6' }],
+  			'caption': ['var(--text-caption)', { lineHeight: '1.5' }],
+  			'micro': ['var(--text-micro)', { lineHeight: '1.4' }],
   		},
   		fontFamily: {
   			sans: [

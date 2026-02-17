@@ -177,7 +177,7 @@ export default function BusinessProfileForm({
             className={inputClass + " appearance-none cursor-pointer"}
           >
             {INDUSTRIES.map((ind) => (
-              <option key={ind.value} value={ind.value} className="bg-[#1a1a2e]">
+              <option key={ind.value} value={ind.value} className="bg-surface-tooltip">
                 {ind.label}
               </option>
             ))}
@@ -294,7 +294,7 @@ export default function BusinessProfileForm({
             className={inputClass + " appearance-none cursor-pointer"}
           >
             {LANGUAGES.map((lang) => (
-              <option key={lang.value} value={lang.value} className="bg-[#1a1a2e]">
+              <option key={lang.value} value={lang.value} className="bg-surface-tooltip">
                 {lang.label}
               </option>
             ))}

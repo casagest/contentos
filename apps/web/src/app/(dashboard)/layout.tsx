@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShellClient from "./dashboard-shell-client";
+import { UserProvider } from "@/components/providers/user-provider";
 
 export const metadata = {
   robots: { index: false, follow: false },
@@ -36,5 +37,9 @@ export default async function DashboardLayout({
     }
   }
 
-  return <DashboardShellClient>{children}</DashboardShellClient>;
+  return (
+    <UserProvider>
+      <DashboardShellClient>{children}</DashboardShellClient>
+    </UserProvider>
+  );
 }
