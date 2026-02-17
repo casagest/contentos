@@ -532,28 +532,33 @@ export default function BrainDumpPage() {
 
       {/* Config bar */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5" role="group" aria-label="Selectează platforme">
           {platforms.map((p) => (
             <button
               key={p.id}
               onClick={() => togglePlatform(p.id)}
+              role="switch"
+              aria-checked={selectedPlatforms.includes(p.id)}
+              aria-label={`${p.label} ${selectedPlatforms.includes(p.id) ? "activat" : "dezactivat"}`}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition ${
                 selectedPlatforms.includes(p.id)
                   ? "bg-accent text-white border border-brand-500/30"
                   : "bg-card text-muted-foreground border border-border hover:border-border"
               }`}
             >
-              <div className={`w-1.5 h-1.5 rounded-full ${p.color}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${p.color}`} aria-hidden="true" />
               {p.label}
             </button>
           ))}
         </div>
-        <div className="h-4 w-px bg-white/10" />
-        <div className="flex gap-1.5">
+        <div className="h-4 w-px bg-white/10" aria-hidden="true" />
+        <div className="flex gap-1.5" role="group" aria-label="Selectează obiectiv">
           {objectives.map((o) => (
             <button
               key={o.id}
               onClick={() => setObjective(o.id)}
+              role="radio"
+              aria-checked={objective === o.id}
               className={`px-2 py-1 rounded-lg text-[10px] border transition ${
                 objective === o.id
                   ? "bg-brand-600/20 text-brand-300 border-brand-500/40"

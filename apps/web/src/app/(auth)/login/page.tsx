@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { login } from "../actions";
+import { SubmitButton } from "./submit-button";
 
 export const metadata = {
   title: "Conectare — ContentOS",
@@ -24,7 +25,7 @@ export default async function LoginPage({
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
           {error === "Invalid login credentials"
             ? "Email sau parolă incorectă."
             : error}
@@ -45,6 +46,7 @@ export default async function LoginPage({
             required
             autoComplete="email"
             placeholder="tu@exemplu.ro"
+            aria-required="true"
             className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
@@ -68,16 +70,12 @@ export default async function LoginPage({
             required
             autoComplete="current-password"
             placeholder="••••••••"
+            aria-required="true"
             className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
-        <button
-          type="submit"
-          className="w-full rounded-xl bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
-        >
-          Conectare
-        </button>
+        <SubmitButton>Conectare</SubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">

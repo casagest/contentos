@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", orgId);
 
-        console.log(`Webhook: org ${orgId} upgraded to ${planId}`);
+        // Webhook: plan upgrade logged
         break;
       }
 
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
         // If subscription cancelled at period end, we'll handle it on deletion
         if (subscription.cancel_at_period_end) {
-          console.log(`Webhook: subscription for org ${org.id} set to cancel at period end`);
+          // subscription set to cancel at period end
           break;
         }
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", org.id);
 
-        console.log(`Webhook: org ${org.id} downgraded to free`);
+        // org downgraded to free
         break;
       }
 
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
           .update({ settings })
           .eq("id", org.id);
 
-        console.log(`Webhook: payment failed for org ${org.id}`);
+        // payment failed
         break;
       }
 

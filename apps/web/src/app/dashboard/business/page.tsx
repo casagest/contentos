@@ -1266,6 +1266,7 @@ export default function BusinessDashboardPage() {
             {socialAccounts.map((acc) => (
               <div key={acc.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                 {acc.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={acc.avatar_url} alt="" className="w-8 h-8 rounded-full" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">

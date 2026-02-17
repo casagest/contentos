@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { register } from "../actions";
+import { RegisterSubmitButton } from "./submit-button";
 
 export const metadata = {
   title: "Înregistrare — ContentOS",
@@ -99,12 +100,7 @@ export default async function RegisterPage({
           />
         </div>
 
-        <button
-          type="submit"
-          className="w-full rounded-xl bg-brand-600 hover:bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition shadow-lg shadow-brand-500/25"
-        >
-          Creează cont
-        </button>
+        <RegisterSubmitButton>Creează cont</RegisterSubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">

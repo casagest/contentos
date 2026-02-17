@@ -18,7 +18,17 @@ const PROTECTED_PREFIXES = [
   "/inspiration",
   "/settings",
   "/onboarding",
+  "/video-script",
+  "/image-editor",
 ];
+
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
+  return response;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,7 +37,7 @@ export async function middleware(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isApi = pathname.startsWith("/api/");
   if (isPublic || isApi) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
@@ -35,7 +45,7 @@ export async function middleware(request: NextRequest) {
 
   // If neither protected nor landing, skip auth
   if (!isProtected && !isLandingPage) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Only now create Supabase client and check auth
@@ -85,7 +95,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return addSecurityHeaders(supabaseResponse);
 }
 
 export const config = {
