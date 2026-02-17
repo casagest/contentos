@@ -42,6 +42,55 @@ function isVideoUrl(url: string): boolean {
   return VIDEO_EXTENSIONS.some((ext) => clean.endsWith(`.${ext}`));
 }
 
+/** Upload files to storage — exportat pentru paste / drag-drop extern */
+export async function uploadMediaFiles(
+  files: File[],
+  options: {
+    organizationId: string;
+    currentUrls: string[];
+    maxImages: number;
+    onChange: (urls: string[]) => void;
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  const { organizationId, currentUrls, maxImages, onChange } = options;
+  const supabase = createClient();
+  const hasVideo = currentUrls.some((u) => isVideoUrl(u));
+
+  for (const file of files) {
+    const type = getFileType(file);
+    if (!type) return { ok: false, error: `Format invalid: ${file.name}` };
+    if (type === "image" && file.size > MAX_IMAGE_SIZE)
+      return { ok: false, error: `${file.name} depășește 8MB` };
+    if (type === "video" && file.size > MAX_VIDEO_SIZE)
+      return { ok: false, error: `Video prea mare` };
+    if (
+      type === "video" &&
+      (hasVideo || files.filter((f) => getFileType(f) === "video").length > 1)
+    )
+      return { ok: false, error: "Un singur video permis" };
+  }
+  if (currentUrls.length + files.length > maxImages)
+    return { ok: false, error: `Maximum ${maxImages} fișiere` };
+
+  try {
+    const newUrls: string[] = [];
+    for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const fileName = `${organizationId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("media")
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+      if (error) throw new Error(error.message);
+      const { data } = supabase.storage.from("media").getPublicUrl(fileName);
+      newUrls.push(data.publicUrl);
+    }
+    onChange([...currentUrls, ...newUrls]);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Eroare upload" };
+  }
+}
+
 export default function MediaUpload({
   mediaUrls,
   onChange,

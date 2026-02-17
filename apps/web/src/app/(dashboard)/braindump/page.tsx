@@ -2,13 +2,20 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import MediaUpload from "../compose/media-upload";
+import { uploadMediaFiles } from "../compose/media-upload";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
+import MediaPickerSheet from "../components/media-picker-sheet";
+import CreativeToolsPanel from "../components/creative-tools-panel";
 import { useUser } from "@/components/providers/user-provider";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ScoreRing } from "@/components/ui/score-ring";
 import { PhoneFrame } from "@/components/ui/phone-frame";
-import { FacebookPostMock, InstagramPostMock, TikTokPostMock } from "@/components/ui/platform-post-mock";
 import {
   Brain,
   RotateCcw,
@@ -18,19 +25,20 @@ import {
   AlertCircle,
   Hash,
   Lightbulb,
-  Clock,
-  Volume2,
-  Type,
-  Send,
   Save,
   TrendingUp,
   Zap,
   MessageSquare,
   Target,
   Bookmark,
-  Plus,
   ArrowUp,
+  ImageIcon,
+  Clock,
+  Volume2,
+  Type,
+  Wrench,
 } from "lucide-react";
+import { CopyButton } from "@/components/ui/copy-button";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -106,10 +114,10 @@ const PLATFORMS = [
 ] as const;
 
 const OBJECTIVES: { id: Objective; label: string; icon: typeof TrendingUp }[] = [
-  { id: "engagement", label: "Engagement", icon: TrendingUp },
+  { id: "engagement", label: "Interacțiune", icon: TrendingUp },
   { id: "reach", label: "Reach", icon: Zap },
-  { id: "leads", label: "Leads", icon: Target },
-  { id: "saves", label: "Saves", icon: Bookmark },
+  { id: "leads", label: "Lead-uri", icon: Target },
+  { id: "saves", label: "Salvări", icon: Bookmark },
 ];
 
 const QUICK_ACTIONS = [
@@ -127,26 +135,26 @@ const QUICK_ACTIONS = [
   },
   {
     icon: TrendingUp,
-    label: "Behind the scenes",
-    sub: "Arată procesul din culise",
+    label: "Din culise",
+    sub: "Arată procesul din spate",
     prompt: "Arată procesul din spatele scenei al echipei mele, cum lucrăm și ce ne diferențiază",
   },
   {
     icon: Target,
     label: "Ofertă cu CTA",
-    sub: "Promovare cu call-to-action",
-    prompt: "Promovează o ofertă specială cu call-to-action puternic și urgență",
+    sub: "Promovare cu apel la acțiune",
+    prompt: "Promovează o ofertă specială cu apel la acțiune puternic și urgență",
   },
   {
     icon: Sparkles,
-    label: "Social proof",
+    label: "Dovadă socială",
     sub: "Recenzii și rezultate",
     prompt: "Post bazat pe recenzii și testimoniale reale ale clienților noștri",
   },
   {
     icon: Brain,
-    label: "FAQ audiență",
-    sub: "Răspunsuri la întrebări frecvente",
+    label: "Întrebări frecvente",
+    sub: "Răspunsuri pentru audiență",
     prompt: "Răspunde la cele mai frecvente întrebări pe care le primim de la clienți",
   },
 ];
@@ -345,6 +353,8 @@ export default function BrainDumpPage() {
   const [error, setError] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState<string | null>(null);
+  const [pasteFeedback, setPasteFeedback] = useState<string | null>(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   const { user: currentUser } = useUser();
   const organizationId = currentUser?.organizationId || "";
@@ -368,6 +378,33 @@ export default function BrainDumpPage() {
       prev.includes(id) ? (prev.length > 1 ? prev.filter((p) => p !== id) : prev) : [...prev, id]
     );
   };
+
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items || !organizationId) return;
+      const files: File[] = [];
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith("image/")) {
+          const f = item.getAsFile();
+          if (f) files.push(f);
+        }
+      }
+      if (files.length === 0) return;
+      e.preventDefault();
+      const res = await uploadMediaFiles(files, {
+        organizationId,
+        currentUrls: mediaUrls,
+        maxImages: 10,
+        onChange: setMediaUrls,
+      });
+      if (res.ok) {
+        setPasteFeedback(`${files.length} imagine${files.length > 1 ? " adăugate" : " adăugată"}`);
+        setTimeout(() => setPasteFeedback(null), 2500);
+      }
+    },
+    [organizationId, mediaUrls]
+  );
 
   const sendMessage = useCallback(async (text?: string) => {
     const input = (text || inputText).trim();
@@ -511,26 +548,12 @@ export default function BrainDumpPage() {
     setClarifications([]);
     setError(null);
     setInputText("");
+    setMediaUrls([]);
     setPhase("idle");
     setProgress(0);
     setVisiblePlatforms([]);
     try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch { /* silent */ }
   };
-
-  // ── Helpers for phone mocks ──
-  function buildMockData(platform: string): { text: string; score: number; likes: string; comments: string; shares?: string } {
-    const p = results?.platforms;
-    if (platform === "facebook" && p?.facebook) {
-      return { text: p.facebook.content, score: getScore(p.facebook), likes: "2.4K", comments: "187", shares: "342" };
-    }
-    if (platform === "instagram" && p?.instagram) {
-      return { text: p.instagram.caption, score: getScore(p.instagram), likes: "1.8K", comments: "94" };
-    }
-    if (platform === "tiktok" && p?.tiktok) {
-      return { text: `${p.tiktok.hook}\n\n${p.tiktok.script}`, score: getScore(p.tiktok), likes: "12.3K", comments: "891" };
-    }
-    return { text: "Se generează conținut...", score: 0, likes: "—", comments: "—" };
-  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER
@@ -574,8 +597,41 @@ export default function BrainDumpPage() {
               </button>
             ))}
           </div>
+
+          {/* Instrumente creative */}
+          <div className="mt-10">
+            <button
+              onClick={() => setToolsOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.12] transition text-sm font-medium"
+            >
+              <Wrench className="w-4 h-4 text-orange-400" />
+              Instrumente creative
+            </button>
+          </div>
         </motion.div>
       )}
+
+      {/* Sheet Instrumente creative — shared */}
+      <Sheet open={toolsOpen} onOpenChange={setToolsOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md bg-[hsl(var(--surface-overlay))] border-white/[0.08] overflow-y-auto">
+          <SheetHeader className="text-left pb-4">
+            <SheetTitle className="text-lg font-semibold text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-orange-400" />
+              Instrumente creative
+            </SheetTitle>
+            <p className="text-sm text-white/50">
+              Voce brand, repurposing, trend pulse, mood board, întrebări audiență.
+            </p>
+          </SheetHeader>
+          <CreativeToolsPanel
+            onPromptSelect={(prompt) => {
+              setInputText(prompt);
+              setToolsOpen(false);
+              setTimeout(() => inputRef.current?.focus(), 100);
+            }}
+          />
+        </SheetContent>
+      </Sheet>
 
       {/* ════ GENERATING STATE — Progress + Phone Previews ════ */}
       {phase === "generating" && (
@@ -588,7 +644,7 @@ export default function BrainDumpPage() {
           <div className="max-w-[700px] mx-auto mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground font-medium">
-                Generez pentru {selectedPlatforms.length} platforme...
+                Se generează pentru {selectedPlatforms.length} platforme...
               </span>
               <span className="text-sm font-mono font-semibold text-orange-400 tabular-nums">
                 {Math.round(progress)}%
@@ -660,39 +716,7 @@ export default function BrainDumpPage() {
             </button>
           </div>
 
-          {/* Phone frame previews row */}
-          <div className="flex gap-5 justify-center flex-wrap mb-8">
-            {selectedPlatforms.map((platform, i) => {
-              const mockData = buildMockData(platform);
-              return (
-                <motion.div
-                  key={platform}
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 }}
-                >
-                  <div className="flex items-center justify-between mb-2.5 px-1">
-                    <span className="text-xs font-semibold" style={{ color: PLATFORMS.find((p) => p.id === platform)?.color }}>
-                      ● {PLATFORMS.find((p) => p.id === platform)?.label}
-                    </span>
-                    <ScoreRing score={mockData.score} size={36} delay={i * 100} />
-                  </div>
-                  <PhoneFrame platform={platform as "facebook" | "instagram" | "tiktok" | "youtube"}>
-                    {platform === "facebook" && <FacebookPostMock data={mockData} />}
-                    {platform === "instagram" && <InstagramPostMock data={mockData} />}
-                    {platform === "tiktok" && <TikTokPostMock data={mockData} />}
-                    {platform === "youtube" && (
-                      <div className="min-h-[480px] flex items-center justify-center p-4">
-                        <p className="text-white/60 text-xs text-center">YouTube preview</p>
-                      </div>
-                    )}
-                  </PhoneFrame>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Detailed result cards */}
+          {/* Rezultate — carduri pe platformă */}
           <div className="max-w-3xl mx-auto space-y-3 pb-48">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-orange-400" />
@@ -751,7 +775,7 @@ export default function BrainDumpPage() {
           {messages.length > 0 && (
             <div className="flex justify-end mb-2">
               <button onClick={startOver} className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition flex items-center gap-1.5">
-                <RotateCcw className="w-3 h-3" /> Start nou
+                <RotateCcw className="w-3 h-3" /> Începe din nou
               </button>
             </div>
           )}
@@ -766,15 +790,24 @@ export default function BrainDumpPage() {
                 layout
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                  msg.role === "user"
-                    ? "bg-orange-500/10 text-white border border-orange-500/20 rounded-br-md"
-                    : "bg-white/[0.03] text-foreground/80 border border-white/[0.06] rounded-bl-md"
-                }`}>
+                <div
+                  className={`group relative max-w-[85%] rounded-2xl px-4 py-3 ${
+                    msg.role === "user"
+                      ? "bg-gradient-to-br from-orange-500/15 to-orange-600/10 text-white border border-orange-500/25 rounded-br-md"
+                      : "bg-white/[0.04] text-foreground/90 border border-white/[0.06] rounded-bl-md"
+                  }`}
+                >
                   {msg.role === "assistant" && (
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Sparkles className="w-3 h-3 text-orange-400" />
-                      <span className="text-[10px] text-orange-400 font-medium">ContentOS AI</span>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                        <span className="text-[10px] text-orange-400 font-semibold">ContentOS AI</span>
+                      </span>
+                      <CopyButton
+                        text={msg.content}
+                        label="Copiază"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-2 py-0.5 rounded-md"
+                      />
                     </div>
                   )}
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -814,36 +847,69 @@ export default function BrainDumpPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-         FLOATING INPUT BAR — glass morphism
+         CHAT COMPOSER 2030 — voce, media, paste, shortcuts
          ═══════════════════════════════════════════════════════════════════ */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none" style={{ paddingLeft: "var(--sidebar-width, 0px)" }}>
-        <div className="pointer-events-auto px-6 pb-5 pt-8 bg-gradient-to-t from-background via-background/95 to-transparent">
-          <div className={`max-w-[640px] mx-auto rounded-2xl shadow-[0_-4px_40px_rgba(0,0,0,0.4)] bg-white/[0.03] backdrop-blur-xl border border-white/[0.07] ${phase === "idle" ? "animate-border-glow" : ""}`}>
-            {/* Platform toggles row */}
-            <div className="flex items-center gap-1 px-3 pt-3 pb-1">
+        <div className="pointer-events-auto px-6 pb-6 pt-10 bg-gradient-to-t from-background via-background/98 to-transparent">
+          <div
+            className={`max-w-[680px] mx-auto rounded-2xl shadow-[0_-8px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.03)] bg-[hsl(var(--surface-overlay))]/80 backdrop-blur-2xl border border-white/[0.08] overflow-hidden ${phase === "idle" ? "animate-border-glow" : ""}`}
+          >
+            {/* Media strip — thumbnails când există imagini */}
+            {mediaUrls.length > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.04] overflow-x-auto">
+                {mediaUrls.slice(0, 6).map((url, i) => (
+                  <div key={url} className="relative shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/5 ring-1 ring-white/10">
+                    {url.split("?")[0].toLowerCase().match(/\.(mp4|mov|webm|avi|m4v)$/) ? (
+                      <div className="w-full h-full flex items-center justify-center text-white/40">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    )}
+                    <span className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded bg-black/60 text-[9px] font-bold flex items-center justify-center text-white">
+                      {i + 1}
+                    </span>
+                  </div>
+                ))}
+                {mediaUrls.length > 6 && (
+                  <span className="text-xs text-white/40 shrink-0">+{mediaUrls.length - 6}</span>
+                )}
+              </div>
+            )}
+
+            {/* Paste feedback */}
+            {pasteFeedback && (
+              <div className="px-3 py-1.5 bg-emerald-500/15 border-b border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-2">
+                <ImageIcon className="w-3.5 h-3.5" /> {pasteFeedback}
+              </div>
+            )}
+
+            {/* Platform + obiective */}
+            <div className="flex items-center gap-1.5 px-3 pt-3 pb-1">
               {PLATFORMS.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => togglePlatform(p.id)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
                     selectedPlatforms.includes(p.id)
-                      ? "border-current/20"
-                      : "text-white/20 border-transparent"
+                      ? "border-current/25"
+                      : "text-white/25 border-transparent hover:text-white/40"
                   }`}
-                  style={selectedPlatforms.includes(p.id) ? { color: p.color, background: `${p.color}18`, borderColor: `${p.color}30` } : undefined}
+                  style={selectedPlatforms.includes(p.id) ? { color: p.color, background: `${p.color}18`, borderColor: `${p.color}35` } : undefined}
                 >
                   {p.label}
                 </button>
               ))}
-              <div className="w-px h-4 bg-white/[0.06] mx-1" />
+              <div className="w-px h-4 bg-white/[0.08] mx-1" />
               {OBJECTIVES.map((o) => (
                 <button
                   key={o.id}
                   onClick={() => setObjective(o.id)}
                   className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
                     objective === o.id
-                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
-                      : "text-white/20 border border-transparent hover:text-white/40"
+                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/35"
+                      : "text-white/25 border border-transparent hover:text-white/45"
                   }`}
                 >
                   {o.label}
@@ -851,15 +917,16 @@ export default function BrainDumpPage() {
               ))}
             </div>
 
-            {/* Input row */}
-            <div className="flex items-end px-1.5 pb-1.5">
-              <div className="flex items-center gap-1 px-1">
+            {/* Input row — Media | Voce | Text | Send */}
+            <div className="flex items-end gap-2 px-2 pb-2.5 pt-1">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {organizationId && (
-                  <MediaUpload
+                  <MediaPickerSheet
                     mediaUrls={mediaUrls}
                     onChange={setMediaUrls}
                     organizationId={organizationId}
                     maxImages={10}
+                    variant="compact"
                   />
                 )}
                 <VoiceInput
@@ -872,23 +939,26 @@ export default function BrainDumpPage() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Descrie postarea pe care o vrei..."
-                aria-label="Mesaj Brain Dump"
+                onPaste={handlePaste}
+                placeholder="Descrie ideea... sau lipește o imagine (Ctrl+V)"
+                aria-label="Mesaj Creier Idei"
                 rows={1}
-                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none resize-none py-2 px-2 min-h-[34px] max-h-[100px]"
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/25 focus:outline-none resize-none py-2.5 px-3 min-h-[38px] max-h-[120px] rounded-lg focus:ring-2 focus:ring-orange-500/20"
                 onInput={(e) => {
                   const el = e.currentTarget;
-                  el.style.height = "34px";
-                  el.style.height = Math.min(el.scrollHeight, 100) + "px";
+                  el.style.height = "38px";
+                  el.style.height = Math.min(el.scrollHeight, 120) + "px";
                 }}
               />
-              <button
+              <motion.button
                 onClick={() => sendMessage()}
                 disabled={!inputText.trim() || isProcessing}
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 m-0.5 transition-all ${
+                whileHover={inputText.trim() ? { scale: 1.05 } : {}}
+                whileTap={inputText.trim() ? { scale: 0.95 } : {}}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
                   inputText.trim()
-                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:shadow-[0_0_28px_rgba(249,115,22,0.55)] hover:scale-105"
-                    : "bg-white/[0.03] text-white/12"
+                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-[0_0_24px_rgba(249,115,22,0.35)] hover:shadow-[0_0_32px_rgba(249,115,22,0.5)]"
+                    : "bg-white/[0.04] text-white/15 cursor-not-allowed"
                 }`}
               >
                 {isProcessing ? (
@@ -896,12 +966,21 @@ export default function BrainDumpPage() {
                 ) : (
                   <ArrowUp className="w-4 h-4" />
                 )}
-              </button>
+              </motion.button>
             </div>
           </div>
-          {/* Hint */}
-          <div className="max-w-[640px] mx-auto flex justify-center mt-1.5">
-            <span className="text-[10px] text-white/10">Enter generează · Shift+Enter linie nouă</span>
+          {/* Shortcuts hint + Instrumente */}
+          <div className="max-w-[680px] mx-auto flex flex-wrap items-center justify-center gap-4 mt-2">
+            <span className="text-[10px] text-white/15">Enter trimite</span>
+            <span className="text-[10px] text-white/15">Shift+Enter linie nouă</span>
+            <span className="text-[10px] text-white/15">Ctrl+V imagine</span>
+            <span className="text-[10px] text-emerald-500/50">🎤 Dictare vocală</span>
+            <button
+              onClick={() => setToolsOpen(true)}
+              className="text-[10px] text-orange-500/70 hover:text-orange-400 flex items-center gap-1"
+            >
+              <Wrench className="w-3 h-3" /> Instrumente
+            </button>
           </div>
         </div>
       </div>
