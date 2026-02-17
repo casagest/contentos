@@ -100,7 +100,7 @@ export default function DashboardShellClient({
         <NetworkStatus />
 
         {/* Page content with route transition */}
-        <div className="flex-1 p-6">
+        <main id="main-content" className="flex-1 p-6">
           <ErrorBoundary>
             <Suspense fallback={<PageFallback />}>
               <AnimatePresence mode="wait" initial={false}>
@@ -116,7 +116,7 @@ export default function DashboardShellClient({
               </AnimatePresence>
             </Suspense>
           </ErrorBoundary>
-        </div>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

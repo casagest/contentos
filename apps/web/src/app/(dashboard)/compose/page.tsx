@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { pushNotification } from "@/components/notification-center";
+import { useUser } from "@/components/providers/user-provider";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
 import {
@@ -123,36 +123,9 @@ export default function ComposePage() {
 
   // Media state
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [organizationId, setOrganizationId] = useState<string>("");
-  const [isDental, setIsDental] = useState(false);
-
-  // Load organization ID + business profile
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase
-        .from("users")
-        .select("organization_id")
-        .eq("id", user.id)
-        .single()
-        .then(({ data }) => {
-          if (data?.organization_id) {
-            setOrganizationId(data.organization_id);
-            supabase
-              .from("business_profiles")
-              .select("industry")
-              .eq("organization_id", data.organization_id)
-              .single()
-              .then(({ data: bp }) => {
-                if (bp?.industry?.toLowerCase().includes("dental") || bp?.industry?.toLowerCase().includes("stomatolog")) {
-                  setIsDental(true);
-                }
-              });
-          }
-        });
-    });
-  }, []);
+  const { user: currentUser } = useUser();
+  const organizationId = currentUser?.organizationId || "";
+  const isDental = currentUser?.industry?.toLowerCase().includes("dental") || currentUser?.industry?.toLowerCase().includes("stomatolog") || false;
 
   // Explore state
   const [angles, setAngles] = useState<CreativeAngle[]>([]);

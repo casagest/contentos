@@ -277,15 +277,16 @@ function DraftModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="draft-modal-title">
       <div className="w-full max-w-lg rounded-2xl bg-surface-ground border border-border p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-semibold text-white">
+          <h3 id="draft-modal-title" className="text-lg font-semibold text-white">
             {isEditing ? "Editează Draft" : "Creează Draft"}
           </h3>
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-white transition"
+            aria-label="Închide"
           >
             <X className="w-5 h-5" />
           </button>
