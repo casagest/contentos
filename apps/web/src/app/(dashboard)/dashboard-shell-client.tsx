@@ -13,6 +13,8 @@ import {
   Search,
   Brain,
   Lightbulb,
+  Film,
+  Image as ImageIcon,
   Settings,
   Menu,
   X,
@@ -34,6 +36,9 @@ const navItems = [
   { href: "/analytics", label: "Analiză", icon: TrendingUp },
   { href: "/calendar", label: "Calendar", icon: CalendarCheck },
   { href: "/history", label: "Istoric Postări", icon: Clock },
+  // — Media —
+  { href: "/video-script", label: "Script Video", icon: Film },
+  { href: "/image-editor", label: "Editor Imagine", icon: ImageIcon },
   // — Cercetare —
   { href: "/research", label: "Cercetare", icon: Search },
   { href: "/inspiration", label: "Inspirație", icon: Lightbulb },
