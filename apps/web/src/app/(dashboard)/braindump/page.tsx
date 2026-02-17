@@ -205,7 +205,7 @@ function getScore(result: FacebookResult | InstagramResult | TikTokResult | YouT
 
 function FacebookCard({ data }: { data: FacebookResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
+    <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm hover:border-white/[0.08] transition-colors">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -223,7 +223,7 @@ function FacebookCard({ data }: { data: FacebookResult }) {
 
 function InstagramCard({ data }: { data: InstagramResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
+    <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm hover:border-white/[0.08] transition-colors">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-pink-500" />
@@ -247,7 +247,7 @@ function InstagramCard({ data }: { data: InstagramResult }) {
 
 function TikTokCard({ data }: { data: TikTokResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
+    <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm hover:border-white/[0.08] transition-colors">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-gray-500" />
@@ -274,7 +274,7 @@ function TikTokCard({ data }: { data: TikTokResult }) {
 
 function YouTubeCard({ data }: { data: YouTubeResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm">
+    <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm hover:border-white/[0.08] transition-colors">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -553,24 +553,24 @@ export default function BrainDumpPage() {
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="flex-1 flex flex-col items-center justify-center px-4 pb-48"
         >
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-center bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-center bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent mb-4">
             Ce vrei să creezi?
           </h1>
-          <p className="text-muted-foreground text-sm mb-10 text-center max-w-md">
+          <p className="text-muted-foreground text-sm mb-12 text-center max-w-md">
             Scrie orice idee. AI-ul cunoaște industria ta, audiența și fiecare platformă.
           </p>
 
-          {/* Quick actions grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-w-[640px] w-full">
+          {/* Quick actions grid 2x3 */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-[640px] w-full">
             {QUICK_ACTIONS.map((q) => (
               <button
                 key={q.label}
                 onClick={() => { setInputText(q.prompt); setTimeout(() => inputRef.current?.focus(), 100); }}
-                className="group bg-white/[0.015] border border-white/[0.04] rounded-2xl p-4 text-left transition-all hover:bg-white/[0.04] hover:border-white/[0.1] hover:-translate-y-0.5"
+                className="group bg-white/[0.015] border border-white/[0.04] rounded-2xl p-4 text-left transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.08] hover:-translate-y-0.5"
               >
                 <q.icon className="w-5 h-5 text-orange-400/60 group-hover:text-orange-400 transition mb-2.5" />
-                <div className="text-white/80 text-[13px] font-semibold">{q.label}</div>
-                <div className="text-white/25 text-[11px] mt-0.5">{q.sub}</div>
+                <div className="text-white font-semibold text-[13px]">{q.label}</div>
+                <div className="text-white/40 text-[11px] mt-0.5">{q.sub}</div>
               </button>
             ))}
           </div>
@@ -584,20 +584,24 @@ export default function BrainDumpPage() {
           animate={{ opacity: 1 }}
           className="flex-1 px-4 pt-4"
         >
-          {/* Progress bar */}
+          {/* Progress bar cu gradient shimmer */}
           <div className="max-w-[700px] mx-auto mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground font-medium">
                 Generez pentru {selectedPlatforms.length} platforme...
               </span>
-              <span className="text-xs text-orange-400 font-semibold font-mono">
+              <span className="text-sm font-mono font-semibold text-orange-400 tabular-nums">
                 {Math.round(progress)}%
               </span>
             </div>
-            <div className="h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+            <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 animate-progress-shimmer transition-[width] duration-300 ease-out"
-                style={{ width: `${progress}%` }}
+                className="h-full rounded-full transition-[width] duration-300 ease-out animate-progress-shimmer"
+                style={{
+                  width: `${progress}%`,
+                  backgroundImage: "linear-gradient(90deg, rgb(249,115,22), rgb(236,72,153), rgb(168,85,247), rgb(249,115,22))",
+                  backgroundSize: "200% 100%",
+                }}
               />
             </div>
           </div>
@@ -640,16 +644,17 @@ export default function BrainDumpPage() {
           animate={{ opacity: 1 }}
           className="flex-1 px-4 pt-2"
         >
-          {/* Success bar */}
-          <div className="max-w-[700px] mx-auto mb-6 flex items-center gap-3 bg-green-500/[0.06] border border-green-500/[0.12] rounded-xl px-4 py-2.5">
-            <Sparkles className="w-4 h-4 text-green-400" />
-            <span className="text-sm text-green-300 font-medium">
+          {/* Success bar verde subtil */}
+          <div className="max-w-[700px] mx-auto mb-6 flex items-center gap-3 bg-green-500/[0.06] border border-green-500/20 rounded-xl px-4 py-3">
+            <div className="w-2 h-2 rounded-full bg-green-400/80 animate-pulse" />
+            <Sparkles className="w-4 h-4 text-green-400/90" />
+            <span className="text-sm text-green-300/90 font-medium">
               {selectedPlatforms.length} versiuni generate · Adaptate per platformă
             </span>
             <div className="flex-1" />
             <button
               onClick={startOver}
-              className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-muted-foreground text-[11px] font-semibold hover:text-white transition"
+              className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-muted-foreground text-[11px] font-semibold hover:text-white hover:bg-white/[0.08] transition"
             >
               ✦ Nou
             </button>
@@ -719,14 +724,14 @@ export default function BrainDumpPage() {
               <VisualSuggestion key={p} platform={p} isDental={isDental} />
             ))}
 
-            {/* Save draft */}
+            {/* Save draft — orange gradient + shine sweep */}
             <div className="flex gap-2 pt-2">
               <button
                 onClick={saveDraft}
                 disabled={savingDraft}
-                className="group relative flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 disabled:opacity-40 text-white font-semibold transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 flex items-center justify-center gap-2 text-sm overflow-hidden"
+                className="group relative flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 disabled:opacity-40 text-white font-semibold transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm overflow-hidden"
               >
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 <Save className="w-4 h-4 relative" />
                 <span className="relative">{savingDraft ? "Se salvează..." : "Salvează ca Draft"}</span>
               </button>
@@ -809,11 +814,11 @@ export default function BrainDumpPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-         FLOATING INPUT BAR
+         FLOATING INPUT BAR — glass morphism
          ═══════════════════════════════════════════════════════════════════ */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none" style={{ paddingLeft: "var(--sidebar-width, 0px)" }}>
         <div className="pointer-events-auto px-6 pb-5 pt-8 bg-gradient-to-t from-background via-background/95 to-transparent">
-          <div className={`max-w-[640px] mx-auto bg-white/[0.03] border border-white/[0.07] rounded-2xl shadow-[0_-4px_40px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-xl ${phase === "idle" ? "animate-border-glow" : ""}`}>
+          <div className={`max-w-[640px] mx-auto rounded-2xl shadow-[0_-4px_40px_rgba(0,0,0,0.4)] bg-white/[0.03] backdrop-blur-xl border border-white/[0.07] ${phase === "idle" ? "animate-border-glow" : ""}`}>
             {/* Platform toggles row */}
             <div className="flex items-center gap-1 px-3 pt-3 pb-1">
               {PLATFORMS.map((p) => (
@@ -880,9 +885,9 @@ export default function BrainDumpPage() {
               <button
                 onClick={() => sendMessage()}
                 disabled={!inputText.trim() || isProcessing}
-                className={`w-[34px] h-[34px] rounded-xl flex items-center justify-center shrink-0 m-0.5 transition-all ${
+                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 m-0.5 transition-all ${
                   inputText.trim()
-                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-[0_2px_20px_rgba(249,115,22,0.4)] hover:shadow-[0_2px_30px_rgba(249,115,22,0.6)]"
+                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:shadow-[0_0_28px_rgba(249,115,22,0.55)] hover:scale-105"
                     : "bg-white/[0.03] text-white/12"
                 }`}
               >

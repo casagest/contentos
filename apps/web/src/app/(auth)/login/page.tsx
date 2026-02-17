@@ -17,7 +17,7 @@ export default async function LoginPage({
   const redirectTo = params.redirect || "";
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8 backdrop-blur-xl shadow-2xl shadow-black/20">
+    <div className="rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] p-8 shadow-2xl w-full">
       {/* Header */}
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-white tracking-tight">Bine ai revenit</h1>
@@ -26,7 +26,7 @@ export default async function LoginPage({
         </p>
       </div>
 
-      {/* Error alert */}
+      {/* Error alert — dot roșu animat + text */}
       {error && (
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
           <div className="mt-0.5 w-2 h-2 rounded-full bg-red-400 shrink-0 animate-pulse" />
@@ -52,7 +52,7 @@ export default async function LoginPage({
               autoComplete="email"
               placeholder="tu@exemplu.ro"
               aria-required="true"
-              className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-4 py-3 text-sm text-white placeholder:text-muted-foreground/60 focus:border-orange-500/50 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white/[0.06] transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-muted-foreground/60 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all"
             />
           </div>
         </div>
@@ -65,7 +65,7 @@ export default async function LoginPage({
             </label>
             <Link
               href="/reset-password"
-              className="text-xs text-orange-400/80 hover:text-orange-300 transition"
+              className="text-xs text-muted-foreground/80 hover:text-muted-foreground transition"
             >
               Ai uitat parola?
             </Link>
@@ -80,7 +80,7 @@ export default async function LoginPage({
               autoComplete="current-password"
               placeholder="••••••••"
               aria-required="true"
-              className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-4 py-3 text-sm text-white placeholder:text-muted-foreground/60 focus:border-orange-500/50 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white/[0.06] transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-muted-foreground/60 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all"
             />
           </div>
         </div>
@@ -91,13 +91,13 @@ export default async function LoginPage({
         </SubmitButton>
       </form>
 
-      {/* Divider */}
+      {/* Divider — linie subtilă */}
       <div className="relative my-7">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-white/[0.06]" />
         </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="px-3 text-muted-foreground/50 bg-surface-sunken">sau</span>
+        <div className="relative flex justify-center">
+          <span className="px-3 text-xs text-muted-foreground/50 bg-white/[0.03]">sau</span>
         </div>
       </div>
 

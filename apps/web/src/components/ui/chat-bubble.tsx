@@ -11,7 +11,7 @@ interface ChatBubbleProps {
   /** Optional warning text */
   warning?: string;
   /** Accent color for assistant avatar (default: brand) */
-  accentColor?: "brand" | "emerald";
+  accentColor?: "brand" | "emerald" | "orange";
   /** Assistant label */
   assistantLabel?: string;
   className?: string;
@@ -22,11 +22,25 @@ const accentStyles = {
     avatar: "bg-brand-500/10 text-brand-400",
     label: "text-brand-400",
     icon: Sparkles,
+    userBubble: "bg-brand-600/15 text-white border border-brand-500/20 rounded-br-md",
+    userAvatar: "bg-brand-500/10 text-brand-400",
+    assistantBubble: "bg-muted text-foreground/80 border border-border rounded-bl-md",
   },
   emerald: {
     avatar: "bg-emerald-500/10 text-emerald-400",
     label: "text-emerald-400",
     icon: Bot,
+    userBubble: "bg-brand-600/15 text-white border border-brand-500/20 rounded-br-md",
+    userAvatar: "bg-brand-500/10 text-brand-400",
+    assistantBubble: "bg-muted text-foreground/80 border border-border rounded-bl-md",
+  },
+  orange: {
+    avatar: "bg-orange-500/10 text-orange-400",
+    label: "text-orange-400",
+    icon: Sparkles,
+    userBubble: "bg-orange-500/10 text-white border border-orange-500/20 rounded-br-md",
+    userAvatar: "bg-orange-500/10 text-orange-400",
+    assistantBubble: "bg-white/[0.03] text-foreground/80 border border-white/[0.06] rounded-bl-md",
   },
 };
 
@@ -52,15 +66,13 @@ export function ChatBubble({
       <div
         className={cn(
           "max-w-[80%] rounded-2xl px-4 py-2.5 text-body",
-          role === "user"
-            ? "bg-brand-600/15 text-white border border-brand-500/20 rounded-br-md"
-            : "bg-muted text-foreground/80 border border-border rounded-bl-md",
+          role === "user" ? accent.userBubble : accent.assistantBubble,
         )}
       >
-        {role === "assistant" && assistantLabel && (
+        {role === "assistant" && (assistantLabel != null || accentColor === "orange") && (
           <div className="flex items-center gap-1.5 mb-1">
-            <Sparkles className="w-3 h-3" />
-            <span className={cn("text-micro font-medium", accent.label)}>{assistantLabel}</span>
+            <Sparkles className={cn("w-3 h-3", accent.label)} />
+            <span className={cn("text-micro font-medium", accent.label)}>{assistantLabel ?? "ContentOS AI"}</span>
           </div>
         )}
 
@@ -87,8 +99,8 @@ export function ChatBubble({
         )}
       </div>
       {role === "user" && (
-        <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center shrink-0">
-          <User className="w-4 h-4 text-brand-400" />
+        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", accent.userAvatar)}>
+          <User className="w-4 h-4" />
         </div>
       )}
     </div>

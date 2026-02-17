@@ -12,7 +12,6 @@ import {
   Check,
   Hash,
   Smile,
-  ChevronDown,
   Wand2,
   RotateCcw,
   Save,
@@ -31,8 +30,10 @@ import {
   AlertCircle,
   MessageCircle,
   Image as ImageIcon,
+  Pencil,
 } from "lucide-react";
 import MediaUpload from "./media-upload";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ---------- Types ----------
 type Objective = "engagement" | "reach" | "leads" | "saves";
@@ -387,34 +388,71 @@ export default function ComposePage() {
   // ---------- Render ----------
   return (
     <div>
-      {/* Phase indicator */}
-      <div className="flex items-center gap-2 mb-6">
-        {(["input", "explore", "generate"] as Phase[]).map((p, idx) => (
-          <div key={p} className="flex items-center gap-2">
-            {idx > 0 && <div className="w-8 h-px bg-white/10" />}
-            <button
-              onClick={() => {
-                if (p === "input") resetToInput();
-                else if (p === "explore" && phase === "generate") backToExplore();
-              }}
-              disabled={
-                (p === "explore" && phase === "input") ||
-                (p === "generate" && phase !== "generate")
-              }
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                phase === p
-                  ? "bg-brand-600/20 text-brand-300 border border-brand-500/40"
-                  : phase === "generate" && p === "input"
-                    ? "bg-muted text-muted-foreground border border-border cursor-pointer hover:text-foreground/80"
-                    : "bg-muted text-muted-foreground border border-border"
-              }`}
-            >
-              {p === "input" && <><PenTool className="w-3 h-3" /> Ideea</>}
-              {p === "explore" && <><Brain className="w-3 h-3" /> Unghiuri</>}
-              {p === "generate" && <><Sparkles className="w-3 h-3" /> Rezultat</>}
-            </button>
-          </div>
-        ))}
+      {/* Stepper vizual — 3 cercuri conectate cu linie */}
+      <div className="flex items-center justify-center mb-8">
+        {(["input", "explore", "generate"] as Phase[]).map((p, idx) => {
+          const phaseOrder = ["input", "explore", "generate"] as const;
+          const currentIdx = phaseOrder.indexOf(phase);
+          const stepIdx = phaseOrder.indexOf(p);
+          const isCurrent = phase === p;
+          const isCompleted = currentIdx > stepIdx;
+          const canClick = (p === "input") || (p === "explore" && phase === "generate");
+          return (
+            <div key={p} className="flex items-center">
+              {idx > 0 && (
+                <div
+                  className={`w-6 sm:w-12 h-px mx-0.5 transition-colors ${
+                    isCompleted ? "bg-green-500/50" : "bg-white/10"
+                  }`}
+                />
+              )}
+              <button
+                onClick={() => {
+                  if (p === "input") resetToInput();
+                  else if (p === "explore" && phase === "generate") backToExplore();
+                }}
+                disabled={!canClick}
+                className={`flex flex-col sm:flex-row items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg transition ${
+                  canClick ? "cursor-pointer hover:opacity-90" : "cursor-default"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                    isCurrent
+                      ? "bg-orange-500 text-white animate-pulse shadow-lg shadow-orange-500/30"
+                      : isCompleted
+                        ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                        : "bg-white/5 text-white/30 border border-white/10"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <Check className="w-4 h-4" strokeWidth={2.5} />
+                  ) : (
+                    <>
+                      {p === "input" && <PenTool className="w-4 h-4" />}
+                      {p === "explore" && <Brain className="w-4 h-4" />}
+                      {p === "generate" && <Sparkles className="w-4 h-4" />}
+                    </>
+                  )}
+                </div>
+                <span className={`text-xs font-medium hidden sm:inline ${
+                  isCurrent ? "text-orange-400" : isCompleted ? "text-green-400/90" : "text-muted-foreground"
+                }`}>
+                  {p === "input" && "Ideea ta"}
+                  {p === "explore" && "Unghiuri creative"}
+                  {p === "generate" && "Conținut final"}
+                </span>
+              </button>
+              {idx < 2 && (
+                <div
+                  className={`w-6 sm:w-12 h-px mx-0.5 transition-colors ${
+                    stepIdx < currentIdx ? "bg-green-500/50" : "bg-white/10"
+                  }`}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* ============ PHASE 1: INPUT ============ */}
@@ -422,15 +460,15 @@ export default function ComposePage() {
       {phase === "input" && (
         <motion.div
           key="input"
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -16 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
+          exit={{ opacity: 0, x: 16 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
           <div className="space-y-4">
-            {/* Content input */}
-            <div className="rounded-xl bg-card border border-border p-4">
+            {/* Content input — card glass */}
+            <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-4">
               <label className="block text-sm font-medium text-foreground/80 mb-2">
                 Ideea ta
               </label>
@@ -439,7 +477,7 @@ export default function ComposePage() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Scrie ideea, mesajul sau textul brut... Fii cat de vag sau specific vrei — AI-ul te va ghida."
                 rows={8}
-                className="w-full bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none"
+                className="w-full bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none rounded-lg"
               />
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                 <div className="flex gap-2 items-center">
@@ -468,7 +506,7 @@ export default function ComposePage() {
 
             {/* Media Upload */}
             {organizationId && (
-              <div className="rounded-xl bg-card border border-border p-4">
+              <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-4">
                 <label className="text-sm font-medium text-foreground/80 mb-2 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" />
                   Media
@@ -481,8 +519,8 @@ export default function ComposePage() {
               </div>
             )}
 
-            {/* Platform selection */}
-            <div className="rounded-xl bg-card border border-border p-4">
+            {/* Platform selection — dot-uri colorate */}
+            <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-4">
               <label className="block text-sm font-medium text-foreground/80 mb-3" id="compose-platforms-label">
                 Platforme
               </label>
@@ -493,36 +531,37 @@ export default function ComposePage() {
                     onClick={() => togglePlatform(p.id)}
                     role="switch"
                     aria-checked={selectedPlatforms.includes(p.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition border ${
                       selectedPlatforms.includes(p.id)
-                        ? "bg-accent text-white border border-brand-500/30"
-                        : "bg-card text-muted-foreground border border-border hover:border-border"
+                        ? "bg-accent text-white border-orange-500/30"
+                        : "bg-white/[0.03] text-muted-foreground border-white/[0.06] hover:border-white/[0.1]"
                     }`}
                   >
-                    <div className={`w-2 h-2 rounded-full ${p.color}`} />
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${p.color}`} />
                     {p.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Options: tone + objective */}
-            <div className="rounded-xl bg-card border border-border p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Ton</span>
-                <div className="relative">
-                  <select
-                    value={tone}
-                    onChange={(e) => setTone(e.target.value)}
-                    className="appearance-none bg-muted border border-border rounded-lg px-3 py-1.5 pr-8 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
-                  >
-                    {tones.map((t) => (
-                      <option key={t.id} value={t.id} className="bg-gray-900">
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            {/* Options: tone pills + objective */}
+            <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-4 space-y-3">
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground block">Ton</span>
+                <div className="flex flex-wrap gap-2">
+                  {tones.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setTone(t.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition border ${
+                        tone === t.id
+                          ? "bg-orange-500/15 text-orange-400 border-orange-500/30"
+                          : "bg-white/[0.03] text-muted-foreground border-white/[0.06] hover:text-white/80 hover:border-white/[0.1]"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -534,10 +573,10 @@ export default function ComposePage() {
                       <button
                         key={item.id}
                         onClick={() => setObjective(item.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs border transition ${
                           objective === item.id
-                            ? "bg-brand-600/20 text-brand-300 border-brand-500/40"
-                            : "bg-muted text-muted-foreground border-border hover:text-foreground/80"
+                            ? "bg-orange-500/15 text-orange-400 border-orange-500/30"
+                            : "bg-white/[0.03] text-muted-foreground border-white/[0.06] hover:text-white/80 hover:border-white/[0.1]"
                         }`}
                       >
                         <Icon className="w-3 h-3" />
@@ -571,7 +610,7 @@ export default function ComposePage() {
           </div>
 
           {/* Right side: intent analysis / help */}
-          <div className="rounded-xl bg-card/50 border border-dashed border-border p-6 space-y-4">
+          <div className="rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-dashed border-white/[0.06] p-6 space-y-4">
             {intentResult ? (
               <>
                 <div className="flex items-center gap-2 mb-2">
@@ -623,14 +662,14 @@ export default function ComposePage() {
       {phase === "explore" && (
         <motion.div
           key="explore"
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
+          exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="space-y-4"
         >
           {/* Input summary bar */}
-          <div className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+          <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-3 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <PenTool className="w-4 h-4 text-muted-foreground shrink-0" />
               <p className="text-sm text-foreground/80 truncate">{content.slice(0, 120)}{content.length > 120 ? "..." : ""}</p>
@@ -652,10 +691,10 @@ export default function ComposePage() {
                 <button
                   key={angle.id}
                   onClick={() => setSelectedAngleId(angle.id)}
-                  className={`text-left rounded-xl border p-4 transition ${
+                  className={`text-left rounded-2xl border p-4 transition-all ${
                     isSelected
-                      ? "bg-brand-600/10 border-brand-500/40 ring-1 ring-brand-500/20"
-                      : "bg-card border-border hover:border-border"
+                      ? "ring-2 ring-orange-500 bg-orange-500/5 border-orange-500/40"
+                      : "bg-white/[0.03] border-white/[0.06] hover:border-orange-500/30"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -664,11 +703,11 @@ export default function ComposePage() {
                         angle.isContrarian
                           ? "bg-amber-500/10"
                           : isSelected
-                            ? "bg-brand-600/15"
-                            : "bg-muted"
+                            ? "bg-orange-500/20"
+                            : "bg-white/[0.05]"
                       }`}>
                         <Icon className={`w-4 h-4 ${
-                          angle.isContrarian ? "text-amber-400" : isSelected ? "text-brand-400" : "text-muted-foreground"
+                          angle.isContrarian ? "text-amber-400" : isSelected ? "text-orange-400" : "text-muted-foreground"
                         }`} />
                       </div>
                       <div>
@@ -680,12 +719,12 @@ export default function ComposePage() {
                         )}
                       </div>
                     </div>
-                    <div className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                    <div className={`text-xs font-bold px-2 py-1 rounded-lg shrink-0 ${
                       angle.predictedScore >= 80
-                        ? "bg-green-500/10 text-green-400"
+                        ? "bg-green-500/15 text-green-400 border border-green-500/20"
                         : angle.predictedScore >= 65
-                          ? "bg-blue-500/10 text-blue-400"
-                          : "bg-gray-500/10 text-muted-foreground"
+                          ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+                          : "bg-white/[0.08] text-muted-foreground border border-white/[0.06]"
                     }`}>
                       {angle.predictedScore}
                     </div>
@@ -702,12 +741,20 @@ export default function ComposePage() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={resetToInput}
-              className="px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground/80 hover:text-white text-sm transition flex items-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-foreground/80 hover:text-white hover:border-white/[0.1] text-sm transition flex items-center gap-2"
             >
-              <ArrowLeft className="w-4 h-4" /> Inapoi
+              <ArrowLeft className="w-4 h-4" /> Înapoi
+            </button>
+            <button
+              onClick={explore}
+              disabled={isExploring}
+              className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-white hover:border-white/[0.1] text-sm transition flex items-center gap-2"
+            >
+              {isExploring ? <RotateCcw className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              Regenerează
             </button>
             <button
               onClick={generate}
@@ -735,10 +782,10 @@ export default function ComposePage() {
       {phase === "generate" && (
         <motion.div
           key="generate"
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
+          exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="space-y-4"
         >
           {/* Selected angle summary */}
@@ -767,104 +814,108 @@ export default function ComposePage() {
             </div>
           )}
 
-          {/* Platform results */}
-          {selectedPlatforms.map((platformId) => {
-            const platform = platforms.find((p) => p.id === platformId);
-            const result = generatedContent[platformId];
-            if (!platform || !result) return null;
-            return (
-              <div
-                key={platformId}
-                className="rounded-xl bg-card border border-border p-4"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${platform.color}`} />
-                    <span className="text-sm font-medium text-white">
+          {/* Content output cu Radix Tabs per platformă */}
+          <Tabs
+            defaultValue={selectedPlatforms.find((p) => generatedContent[p]) || selectedPlatforms[0] || "facebook"}
+            className="w-full"
+          >
+            <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] overflow-hidden">
+              <TabsList className="w-full justify-start rounded-none border-b border-white/[0.06] bg-transparent p-0 h-auto">
+                {selectedPlatforms.map((platformId) => {
+                  const platform = platforms.find((p) => p.id === platformId);
+                  const result = generatedContent[platformId];
+                  if (!platform || !result) return null;
+                  return (
+                    <TabsTrigger
+                      key={platformId}
+                      value={platformId}
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-orange-500/5 data-[state=active]:text-orange-400 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-white transition-all"
+                    >
+                      <div className={`w-2 h-2 rounded-full mr-2 ${platform.color}`} />
                       {platform.label}
-                    </span>
-                    {result.algorithmScore && (
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        result.algorithmScore.overallScore >= 80
-                          ? "bg-green-500/10 text-green-400"
-                          : result.algorithmScore.overallScore >= 65
-                            ? "bg-blue-500/10 text-blue-400"
-                            : "bg-input text-foreground/80"
-                      }`}>
-                        {result.algorithmScore.grade} ({result.algorithmScore.overallScore})
-                      </span>
+                      {result.algorithmScore && (
+                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          result.algorithmScore.overallScore >= 80
+                            ? "bg-green-500/15 text-green-400"
+                            : result.algorithmScore.overallScore >= 65
+                              ? "bg-blue-500/15 text-blue-400"
+                              : "bg-white/10 text-muted-foreground"
+                        }`}>
+                          {result.algorithmScore.grade} {result.algorithmScore.overallScore}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+              {selectedPlatforms.map((platformId) => {
+                const platform = platforms.find((p) => p.id === platformId);
+                const result = generatedContent[platformId];
+                if (!platform || !result) return null;
+                return (
+                  <TabsContent key={platformId} value={platformId} className="m-0 p-4">
+                    <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                      {result.text}
+                    </div>
+                    {result.hashtags?.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                        <p className="text-xs text-orange-400">
+                          {result.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
+                        </p>
+                      </div>
                     )}
-                    {typeof result.selectedVariant === "number" && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-brand-600/15 text-brand-300 border border-brand-500/25">
-                        v{result.selectedVariant}
-                      </span>
-                    )}
-                    {generationMeta?.mode === "ai" ? (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">
-                        ✨ AI
-                      </span>
-                    ) : generationMeta?.mode === "deterministic" ? (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
-                        ⚡ Template
-                      </span>
-                    ) : null}
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(result.text, platformId)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-muted-foreground hover:text-white bg-muted hover:bg-accent transition"
-                  >
-                    {copiedPlatform === platformId ? (
-                      <><Check className="w-3 h-3 text-green-400" /> Copiat</>
-                    ) : (
-                      <><Copy className="w-3 h-3" /> Copiaza</>
-                    )}
-                  </button>
-                </div>
-                <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
-                  {result.text}
-                </div>
-                {result.hashtags?.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <p className="text-xs text-brand-400">
-                      {result.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
-                    </p>
-                  </div>
-                )}
-                {/* Content verification */}
-                <div className="mt-3">
-                  <ContentChecker
-                    text={result.text}
-                    hashtags={result.hashtags}
-                    platforms={[platformId]}
-                    isDental={isDental}
-                  />
-                </div>
-                <VisualSuggestion platform={platformId} isDental={isDental} />
-              </div>
-            );
-          })}
+                    <ContentChecker
+                      text={result.text}
+                      hashtags={result.hashtags}
+                      platforms={[platformId]}
+                      isDental={isDental}
+                    />
+                    <VisualSuggestion platform={platformId} isDental={isDental} />
+                  </TabsContent>
+                );
+              })}
+            </div>
+          </Tabs>
 
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={backToExplore}
-              className="px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground/80 hover:text-white text-sm transition flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" /> Alt unghi
-            </button>
-            <button
-              onClick={resetToInput}
-              className="px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground/80 hover:text-white text-sm transition flex items-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" /> Idee noua
-            </button>
+          {/* Copy / Save / Edit buttons row */}
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedPlatforms.map((platformId) => {
+              const platform = platforms.find((p) => p.id === platformId);
+              const result = generatedContent[platformId];
+              if (!platform || !result) return null;
+              return (
+                <button
+                  key={platformId}
+                  onClick={() => copyToClipboard(result.text, platformId)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-white hover:border-white/[0.1] text-sm transition"
+                >
+                  {copiedPlatform === platformId ? (
+                    <><Check className="w-4 h-4 text-green-400" /> Copiat</>
+                  ) : (
+                    <><Copy className="w-4 h-4" /> Copiază {platform.label}</>
+                  )}
+                </button>
+              );
+            })}
             <button
               onClick={saveDraft}
               disabled={savingDraft}
-              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-40 text-white font-medium transition flex items-center justify-center gap-2 text-sm"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 disabled:opacity-40 text-white font-medium transition flex-1 min-w-[140px]"
             >
               <Save className="w-4 h-4" />
-              {savingDraft ? "Se salveaza..." : "Salveaza ca Draft"}
+              {savingDraft ? "Se salvează..." : "Salvează ca Draft"}
+            </button>
+            <button
+              onClick={backToExplore}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-white hover:border-white/[0.1] text-sm transition"
+            >
+              <Pencil className="w-4 h-4" /> Edit / Alt unghi
+            </button>
+            <button
+              onClick={resetToInput}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-white hover:border-white/[0.1] text-sm transition"
+            >
+              <RotateCcw className="w-4 h-4" /> Idee nouă
             </button>
           </div>
 
@@ -879,7 +930,7 @@ export default function ComposePage() {
           )}
 
           {/* Refinement chat */}
-          <div className="rounded-xl bg-card border border-border p-3">
+          <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-4">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Rafinează rezultatul</p>
             <div className="flex items-end gap-2">
               <textarea

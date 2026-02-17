@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 interface TypingIndicatorProps {
   label?: string;
   /** Dot color */
-  color?: "brand" | "emerald" | "gray";
+  color?: "brand" | "emerald" | "gray" | "orange";
   className?: string;
 }
 
@@ -11,6 +11,7 @@ const colorMap = {
   brand: "bg-brand-400",
   emerald: "bg-emerald-400",
   gray: "bg-gray-500",
+  orange: "bg-orange-400",
 };
 
 export function TypingIndicator({ label, color = "brand", className }: TypingIndicatorProps) {

@@ -6,7 +6,6 @@ import {
   TrendingUp,
   Eye,
   Hash,
-  MessageSquare,
   ThumbsUp,
   Share2,
   Clock,
@@ -44,10 +43,9 @@ interface TrendsData {
 }
 
 const RANGES = [
-  { value: 7, label: "7z" },
-  { value: 30, label: "30z" },
-  { value: 60, label: "60z" },
-  { value: 90, label: "90z" },
+  { value: 7, label: "7d" },
+  { value: 30, label: "30d" },
+  { value: 90, label: "90d" },
 ];
 
 const platformColors: Record<string, { bg: string; text: string; fill: string }> = {
@@ -72,13 +70,13 @@ function formatDate(dateStr: string): string {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg bg-surface-tooltip border border-border px-3 py-2 text-xs shadow-xl">
-      <p className="text-muted-foreground mb-1">{label}</p>
+    <div className="rounded-xl bg-surface-overlay/95 backdrop-blur-lg border border-white/[0.08] px-4 py-3 text-xs shadow-xl">
+      <p className="text-muted-foreground mb-2 font-medium">{label}</p>
       {payload.map((p) => (
-        <div key={p.name} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+        <div key={p.name} className="flex items-center gap-2 py-0.5">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
           <span className="text-foreground/80">{p.name}:</span>
-          <span className="text-white font-medium">{formatNum(p.value)}</span>
+          <span className="text-white font-semibold">{formatNum(p.value)}</span>
         </div>
       ))}
     </div>
@@ -86,13 +84,18 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 // ---------- KPI Card ----------
-function KpiCard({ icon: Icon, label, value, color }: { icon: typeof TrendingUp; label: string; value: string; color: string }) {
+function KpiCard({ icon: Icon, label, value, color, trend }: { icon: typeof TrendingUp; label: string; value: string; color: string; trend?: { pct: number; positive: boolean } }) {
   return (
-    <div className="rounded-xl bg-muted border border-border p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 backdrop-blur-sm transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg">
+      <div className="flex items-start justify-between mb-2">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}20` }}>
           <Icon className="w-4 h-4" style={{ color }} />
         </div>
+        {trend != null && (
+          <span className={`flex items-center gap-0.5 text-xs font-semibold ${trend.positive ? "text-green-400" : "text-red-400"}`}>
+            {trend.positive ? "↑" : "↓"} {Math.abs(trend.pct)}%
+          </span>
+        )}
       </div>
       <div className="text-2xl font-bold text-white">{value}</div>
       <div className="text-xs text-muted-foreground mt-1">{label}</div>
@@ -143,42 +146,64 @@ export default function AnalyticsPage() {
 
   const maxHourEng = Math.max(...data.bestHours.map((h) => h.avgEngagement), 1);
 
+  // Compute trend from daily engagement (first half vs second half)
+  const getEngagementTrend = () => {
+    if (data.dailyEngagement.length < 4) return undefined;
+    const mid = Math.floor(data.dailyEngagement.length / 2);
+    const first = data.dailyEngagement.slice(0, mid).reduce((s, d) => s + d.likes + d.comments + d.shares, 0);
+    const second = data.dailyEngagement.slice(mid).reduce((s, d) => s + d.likes + d.comments + d.shares, 0);
+    if (first === 0) return second > 0 ? { pct: 100, positive: true } : undefined;
+    const pct = Math.round(((second - first) / first) * 100);
+    return { pct, positive: pct >= 0 };
+  };
+  const engagementTrend = getEngagementTrend();
+
+  const getImpressionsTrend = () => {
+    if (data.dailyEngagement.length < 4) return undefined;
+    const mid = Math.floor(data.dailyEngagement.length / 2);
+    const first = data.dailyEngagement.slice(0, mid).reduce((s, d) => s + (d.impressions || 0), 0);
+    const second = data.dailyEngagement.slice(mid).reduce((s, d) => s + (d.impressions || 0), 0);
+    if (first === 0) return second > 0 ? { pct: 100, positive: true } : undefined;
+    const pct = Math.round(((second - first) / first) * 100);
+    return { pct, positive: pct >= 0 };
+  };
+  const impressionsTrend = getImpressionsTrend();
+
   return (
     <div className="space-y-6">
-      {/* Range selector */}
-      <div className="flex justify-end mb-4">
-        <div className="flex items-center gap-1 bg-muted border border-border rounded-lg p-1">
-          {RANGES.map((r) => (
-            <button
-              key={r.value}
-              onClick={() => setRange(r.value)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                range === r.value
-                  ? "bg-brand-600/20 text-brand-300 border border-brand-500/40"
-                  : "text-muted-foreground hover:text-white hover:bg-muted"
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* KPI Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard icon={Hash} label="Total postari" value={String(data.totalPosts)} color="#6366f1" />
-        <KpiCard icon={TrendingUp} label="Total engagement" value={formatNum(data.totalEngagement)} color="#10b981" />
+      {/* KPI Strip — stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard icon={Hash} label="Total postări" value={String(data.totalPosts)} color="#6366f1" />
+        <KpiCard icon={TrendingUp} label="Total engagement" value={formatNum(data.totalEngagement)} color="#10b981" trend={engagementTrend} />
         <KpiCard icon={ThumbsUp} label="Medie / postare" value={formatNum(data.avgEngagement)} color="#f59e0b" />
-        <KpiCard icon={Eye} label="Total impressions" value={formatNum(data.totalImpressions)} color="#8b5cf6" />
+        <KpiCard icon={Eye} label="Total impressions" value={formatNum(data.totalImpressions)} color="#8b5cf6" trend={impressionsTrend} />
       </div>
 
-      {/* Engagement Trend Chart */}
+      {/* Main chart — Engagement Trend */}
       {data.dailyEngagement.length > 0 && (
-        <div className="rounded-xl bg-card border border-border p-5">
-          <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-brand-400" />
-            Trend Engagement
-          </h2>
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-orange-400" />
+              Trend Engagement
+            </h2>
+            {/* Time range selector — pill buttons */}
+            <div className="flex items-center gap-1">
+              {RANGES.map((r) => (
+                <button
+                  key={r.value}
+                  onClick={() => setRange(r.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                    range === r.value
+                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                      : "text-muted-foreground hover:text-white/80 border border-transparent hover:border-white/[0.1]"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={data.dailyEngagement.map((d) => ({ ...d, name: formatDate(d.date) }))}>
               <defs>
@@ -204,19 +229,19 @@ export default function AnalyticsPage() {
                 iconType="circle"
                 iconSize={8}
               />
-              <Area type="monotone" dataKey="likes" name="Likes" stroke="#3b82f6" fill="url(#gradLikes)" strokeWidth={2} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
-              <Area type="monotone" dataKey="comments" name="Comentarii" stroke="#10b981" fill="url(#gradComments)" strokeWidth={2} animationBegin={200} animationDuration={1200} animationEasing="ease-out" />
-              <Area type="monotone" dataKey="shares" name="Shares" stroke="#8b5cf6" fill="url(#gradShares)" strokeWidth={2} animationBegin={400} animationDuration={1200} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="likes" name="Likes" stroke="#3b82f6" fill="url(#gradLikes)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="comments" name="Comentarii" stroke="#10b981" fill="url(#gradComments)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" animationBegin={200} animationDuration={1200} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="shares" name="Shares" stroke="#8b5cf6" fill="url(#gradShares)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" animationBegin={400} animationDuration={1200} animationEasing="ease-out" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Two-column layout */}
+      {/* Two-column layout — sub-charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Platform Comparison */}
         {data.platformComparison.length > 0 && (
-          <div className="rounded-xl bg-card border border-border p-5">
+          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-sm">
             <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
               <Share2 className="w-4 h-4 text-blue-400" />
               Comparatie platforme
@@ -228,7 +253,7 @@ export default function AnalyticsPage() {
                 <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={formatNum} />
                 <ReTooltip content={<ChartTooltip />} />
                 <Bar dataKey="avgEngagement" name="Avg Eng." fill="#6366f1" radius={[4, 4, 0, 0]} animationBegin={0} animationDuration={800} animationEasing="ease-out" />
-                <Bar dataKey="totalReach" name="Total Reach" fill="#8b5cf6" radius={[4, 4, 0, 0]} opacity={0.6} animationBegin={200} animationDuration={800} animationEasing="ease-out" />
+                <Bar dataKey="totalReach" name="Total Reach" fill="#8b5cf6" radius={[4, 4, 0, 0]} opacity={0.7} animationBegin={200} animationDuration={800} animationEasing="ease-out" />
               </BarChart>
             </ResponsiveContainer>
             <div className="mt-3 flex flex-wrap gap-3">
@@ -248,7 +273,7 @@ export default function AnalyticsPage() {
         )}
 
         {/* Best Posting Hours */}
-        <div className="rounded-xl bg-card border border-border p-5">
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-sm">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-400" />
             Cele mai bune ore de postare
@@ -269,7 +294,7 @@ export default function AnalyticsPage() {
                   />
                   <span className="text-[9px] text-muted-foreground">{h.hour}</span>
                   {/* Tooltip on hover */}
-                  <div className="absolute bottom-full mb-1 hidden group-hover:block z-10 bg-surface-tooltip border border-border rounded px-2 py-1 text-[10px] whitespace-nowrap">
+                  <div className="absolute bottom-full mb-1 hidden group-hover:block z-10 bg-surface-overlay/95 backdrop-blur-lg border border-white/[0.08] rounded-xl px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
                     <span className="text-white font-medium">{h.hour}:00</span>
                     <br />
                     <span className="text-muted-foreground">Avg: {formatNum(h.avgEngagement)}</span>
@@ -287,9 +312,11 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Content Type + Hook Performance — grid 2 cols */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Content Type Performance */}
       {data.contentTypePerformance.length > 0 && (
-        <div className="rounded-xl bg-card border border-border p-5">
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-sm">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-cyan-400" />
             Performanta per tip de continut
@@ -303,9 +330,9 @@ export default function AnalyticsPage() {
                 return (
                   <div key={ct.type} className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground w-20 capitalize flex-shrink-0">{ct.type}</span>
-                    <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
+                    <div className="flex-1 h-6 bg-white/[0.04] rounded overflow-hidden">
                       <div
-                        className="h-full rounded bg-gradient-to-r from-brand-500/40 to-brand-500/70 transition-all duration-700"
+                        className="h-full rounded bg-gradient-to-r from-orange-500/40 to-orange-500/70 transition-all duration-700"
                         style={{ width: `${Math.max(pct, 2)}%` }}
                       />
                     </div>
@@ -320,9 +347,9 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* Hook Type Performance */}
-      {data.hookPerformance.length > 0 && (
-        <div className="rounded-xl bg-card border border-border p-5">
+        {/* Hook Type Performance */}
+        {data.hookPerformance.length > 0 && (
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-sm">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <Zap className="w-4 h-4 text-yellow-400" />
             Performanta Hook-uri (Creative Memory)
@@ -331,7 +358,7 @@ export default function AnalyticsPage() {
             {data.hookPerformance.slice(0, 9).map((hook) => (
               <div
                 key={hook.hookType}
-                className="rounded-lg bg-muted border border-border p-3 hover:border-brand-500/20 transition"
+                className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 hover:border-orange-500/30 transition"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-white capitalize">
@@ -355,11 +382,14 @@ export default function AnalyticsPage() {
             ))}
           </div>
         </div>
-      )}
+        )}
+      </div>
 
+      {/* Followers Trend + Top Posts — grid 2 cols */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Followers Trend */}
       {data.followersTrend.length > 0 && (
-        <div className="rounded-xl bg-card border border-border p-5">
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-sm">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
             Trend Urmaritori
@@ -376,15 +406,15 @@ export default function AnalyticsPage() {
               <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={formatNum} />
               <ReTooltip content={<ChartTooltip />} />
-              <Area type="monotone" dataKey="followers" name="Urmaritori" stroke="#10b981" fill="url(#gradFollowers)" strokeWidth={2} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="followers" name="Urmaritori" stroke="#10b981" fill="url(#gradFollowers)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Top Posts */}
-      {data.topPosts.length > 0 && (
-        <div className="rounded-xl bg-card border border-border p-5">
+        {/* Top Posts */}
+        {data.topPosts.length > 0 && (
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-sm">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <ThumbsUp className="w-4 h-4 text-brand-400" />
             Top Postari ({data.range} zile)
@@ -395,7 +425,7 @@ export default function AnalyticsPage() {
               return (
                 <div
                   key={post.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-border transition"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition"
                 >
                   <span className="text-xs text-muted-foreground w-5 text-right flex-shrink-0 font-mono">
                     #{i + 1}
@@ -427,11 +457,12 @@ export default function AnalyticsPage() {
             })}
           </div>
         </div>
-      )}
+        )}
+      </div>
 
       {/* Empty state */}
       {data.totalPosts === 0 && (
-        <div className="rounded-xl bg-card border border-dashed border-border p-12 text-center">
+        <div className="rounded-xl bg-white/[0.03] border border-dashed border-white/[0.06] p-12 text-center">
           <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground mb-1">Nicio postare in ultimele {data.range} zile</p>
           <p className="text-xs text-muted-foreground">

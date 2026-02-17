@@ -9,6 +9,8 @@ interface EmptyStateProps {
   className?: string;
   /** Size variant */
   size?: "sm" | "md" | "lg";
+  /** Icon in circle (e.g. bg-orange-500/10) */
+  iconInCircle?: boolean;
 }
 
 const sizeStyles = {
@@ -24,12 +26,19 @@ export function EmptyState({
   children,
   className,
   size = "md",
+  iconInCircle = false,
 }: EmptyStateProps) {
   const s = sizeStyles[size];
 
   return (
     <div className={cn("flex flex-col items-center justify-center text-center", s.wrapper, className)}>
-      <Icon className={cn(s.icon, "text-muted-foreground/40 mb-3")} />
+      {iconInCircle ? (
+        <div className={cn("rounded-full bg-orange-500/10 flex items-center justify-center mb-4", s.icon === "w-8 h-8" ? "w-16 h-16" : s.icon === "w-12 h-12" ? "w-20 h-20" : "w-24 h-24")}>
+          <Icon className={cn(s.icon, "text-orange-400")} />
+        </div>
+      ) : (
+        <Icon className={cn(s.icon, "text-muted-foreground/40 mb-3")} />
+      )}
       <p className={cn(s.title, "font-semibold text-foreground mb-1")}>{title}</p>
       {description && (
         <p className={cn(s.desc, "text-muted-foreground max-w-md")}>{description}</p>
