@@ -174,7 +174,7 @@ export default function AnalyticsPage() {
       {/* KPI Strip — stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon={Hash} label="Total postări" value={String(data.totalPosts)} color="#6366f1" />
-        <KpiCard icon={TrendingUp} label="Total engagement" value={formatNum(data.totalEngagement)} color="#10b981" trend={engagementTrend} />
+        <KpiCard icon={TrendingUp} label="Total interacțiune" value={formatNum(data.totalEngagement)} color="#10b981" trend={engagementTrend} />
         <KpiCard icon={ThumbsUp} label="Medie / postare" value={formatNum(data.avgEngagement)} color="#f59e0b" />
         <KpiCard icon={Eye} label="Total impressions" value={formatNum(data.totalImpressions)} color="#8b5cf6" trend={impressionsTrend} />
       </div>
@@ -185,7 +185,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-white flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-orange-400" />
-              Trend Engagement
+              Trend interacțiune
             </h2>
             {/* Time range selector — pill buttons */}
             <div className="flex items-center gap-1">
@@ -252,8 +252,8 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="platform" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={formatNum} />
                 <ReTooltip content={<ChartTooltip />} />
-                <Bar dataKey="avgEngagement" name="Avg Eng." fill="#6366f1" radius={[4, 4, 0, 0]} animationBegin={0} animationDuration={800} animationEasing="ease-out" />
-                <Bar dataKey="totalReach" name="Total Reach" fill="#8b5cf6" radius={[4, 4, 0, 0]} opacity={0.7} animationBegin={200} animationDuration={800} animationEasing="ease-out" />
+                <Bar dataKey="avgEngagement" name="Medie" fill="#6366f1" radius={[4, 4, 0, 0]} animationBegin={0} animationDuration={800} animationEasing="ease-out" />
+                <Bar dataKey="totalReach" name="Total reach" fill="#8b5cf6" radius={[4, 4, 0, 0]} opacity={0.7} animationBegin={200} animationDuration={800} animationEasing="ease-out" />
               </BarChart>
             </ResponsiveContainer>
             <div className="mt-3 flex flex-wrap gap-3">

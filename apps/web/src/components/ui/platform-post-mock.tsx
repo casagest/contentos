@@ -131,7 +131,7 @@ export function InstagramPostMock({ data, brandName = "contentos" }: { data: Pos
           <span className="text-white font-semibold">{brandName} </span>
           <span className="text-[#e0e0e0]">{data.text.split("\n")[0]}</span>
         </div>
-        <div className="text-[#a8a8a8] text-[11px] mt-1">Vezi toate cele {data.comments} comentarii</div>
+        <div className="text-[#a8a8a8] text-[11px] mt-1">{data.comments === "—" ? "Nepublicat încă" : `Vezi toate cele ${data.comments} comentarii`}</div>
       </div>
     </div>
   );
@@ -178,7 +178,7 @@ export function TikTokPostMock({ data, brandName = "contentos" }: { data: PostDa
         {[
           { icon: "♡", count: data.likes },
           { icon: "💬", count: data.comments },
-          { icon: "🔖", count: "2.1K" },
+          { icon: "🔖", count: "—" },
           { icon: "↗️", count: "Share" },
         ].map((a) => (
           <div key={a.icon} className="text-center">

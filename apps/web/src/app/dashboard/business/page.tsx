@@ -743,7 +743,7 @@ function EngagementOverview({ data }: { data: AnalyticsData | null }) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-white flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-brand-400" />
-          Engagement Overview
+          Prezentare interacțiune
         </h2>
         <Link
           href="/history"
@@ -1171,7 +1171,7 @@ export default function BusinessDashboardPage() {
           {analyticsData && (
             <>
               <div className="rounded-xl bg-card border border-border p-4">
-                <p className="text-xs text-muted-foreground mb-1">Engagement total</p>
+                <p className="text-xs text-muted-foreground mb-1">Interacțiune totală</p>
                 <p className="text-2xl font-bold text-white">
                   {analyticsData.totalEngagement?.toLocaleString() || "0"}
                 </p>

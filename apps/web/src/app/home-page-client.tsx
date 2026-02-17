@@ -76,43 +76,43 @@ function FaqItem({
 const features = [
   {
     icon: BarChart3,
-    title: "AI Content Coach",
-    desc: "Coach-ul tău personal. Analizează istoricul tău complet și îți spune exact ce să postezi, când și pe ce platformă.",
+    title: "Antrenor AI",
+    desc: "Coach-ul tău personal. Analizează istoricul complet și îți spune exact ce să postezi, când și pe ce platformă.",
   },
   {
     icon: Target,
-    title: "Algorithm Scorer",
+    title: "Scorant",
     desc: "Scor 0-100 pe 9 metrici per platformă. Știi cât de bine va performa postarea ÎNAINTE să o publici.",
   },
   {
     icon: PenTool,
-    title: "Content Composer",
-    desc: "Generează conținut optimizat per platformă dintr-un singur input. Cu diacritice corecte și slang actual.",
+    title: "Compune",
+    desc: "Generează conținut optimizat per platformă dintr-un singur input. Cu diacritice corecte și limbaj actual.",
   },
   {
     icon: Brain,
-    title: "AI Brain Dump",
+    title: "Creier Idei",
     desc: "Aruncă orice gând — AI-ul le transformă în postări virale pentru Facebook, Instagram, TikTok și YouTube.",
   },
   {
     icon: Search,
-    title: "Account Research",
-    desc: "Analizează competitorii: ce postează, când, cum, și ce funcționează. Fură ce-i mai bun, legal.",
+    title: "Cercetare Conturi",
+    desc: "Analizează competitorii: ce postează, când, cum și ce funcționează. Inspirează-te legal din ce e mai bun.",
   },
   {
     icon: Lightbulb,
-    title: "AI Inspirație",
+    title: "Inspirație",
     desc: "Salvează postări de la alții și transformă-le instant în conținut cu vocea ta. Zero plagiat, 100% original.",
   },
   {
     icon: CalendarDays,
-    title: "Post History",
-    desc: "Vizualizează performanța pe timeline. Descoperă pattern-urile ascunse care îți cresc engagement-ul.",
+    title: "Istoric Postări",
+    desc: "Vizualizează performanța pe cronologie. Descoperă modelele ascunse care îți cresc engagement-ul.",
   },
   {
     icon: Film,
     title: "Script Video",
-    desc: "Generează scripturi video cu timeline, cue-uri vizuale și tranziții. 6 stiluri, 5 durate. Gata de filmat.",
+    desc: "Generează scripturi video cu cronologie, indicații vizuale și tranziții. 6 stiluri, 5 durate. Gata de filmat.",
   },
 ];
 
@@ -162,7 +162,7 @@ const plans = [
       "AI Content Coach personalizat",
       "Brain Dump nelimitat",
       "Account Research (10 conturi)",
-      "Post History Analytics",
+      "Analiză Istoric Postări",
       "Script Video Generator",
     ],
     cta: "Începe cu Pro",
@@ -320,7 +320,7 @@ export default function HomePageClient() {
               transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed"
             >
-              Platforma AI care transformă orice idee în conținut optimizat per platformă. Brain dump → postări virale în 2 minute.
+              Platforma AI care transformă orice idee în conținut optimizat per platformă. Creier Idei → postări virale în 2 minute.
             </motion.p>
 
             <motion.div
@@ -343,7 +343,7 @@ export default function HomePageClient() {
                 href="#cum-functioneaza"
                 className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/25 text-gray-400 hover:text-white font-semibold text-base transition-all hover:-translate-y-[1px]"
               >
-                Vezi demo
+                Vezi demonstrație
               </Link>
             </motion.div>
 
@@ -390,7 +390,7 @@ export default function HomePageClient() {
               {/* Header */}
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">B</div>
-                <span className="text-sm font-semibold text-white">Brain Dump</span>
+                <span className="text-sm font-semibold text-white">Creier Idei</span>
               </div>
               {/* 3 blur lines */}
               <div className="space-y-2 mb-4">
@@ -461,7 +461,7 @@ export default function HomePageClient() {
                       </p>
                     </div>
                     <div className=" shrink-0 w-full md:w-36 lg:w-40">
-                      {feature.title === "AI Content Coach" ? (
+                      {feature.title === "Antrenor AI" ? (
                         <div className="space-y-2 ml-auto">
                           <div className="rounded-xl rounded-br-md bg-black/8 px-3 py-2 text-xs text-gray-800 w-[85%] ml-auto">
                             Postează marți, 14:00 — Instagram
@@ -490,7 +490,7 @@ export default function HomePageClient() {
                             <div className="h-full w-[87%] rounded-full bg-emerald-400" />
                           </div>
                           <div className="flex justify-between text-[10px] text-gray-600 font-medium">
-                            <span>Engagement</span>
+                            <span>Interacțiune</span>
                             <span>94</span>
                           </div>
                           <div className="h-2 rounded-full bg-black/10 overflow-hidden">
@@ -594,16 +594,16 @@ export default function HomePageClient() {
                 <div className="bg-surface-overlay rounded-xl p-6 border border-white/10">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-2 h-2 rounded-full bg-orange-400" />
-                    <span className="text-xs text-orange-400 font-bold">Algorithm Score</span>
+                    <span className="text-xs text-orange-400 font-bold">Scor Algoritm</span>
                   </div>
                   <div className="text-5xl font-extrabold text-white mb-2">87<span className="text-2xl text-gray-400">/100</span></div>
                   <div className="text-sm text-emerald-400 font-semibold mb-4">✓ Excelent — gata de publicare</div>
                   <div className="space-y-2">
                     {[
-                      { label: "Hook Power", score: 92, color: "bg-emerald-400" },
-                      { label: "Readability", score: 88, color: "bg-emerald-400" },
-                      { label: "CTA Strength", score: 76, color: "bg-yellow-400" },
-                      { label: "Engagement Potential", score: 91, color: "bg-emerald-400" },
+                      { label: "Putere hook", score: 92, color: "bg-emerald-400" },
+                      { label: "Lizibilitate", score: 88, color: "bg-emerald-400" },
+                      { label: "Putere CTA", score: 76, color: "bg-yellow-400" },
+                      { label: "Potențial Interacțiune", score: 91, color: "bg-emerald-400" },
                     ].map((m) => (
                       <div key={m.label} className="flex items-center gap-3">
                         <span className="text-xs text-gray-400 w-32 shrink-0">{m.label}</span>
@@ -630,7 +630,7 @@ export default function HomePageClient() {
                 <div className="bg-surface-overlay rounded-xl p-6 border border-white/10">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-2 h-2 rounded-full bg-blue-400" />
-                    <span className="text-xs text-blue-400 font-bold">AI Brain Dump</span>
+                    <span className="text-xs text-blue-400 font-bold">Creier Idei</span>
                   </div>
                   <div className="space-y-3">
                     <div className="bg-white/5 rounded-lg p-3 ml-8">
@@ -686,14 +686,14 @@ export default function HomePageClient() {
             {[
               {
                 name: "Alexandra M.",
-                role: "Social Media Manager",
-                text: "Am redus timpul de creare conținut de la 6 ore pe zi la 45 de minute. Algorithm Scorer-ul e un game-changer — știu exact ce va funcționa înainte de a posta.",
+                role: "Manager Social Media",
+                text: "Am redus timpul de creare conținut de la 6 ore pe zi la 45 de minute. Scorantul e un game-changer — știu exact ce va funcționa înainte de a posta.",
                 rating: 5,
               },
               {
                 name: "Mihai D.",
                 role: "Fondator Agenție Marketing",
-                text: "Folosesc ContentOS pentru 12 clienți simultan. Brain Dump-ul transformă orice idee vagă în postări optimizate per platformă. Ne-a crescut productivitatea x10.",
+                text: "Folosesc ContentOS pentru 12 clienți simultan. Creier Idei transformă orice idee vagă în postări optimizate per platformă. Ne-a crescut productivitatea de 10 ori.",
                 rating: 5,
               },
               {
@@ -751,7 +751,7 @@ export default function HomePageClient() {
                 {[
                   ["Conținut în limba română", true, false, "partial"],
                   ["Scor algoritm per platformă", true, false, false],
-                  ["Brain Dump → postări virale", true, false, false],
+                  ["Creier Idei → postări virale", true, false, false],
                   ["Cercetare competitori", true, "manual", "partial"],
                   ["Optimizat per platformă", true, false, "partial"],
                   ["Script video cu timeline", true, false, false],
