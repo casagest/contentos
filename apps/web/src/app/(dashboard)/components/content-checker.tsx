@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
   Image as ImageIcon,
@@ -9,7 +10,6 @@ import {
   AlertTriangle,
   XCircle,
   ChevronDown,
-  ChevronUp,
   Ruler,
   Smartphone,
 } from "lucide-react";
@@ -395,10 +395,23 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
             </span>
           )}
         </div>
-        {expanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-500" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-500" />}
+        <motion.div
+          animate={{ rotate: expanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+        </motion.div>
       </button>
 
+      <AnimatePresence>
       {expanded && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          style={{ overflow: "hidden" }}
+        >
         <div className="px-3 pb-3 space-y-3">
           {/* CMSR Compliance */}
           {isDental && compliance.length > 0 && (
@@ -452,7 +465,7 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
 
           {/* Platform Fit */}
           {fits.map((fit) => (
-            <div key={fit.platform} className="space-y-1">
+            <div key={fit.platform} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                   {PLATFORM_SPECS[fit.platform]?.label || fit.platform}
@@ -460,6 +473,15 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
                 <span className={`text-xs font-bold ${fit.score >= 80 ? "text-emerald-400" : fit.score >= 50 ? "text-yellow-400" : "text-red-400"}`}>
                   {fit.score}/100
                 </span>
+              </div>
+              {/* Animated progress bar */}
+              <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${fit.score}%` }}
+                  transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                  className={`h-full rounded-full ${fit.score >= 80 ? "bg-emerald-400" : fit.score >= 50 ? "bg-yellow-400" : "bg-red-400"}`}
+                />
               </div>
               {fit.checks.map((check, i) => (
                 <div key={i} className="flex items-center gap-2 text-[11px]">
@@ -505,7 +527,9 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
             </div>
           )}
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
