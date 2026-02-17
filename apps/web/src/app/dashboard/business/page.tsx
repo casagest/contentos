@@ -60,6 +60,7 @@ import {
   Dumbbell,
   Loader2,
   Check,
+  Link2 as LinkIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getIndustryConfig, INDUSTRY_CONFIGS } from "@/lib/dashboard/industry-config";
@@ -1137,200 +1138,154 @@ export default function BusinessDashboardPage() {
 
   return (
     <div className="space-y-6 dashboard-fade-in">
-      {/* Header */}
+      {/* Header — simple, clean */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${config.kpis[0]?.color || "#6366f1"}15` }}
-          >
-            <DynamicIcon
-              name={config.icon}
-              className="w-5 h-5"
-              style={{ color: config.kpis[0]?.color || "#6366f1" }}
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-white">
-                {businessProfile.name || "Dashboard"}
-              </h1>
-              <span
-                className="px-2 py-0.5 rounded-md text-[10px] font-medium border"
-                style={{
-                  color: config.kpis[0]?.color || "#6366f1",
-                  borderColor: `${config.kpis[0]?.color || "#6366f1"}30`,
-                  backgroundColor: `${config.kpis[0]?.color || "#6366f1"}10`,
-                }}
-              >
-                {config.label}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-white">
+            {businessProfile.name || "Dashboard"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {dateStr} · <span className="capitalize">{config.label}</span>
+          </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20">
-            <span className="w-2 h-2 rounded-full bg-green-400 dashboard-live-pulse" />
-            <span className="text-xs font-medium text-green-400">LIVE</span>
-          </div>
-          <span className="text-sm text-muted-foreground">{timeStr}</span>
-          <Link
-            href="/settings"
-            className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-white transition"
-          >
-            <Settings className="w-4 h-4" />
-          </Link>
-        </div>
+        <Link
+          href="/braindump"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 hover:opacity-90 transition"
+        >
+          <PenTool className="w-4 h-4" />
+          Creează post
+        </Link>
       </div>
 
-      {/* KPI Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {config.kpis.map((kpi) => (
-          <KpiCard
-            key={kpi.key}
-            kpi={kpi}
-            value={kpiValues[kpi.key] ?? kpi.defaultValue}
-            onEdit={handleKpiEdit}
-          />
-        ))}
-      </div>
-
-      {/* AI Memory Health */}
-      <Suspense fallback={null}><MemoryHealth /></Suspense>
-
-      {/* Engagement Overview */}
-      <EngagementOverview data={analyticsData} />
-
-      {/* Social Performance */}
-      <SocialPerformance accounts={socialAccounts} recentPosts={recentPosts} />
-
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left Column (60%) */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Funnel Visualization */}
-          <div className="rounded-xl bg-card border border-border p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <Target className="w-4 h-4 text-brand-400" />
-                Funnel de Conversie
-              </h2>
-              <span className="text-[10px] text-muted-foreground">Conectează conturile pentru date reale</span>
-            </div>
-            <FunnelVisualization stages={config.funnelStages} />
+      {/* Stats — only show if we have real data */}
+      {(socialAccounts.length > 0 || recentPosts.length > 0) && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="rounded-xl bg-card border border-border p-4">
+            <p className="text-xs text-muted-foreground mb-1">Conturi conectate</p>
+            <p className="text-2xl font-bold text-white">{socialAccounts.length}</p>
           </div>
-
-          {/* Content Calendar Preview */}
-          <div className="rounded-xl bg-card border border-border p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <CalendarCheck className="w-4 h-4 text-purple-400" />
-                Calendar Conținut
-              </h2>
-              <Link
-                href="/braindump"
-                className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1 transition"
-              >
-                Creează post <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <ContentCalendarPreview />
+          <div className="rounded-xl bg-card border border-border p-4">
+            <p className="text-xs text-muted-foreground mb-1">Postări publicate</p>
+            <p className="text-2xl font-bold text-white">{recentPosts.length}</p>
           </div>
-
-          {/* AI Content Suggestions */}
-          <div className="rounded-xl bg-card border border-border p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-400" />
-                Sugestii AI de Conținut
-              </h2>
-            </div>
-            <AiContentSuggestions config={config} />
-          </div>
-        </div>
-
-        {/* Right Column (40%) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Recent Activity */}
-          <div className="rounded-xl bg-card border border-border p-5">
-            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              Activitate Recentă
-            </h2>
-            {recentPosts.length > 0 ? (
-              <div className="space-y-2">
-                {recentPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      <Send className="w-4 h-4 text-brand-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-foreground/80 truncate">
-                        {post.text_content || "Postare publicată"}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {post.platform} · {new Date(post.published_at).toLocaleDateString("ro-RO")}
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                      {post.likes_count + post.comments_count + post.shares_count} eng.
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="h-3 w-2/3 bg-muted rounded" />
-                      <div className="h-2 w-1/3 bg-muted rounded mt-1.5" />
-                    </div>
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground text-center py-2">
-                  Nicio activitate recentă. Creează primul tău post!
+          {analyticsData && (
+            <>
+              <div className="rounded-xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground mb-1">Engagement total</p>
+                <p className="text-2xl font-bold text-white">
+                  {analyticsData.totalEngagement?.toLocaleString() || "0"}
                 </p>
               </div>
-            )}
+              <div className="rounded-xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground mb-1">Impressions</p>
+                <p className="text-2xl font-bold text-white">
+                  {analyticsData.totalImpressions?.toLocaleString() || "0"}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Empty state — show when no accounts connected */}
+      {socialAccounts.length === 0 && (
+        <div className="rounded-xl bg-card border border-border p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-8 h-8 text-primary" />
           </div>
-
-          {/* Industry Tips */}
-          <div className="rounded-xl bg-card border border-border p-5">
-            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-yellow-400" />
-              Tips pentru {config.label}
-            </h2>
-            <IndustryTips tips={config.contentTips} />
-          </div>
-
-          {/* Autopilot CTA */}
-          <AutopilotCard />
-
-          {/* Mini Reporting integrated into dashboard — no separate component */}
-
-          {/* Quick Actions */}
-          <div className="rounded-xl bg-card border border-border p-5">
-            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-orange-400" />
-              Acțiuni Rapide
-            </h2>
-            <QuickActions />
+          <h2 className="text-xl font-bold text-white mb-2">Bine ai venit pe ContentOS!</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+            Conectează-ți conturile de social media și lasă AI-ul să analizeze ce funcționează.
+            În câteva minute vei avea conținut optimizat gata de publicat.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/settings"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 hover:opacity-90 transition"
+            >
+              <LinkIcon className="w-4 h-4" />
+              Conectează conturi
+            </Link>
+            <Link
+              href="/braindump"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-card border border-border text-foreground font-semibold text-sm hover:bg-muted transition"
+            >
+              <Brain className="w-4 h-4" />
+              Sau creează direct
+            </Link>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Recent posts — only if we have some */}
+      {recentPosts.length > 0 && (
+        <div className="rounded-xl bg-card border border-border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              Postări recente
+            </h2>
+            <Link href="/history" className="text-xs text-primary hover:underline">
+              Vezi tot →
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {recentPosts.map((post) => (
+              <div
+                key={post.id}
+                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+              >
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                  <Send className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground truncate">
+                    {post.text_content || "Postare publicată"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {post.platform} · {new Date(post.published_at).toLocaleDateString("ro-RO")}
+                  </p>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {post.likes_count + post.comments_count + post.shares_count} eng.
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Connected accounts — only if we have some */}
+      {socialAccounts.length > 0 && (
+        <div className="rounded-xl bg-card border border-border p-5">
+          <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+            <Globe className="w-4 h-4 text-blue-400" />
+            Conturi conectate
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {socialAccounts.map((acc) => (
+              <div key={acc.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                {acc.avatar_url ? (
+                  <img src={acc.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                    {acc.platform?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {acc.platform_name || acc.platform_username || acc.platform}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {acc.followers_count?.toLocaleString() || 0} followers
+                  </p>
+                </div>
+                <span className={`w-2 h-2 rounded-full ${acc.sync_status === "active" ? "bg-emerald-400" : "bg-muted-foreground"}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
