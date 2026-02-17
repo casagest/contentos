@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -19,9 +18,8 @@ import {
   Image,
   Sparkles,
   LogOut,
-  User,
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { useUser } from "@/components/providers/user-provider"
 
 import {
   Sidebar,
@@ -80,27 +78,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ draftCount, scheduledCount, ...props }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [userEmail, setUserEmail] = useState<string>("")
-  const [userName, setUserName] = useState<string>("")
-
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUserEmail(user.email || "")
-        setUserName(user.user_metadata?.full_name || "")
-      }
-    })
-  }, [])
+  const { user } = useUser()
 
   const handleSignOut = async () => {
     await fetch("/api/auth/signout", { method: "POST" })
     router.push("/login")
   }
 
-  const initials = userName
-    ? userName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-    : userEmail ? userEmail[0].toUpperCase() : "U"
+  const initials = user?.initials || "U"
+  const userName = user?.fullName || ""
+  const userEmail = user?.email || ""
 
   return (
     <Sidebar variant="sidebar" collapsible="icon" {...props}>

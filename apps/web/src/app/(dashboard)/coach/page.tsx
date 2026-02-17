@@ -1,15 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Send,
-  Bot,
-  User,
-  Sparkles,
-  TrendingUp,
-  Lightbulb,
-  Target,
-} from "lucide-react";
+import { Send, TrendingUp, Lightbulb, Target, Sparkles } from "lucide-react";
+import { ChatBubble } from "@/components/ui/chat-bubble";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TypingIndicator } from "@/components/ui/typing-indicator";
+import { SectionCard } from "@/components/ui/section-card";
 
 interface Message {
   id: string;
@@ -107,91 +103,47 @@ export default function CoachPage() {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto space-y-4 mb-4">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
-              <Sparkles className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h2 className="text-lg font-semibold text-white mb-2">
-              Salut! Sunt AI Coach-ul tău de conținut.
-            </h2>
-            <p className="text-sm text-muted-foreground max-w-md mb-8">
-              Cu ce te pot ajuta?
-            </p>
-            <div className="space-y-2 w-full max-w-lg">
-              {suggestions.map((s) => {
-                const Icon = s.icon;
-                return (
-                  <button
-                    key={s.label}
-                    onClick={() => sendMessage(s.label)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-emerald-500/30 text-left transition"
-                  >
-                    <Icon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                    <span className="text-sm text-foreground/80">{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex flex-col items-center justify-center h-full">
+            <EmptyState
+              icon={Sparkles}
+              title="Salut! Sunt AI Coach-ul tău de conținut."
+              description="Cu ce te pot ajuta?"
+              size="lg"
+            >
+              <div className="space-y-2 w-full max-w-lg">
+                {suggestions.map((s) => {
+                  const Icon = s.icon;
+                  return (
+                    <button
+                      key={s.label}
+                      onClick={() => sendMessage(s.label)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-emerald-500/30 text-left transition"
+                    >
+                      <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="text-body text-foreground/80">{s.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </EmptyState>
           </div>
         ) : (
           messages.map((msg) => (
-            <div
+            <ChatBubble
               key={msg.id}
-              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
+              role={msg.role}
+              mode={msg.mode}
+              warning={msg.warning}
+              accentColor="emerald"
             >
-              {msg.role === "assistant" && (
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-emerald-400" />
-                </div>
-              )}
-              <div
-                className={`max-w-[75%] rounded-xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                  msg.role === "user"
-                    ? "bg-brand-600 text-white"
-                    : "bg-muted border border-border text-foreground/80"
-                }`}
-              >
-                {msg.role === "assistant" && msg.mode && (
-                  <div className="mb-2">
-                    {msg.mode === "ai" ? (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">
-                        ✨ AI
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
-                        ⚡ Template
-                      </span>
-                    )}
-                  </div>
-                )}
-                {msg.content}
-                {msg.warning && (
-                  <div className="mt-2 pt-2 border-t border-border text-[10px] text-yellow-400/70">
-                    ⚠️ {msg.warning}
-                  </div>
-                )}
-              </div>
-              {msg.role === "user" && (
-                <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-brand-400" />
-                </div>
-              )}
-            </div>
+              {msg.content}
+            </ChatBubble>
           ))
         )}
         {isLoading && (
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="bg-muted border border-border rounded-xl px-4 py-3">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" />
-                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce [animation-delay:0.15s]" />
-                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce [animation-delay:0.3s]" />
-              </div>
-            </div>
-          </div>
+          <SectionCard padding="sm" className="w-fit">
+            <TypingIndicator color="emerald" label="AI Coach gândește..." />
+          </SectionCard>
         )}
       </div>
 

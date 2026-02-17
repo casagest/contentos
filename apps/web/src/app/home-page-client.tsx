@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import {
+  BarChart3,
+  Target,
+  PenTool,
+  Brain,
+  Search,
+  Lightbulb,
+  CalendarDays,
+  Film,
+} from "lucide-react";
 
 /* FadeIn removed — content visible instantly for better LCP and no invisible sections */
 
@@ -64,42 +74,42 @@ function FaqItem({
 /* ─── Data ─── */
 const features = [
   {
-    icon: "📊",
+    icon: BarChart3,
     title: "AI Content Coach",
     desc: "Coach-ul tău personal. Analizează istoricul tău complet și îți spune exact ce să postezi, când și pe ce platformă.",
   },
   {
-    icon: "🎯",
+    icon: Target,
     title: "Algorithm Scorer",
     desc: "Scor 0-100 pe 9 metrici per platformă. Știi cât de bine va performa postarea ÎNAINTE să o publici.",
   },
   {
-    icon: "✍️",
+    icon: PenTool,
     title: "Content Composer",
     desc: "Generează conținut optimizat per platformă dintr-un singur input. Cu diacritice corecte și slang actual.",
   },
   {
-    icon: "🧠",
+    icon: Brain,
     title: "AI Brain Dump",
     desc: "Aruncă orice gând — AI-ul le transformă în postări virale pentru Facebook, Instagram, TikTok și YouTube.",
   },
   {
-    icon: "🔍",
+    icon: Search,
     title: "Account Research",
     desc: "Analizează competitorii: ce postează, când, cum, și ce funcționează. Fură ce-i mai bun, legal.",
   },
   {
-    icon: "💡",
+    icon: Lightbulb,
     title: "AI Inspirație",
     desc: "Salvează postări de la alții și transformă-le instant în conținut cu vocea ta. Zero plagiat, 100% original.",
   },
   {
-    icon: "📅",
+    icon: CalendarDays,
     title: "Post History",
     desc: "Vizualizează performanța pe timeline. Descoperă pattern-urile ascunse care îți cresc engagement-ul.",
   },
   {
-    icon: "🎬",
+    icon: Film,
     title: "Script Video",
     desc: "Generează scripturi video cu timeline, cue-uri vizuale și tranziții. 6 stiluri, 5 durate. Gata de filmat.",
   },
@@ -110,19 +120,16 @@ const steps = [
     num: "01",
     title: "Conectează conturile",
     desc: "Leagă Facebook, Instagram, TikTok și YouTube în câteva click-uri. Noi facem restul.",
-    icon: "🔗",
   },
   {
     num: "02",
     title: "AI analizează totul",
     desc: "Algoritmul nostru scanează istoricul postărilor, competitorii și trendurile din piața românească.",
-    icon: "⚡",
   },
   {
     num: "03",
     title: "Creează & publică",
     desc: "Primești conținut optimizat per platformă, gata de publicat. Cu scor de performanță înainte de post.",
-    icon: "🚀",
   },
 ];
 
@@ -196,8 +203,8 @@ const faqs = [
     a: "ContentOS este primul AI de conținut nativ românesc. Înțelege diacritice, expresii colocviale, slang, referințe culturale și context local. Funcționează și în engleză.",
   },
   {
-    q: "Pot folosi ContentOS pentru clinica mea?",
-    a: "Absolut! Avem un modul dedicat pentru clinici dentare cu conformitate CMSR, template-uri pentru proceduri, testimoniale pacienți și campanii sezoniere.",
+    q: "ContentOS funcționează pentru orice industrie?",
+    a: "Da! ContentOS se adaptează la orice nișă — de la retail și HoReCa la clinici medicale și agenții. AI-ul învață specificul industriei tale și generează conținut relevant.",
   },
   {
     q: "Datele mele sunt în siguranță?",
@@ -210,6 +217,7 @@ export default function HomePageClient() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [annual, setAnnual] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -218,13 +226,13 @@ export default function HomePageClient() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#0F1728]">
+    <main className="min-h-screen bg-surface-ground">
       {/* ── Navigation ── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-[#0F1728]/95 backdrop-blur-xl shadow-lg"
-            : "bg-[#0F1728]"
+            ? "bg-surface-ground/95 backdrop-blur-xl shadow-lg"
+            : "bg-surface-ground"
         }`}
       >
         <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
@@ -273,7 +281,7 @@ export default function HomePageClient() {
 
         {/* Mobile menu */}
         <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? "max-h-80" : "max-h-0"}`}>
-          <div className="px-6 pb-6 flex flex-col gap-4 bg-[#0F1728]">
+          <div className="px-6 pb-6 flex flex-col gap-4 bg-surface-ground">
             <Link href="#cum-functioneaza" onClick={() => setMenuOpen(false)} className="text-sm text-gray-300 hover:text-white py-2">Cum funcționează</Link>
             <Link href="#features" onClick={() => setMenuOpen(false)} className="text-sm text-gray-300 hover:text-white py-2">Funcționalități</Link>
             <Link href="#pricing" onClick={() => setMenuOpen(false)} className="text-sm text-gray-300 hover:text-white py-2">Prețuri</Link>
@@ -321,7 +329,7 @@ export default function HomePageClient() {
                 {["bg-orange-400", "bg-blue-400", "bg-emerald-400", "bg-pink-400", "bg-purple-400"].map((color, i) => (
                   <div
                     key={i}
-                    className={`w-8 h-8 rounded-full ${color} border-2 border-[#0F1728] flex items-center justify-center text-white text-[10px] font-bold`}
+                    className={`w-8 h-8 rounded-full ${color} border-2 border-surface-ground flex items-center justify-center text-white text-[10px] font-bold`}
                   >
                     {["A", "M", "R", "I", "D"][i]}
                   </div>
@@ -351,7 +359,7 @@ export default function HomePageClient() {
       </section>
 
       {/* ── Features Grid (warm section) ── */}
-      <section id="features" className="bg-[#E0DACE] py-20 sm:py-28 px-6">
+      <section id="features" className="bg-landing-warm py-20 sm:py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
@@ -363,25 +371,30 @@ export default function HomePageClient() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {features.map((feature) => (
-              <div key={feature.title}>
-                <div className="bg-[#d6d0c2] rounded-2xl p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col items-center">
-                  <div className="text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-lg font-bold text-black mb-2 tracking-tight">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {feature.desc}
-                  </p>
+            {features.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div key={feature.title}>
+                  <div className="bg-landing-warm-card rounded-2xl p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col items-center">
+                    <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-4" aria-hidden="true">
+                      <Icon className="w-7 h-7 text-orange-600" />
+                    </div>
+                    <h3 className="text-heading-3 text-black mb-2 tracking-tight">
+                      {feature.title}
+                    </h3>
+                    <p className="text-body text-gray-700 leading-relaxed">
+                      {feature.desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ── How it works (dark section) ── */}
-      <section id="cum-functioneaza" className="bg-[#0F1728] py-20 sm:py-28 px-6">
+      <section id="cum-functioneaza" className="bg-surface-ground py-20 sm:py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white text-center tracking-tight mb-4">
@@ -396,10 +409,10 @@ export default function HomePageClient() {
             {steps.map((step) => (
               <div key={step.num}>
                 <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl hover:scale-110 hover:bg-white/10 transition-all duration-300">
-                    {step.icon}
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:scale-110 hover:bg-white/10 transition-all duration-300">
+                    <span className="text-heading-1 font-extrabold text-orange-400">{step.num}</span>
                   </div>
-                  <div className="text-xs font-bold text-orange-400 tracking-[0.2em] uppercase mb-3">
+                  <div className="text-caption font-bold text-orange-400 tracking-[0.2em] uppercase mb-3">
                     Pasul {step.num}
                   </div>
                   <h3 className="text-xl font-bold text-white mb-3 tracking-tight">
@@ -416,7 +429,7 @@ export default function HomePageClient() {
       </section>
 
       {/* ── Benefit 1 (warm section) ── */}
-      <section className="bg-[#E0DACE] py-20 sm:py-28 px-6">
+      <section className="bg-landing-warm py-20 sm:py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -443,8 +456,8 @@ export default function HomePageClient() {
                   ))}
                 </ul>
               </div>
-              <div className="bg-[#0F1728] rounded-2xl p-8 shadow-2xl">
-                <div className="bg-[#1a2340] rounded-xl p-6 border border-white/10">
+              <div className="bg-surface-ground rounded-2xl p-8 shadow-2xl">
+                <div className="bg-surface-overlay rounded-xl p-6 border border-white/10">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-2 h-2 rounded-full bg-orange-400" />
                     <span className="text-xs text-orange-400 font-bold">Algorithm Score</span>
@@ -475,12 +488,12 @@ export default function HomePageClient() {
       </section>
 
       {/* ── Benefit 2 (olive section) ── */}
-      <section className="bg-[#939482] py-20 sm:py-28 px-6">
+      <section className="bg-landing-olive py-20 sm:py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div className="order-2 lg:order-1 bg-[#0F1728] rounded-2xl p-8 shadow-2xl">
-                <div className="bg-[#1a2340] rounded-xl p-6 border border-white/10">
+              <div className="order-2 lg:order-1 bg-surface-ground rounded-2xl p-8 shadow-2xl">
+                <div className="bg-surface-overlay rounded-xl p-6 border border-white/10">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-2 h-2 rounded-full bg-blue-400" />
                     <span className="text-xs text-blue-400 font-bold">AI Brain Dump</span>
@@ -526,25 +539,45 @@ export default function HomePageClient() {
       </section>
 
       {/* ── Pricing (warm section) ── */}
-      <section id="pricing" className="bg-[#E0DACE] py-20 sm:py-28 px-6">
+      <section id="pricing" className="bg-landing-warm py-20 sm:py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
               Prețuri Simple
             </h2>
-            <p className="text-base sm:text-lg text-gray-700 text-center mb-14 max-w-xl mx-auto">
+            <p className="text-base sm:text-lg text-gray-700 text-center mb-8 max-w-xl mx-auto">
               Începe cu 7 zile gratuit. Fără card de credit.
             </p>
+
+            {/* Annual/Monthly toggle */}
+            <div className="flex items-center justify-center gap-3 mb-14">
+              <span className={`text-sm font-medium ${!annual ? "text-black" : "text-gray-500"}`}>Lunar</span>
+              <button
+                onClick={() => setAnnual(!annual)}
+                role="switch"
+                aria-checked={annual}
+                aria-label="Comută între facturare lunară și anuală"
+                className={`relative w-12 h-6 rounded-full transition-colors ${annual ? "bg-orange-500" : "bg-gray-300"}`}
+              >
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${annual ? "translate-x-6" : "translate-x-0.5"}`} />
+              </button>
+              <span className={`text-sm font-medium ${annual ? "text-black" : "text-gray-500"}`}>
+                Anual <span className="text-orange-600 font-bold text-xs">-20%</span>
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            {plans.map((plan) => (
+            {plans.map((plan) => {
+              const monthlyPrice = parseInt(plan.price);
+              const displayPrice = annual ? Math.round(monthlyPrice * 0.8) : monthlyPrice;
+              return (
               <div key={plan.name}>
                 <div
                   className={`relative rounded-2xl p-7 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
                     plan.highlighted
-                      ? "bg-[#939482] shadow-2xl scale-[1.02]"
-                      : "bg-[#d6d0c2] shadow-lg"
+                      ? "bg-landing-olive shadow-2xl scale-[1.02]"
+                      : "bg-landing-warm-card shadow-lg"
                   }`}
                 >
                   {plan.highlighted && (
@@ -553,10 +586,10 @@ export default function HomePageClient() {
                     </div>
                   )}
                   <h3 className="text-xl font-bold text-black mb-1">{plan.name}</h3>
-                  <p className="text-sm text-gray-600 mb-5">{plan.desc}</p>
+                  <p className="text-body text-gray-600 mb-5">{plan.desc}</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-extrabold text-black">€{plan.price}</span>
-                    <span className="text-gray-500 ml-1">{plan.period}</span>
+                    <span className="text-4xl font-extrabold text-black">€{displayPrice}</span>
+                    <span className="text-gray-500 ml-1">/ {annual ? "lună, facturat anual" : "lună"}</span>
                   </div>
                   <ul className="space-y-3 mb-8 flex-1">
                     {plan.features.map((f) => (
@@ -575,14 +608,15 @@ export default function HomePageClient() {
                     className={`block text-center px-6 py-3.5 rounded-xl font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 ${
                       plan.highlighted
                         ? "bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/30"
-                        : "bg-[#0F1728] hover:bg-[#1a2744] text-white"
+                        : "bg-surface-ground hover:bg-surface-overlay text-white"
                     }`}
                   >
                     {plan.cta}
                   </Link>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div>
@@ -594,7 +628,7 @@ export default function HomePageClient() {
       </section>
 
       {/* ── FAQ (olive section) ── */}
-      <section id="faq" className="bg-[#939482] py-20 sm:py-28 px-6">
+      <section id="faq" className="bg-landing-olive py-20 sm:py-28 px-6">
         <div className="max-w-3xl mx-auto">
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-14">
@@ -603,7 +637,7 @@ export default function HomePageClient() {
           </div>
 
           <div>
-            <div className="bg-[#E0DACE] rounded-2xl px-8 py-2 shadow-lg">
+            <div className="bg-landing-warm rounded-2xl px-8 py-2 shadow-lg">
               {faqs.map((faq, i) => (
                 <FaqItem
                   key={faq.q}
@@ -620,7 +654,7 @@ export default function HomePageClient() {
       </section>
 
       {/* ── Final CTA (dark) ── */}
-      <section className="bg-[#0F1728] py-20 sm:py-28 px-6 text-center">
+      <section className="bg-surface-ground py-20 sm:py-28 px-6 text-center">
         <div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-6 leading-tight">
             Gata Să-ți Transformi<br />Crearea De Conținut?
@@ -638,7 +672,7 @@ export default function HomePageClient() {
       </section>
 
       {/* ── Footer (darkest) ── */}
-      <footer className="bg-[#0a0f1a] py-12 px-6">
+      <footer className="bg-landing-darkest py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-10">
             {/* Brand */}

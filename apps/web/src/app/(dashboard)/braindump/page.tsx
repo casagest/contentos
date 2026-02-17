@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import MediaUpload from "../compose/media-upload";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
-import { createClient } from "@/lib/supabase/client";
+import { useUser } from "@/components/providers/user-provider";
 import {
   Brain,
   Wand2,
@@ -315,31 +315,9 @@ export default function BrainDumpPage() {
 
   // Media state
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [organizationId, setOrganizationId] = useState<string>("");
-  const [isDental, setIsDental] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from("users").select("organization_id").eq("id", user.id).single()
-        .then(({ data }) => {
-          if (data?.organization_id) {
-            setOrganizationId(data.organization_id);
-            supabase
-              .from("business_profiles")
-              .select("industry")
-              .eq("organization_id", data.organization_id)
-              .single()
-              .then(({ data: bp }) => {
-                if (bp?.industry?.toLowerCase().includes("dental") || bp?.industry?.toLowerCase().includes("stomatolog")) {
-                  setIsDental(true);
-                }
-              });
-          }
-        });
-    });
-  }, []);
+  const { user: currentUser } = useUser();
+  const organizationId = currentUser?.organizationId || "";
+  const isDental = currentUser?.industry?.toLowerCase().includes("dental") || currentUser?.industry?.toLowerCase().includes("stomatolog") || false;
 
   // Results state
   const [results, setResults] = useState<AIResponse | null>(null);

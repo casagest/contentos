@@ -138,7 +138,7 @@ export default function MiniReporting({ className = "" }: { className?: string }
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-muted">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-[#0a0a0a] p-3 flex flex-col items-center gap-2">
+            <div key={i} className="bg-surface-sunken p-3 flex flex-col items-center gap-2">
               <Skeleton className="w-4 h-4 rounded" />
               <Skeleton className="h-6 w-12" />
               <Skeleton className="h-2 w-16" />
@@ -176,22 +176,22 @@ export default function MiniReporting({ className = "" }: { className?: string }
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-muted">
-        <div className="bg-[#08080D] p-3 text-center">
+        <div className="bg-surface-sunken p-3 text-center">
           <FileText className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.thisMonthPosts} duration={1} /></p>
           <p className="text-[10px] text-muted-foreground">Postări luna asta</p>
         </div>
-        <div className="bg-[#08080D] p-3 text-center">
+        <div className="bg-surface-sunken p-3 text-center">
           <ThumbsUp className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.totalLikes} /></p>
           <p className="text-[10px] text-muted-foreground">Like-uri total</p>
         </div>
-        <div className="bg-[#08080D] p-3 text-center">
+        <div className="bg-surface-sunken p-3 text-center">
           <MessageCircle className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.totalComments} /></p>
           <p className="text-[10px] text-muted-foreground">Comentarii</p>
         </div>
-        <div className="bg-[#08080D] p-3 text-center">
+        <div className="bg-surface-sunken p-3 text-center">
           <TrendingUp className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.avgEngagement} /></p>
           <p className="text-[10px] text-muted-foreground">Eng. mediu/post</p>

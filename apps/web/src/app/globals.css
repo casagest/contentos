@@ -5,7 +5,14 @@
 @layer base {
   :root {
     --font-dm-sans: var(--font-dm-sans-loaded, 'DM Sans'), system-ui, sans-serif;
-    /* shadcn/ui CSS variables — dark theme for dashboard */
+
+    /* ══════════════════════════════════════════════
+       CONTENTOS DESIGN SYSTEM — 2030 Standard
+       Semantic token architecture: all colors flow
+       from CSS custom properties.
+       ══════════════════════════════════════════════ */
+
+    /* ── Core semantic tokens (dark-first dashboard) ── */
     --background: 230 20% 5%;
     --foreground: 0 0% 98%;
     --card: 230 20% 7%;
@@ -26,12 +33,29 @@
     --input: 230 15% 18%;
     --ring: 25 95% 53%;
     --radius: 0.75rem;
-    /* Chart colors */
+
+    /* ── Surface hierarchy (replaces all hardcoded hex) ── */
+    --surface-ground: 227 33% 11%;       /* #0F1728 — deepest bg */
+    --surface-sunken: 240 33% 4%;        /* #0A0A0F — auth/legal bg */
+    --surface-raised: 228 29% 12%;       /* #141C2E — cards in dark sections */
+    --surface-overlay: 230 28% 15%;      /* #1a2340 — modals/popovers on dark */
+    --surface-tooltip: 237 36% 14%;      /* #1a1a2e — tooltip bg */
+
+    /* ── Landing page warm palette ── */
+    --landing-warm: 38 23% 83%;          /* #E0DACE */
+    --landing-warm-card: 38 20% 78%;     /* #d6d0c2 */
+    --landing-olive: 63 5% 54%;          /* #939482 */
+    --landing-dark: 227 33% 11%;         /* #0F1728 */
+    --landing-darkest: 225 33% 7%;       /* #0a0f1a — footer */
+
+    /* ── Chart colors ── */
     --chart-1: 25 95% 53%;
     --chart-2: 262 83% 58%;
     --chart-3: 160 84% 39%;
     --chart-4: 43 96% 56%;
     --chart-5: 339 90% 51%;
+
+    /* ── Sidebar ── */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -40,7 +64,17 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* ── Typography scale ── */
+    --text-display: 3.5rem;     /* 56px — hero headings */
+    --text-heading-1: 2.25rem;  /* 36px — section headings */
+    --text-heading-2: 1.5rem;   /* 24px — page titles */
+    --text-heading-3: 1.125rem; /* 18px — card titles */
+    --text-body: 0.875rem;      /* 14px — body text */
+    --text-caption: 0.75rem;    /* 12px — labels, captions */
+    --text-micro: 0.625rem;     /* 10px — badges, timestamps */
   }
+
   .dark {
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

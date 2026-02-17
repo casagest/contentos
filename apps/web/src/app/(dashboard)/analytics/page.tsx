@@ -72,7 +72,7 @@ function formatDate(dateStr: string): string {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg bg-[#1a1a2e] border border-border px-3 py-2 text-xs shadow-xl">
+    <div className="rounded-lg bg-surface-tooltip border border-border px-3 py-2 text-xs shadow-xl">
       <p className="text-muted-foreground mb-1">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2">
@@ -269,7 +269,7 @@ export default function AnalyticsPage() {
                   />
                   <span className="text-[9px] text-muted-foreground">{h.hour}</span>
                   {/* Tooltip on hover */}
-                  <div className="absolute bottom-full mb-1 hidden group-hover:block z-10 bg-[#1a1a2e] border border-border rounded px-2 py-1 text-[10px] whitespace-nowrap">
+                  <div className="absolute bottom-full mb-1 hidden group-hover:block z-10 bg-surface-tooltip border border-border rounded px-2 py-1 text-[10px] whitespace-nowrap">
                     <span className="text-white font-medium">{h.hour}:00</span>
                     <br />
                     <span className="text-muted-foreground">Avg: {formatNum(h.avgEngagement)}</span>

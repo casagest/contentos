@@ -278,7 +278,7 @@ function DraftModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-[#0f1117] border border-border p-6 shadow-2xl">
+      <div className="w-full max-w-lg rounded-2xl bg-surface-ground border border-border p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-semibold text-white">
             {isEditing ? "Editează Draft" : "Creează Draft"}
