@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import MediaUpload from "../compose/media-upload";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
@@ -623,16 +624,21 @@ export default function BrainDumpPage() {
         )}
 
         {/* Messages */}
+        <AnimatePresence mode="popLayout">
         {messages.map((msg) => (
-          <div
+          <motion.div
             key={msg.id}
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            layout
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-xl px-4 py-2.5 ${
+              className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                 msg.role === "user"
-                  ? "bg-brand-600/20 text-white border border-brand-500/20"
-                  : "bg-white/[0.03] text-gray-300 border border-white/[0.06]"
+                  ? "bg-brand-600/15 text-white border border-brand-500/20 rounded-br-md"
+                  : "bg-white/[0.03] text-gray-300 border border-white/[0.06] rounded-bl-md"
               }`}
             >
               {msg.role === "assistant" && (
@@ -643,8 +649,9 @@ export default function BrainDumpPage() {
               )}
               <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
             </div>
-          </div>
+          </motion.div>
         ))}
+        </AnimatePresence>
 
         {/* Clarification buttons */}
         {clarifications.length > 0 && (
@@ -669,15 +676,26 @@ export default function BrainDumpPage() {
           </div>
         )}
 
-        {/* Loading */}
+        {/* Typing indicator */}
+        <AnimatePresence>
         {isProcessing && (
-          <div className="flex justify-start">
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-2.5 flex items-center gap-2">
-              <RotateCcw className="w-3.5 h-3.5 text-brand-400 animate-spin" />
-              <span className="text-xs text-gray-400">Gandesc...</span>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex justify-start"
+          >
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2.5">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <span className="text-xs text-gray-500">ContentOS gândește...</span>
             </div>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {/* Results */}
         {results && (
