@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     // Tree-shake large icon/component libraries
-    optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
+    optimizePackageImports: ["lucide-react", "@supabase/supabase-js", "framer-motion"],
   },
   // Gzip/Brotli compression
   compress: true,
