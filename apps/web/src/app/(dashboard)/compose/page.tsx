@@ -519,18 +519,51 @@ export default function ComposePage() {
             )}
           </div>
 
-          {/* Right side: empty state */}
-          <div className="h-full flex items-center justify-center rounded-xl bg-white/[0.01] border border-dashed border-white/[0.06] p-8 text-center">
-            <div>
-              <Brain className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-sm text-gray-500 mb-2">
-                Scrie ideea ta si apasa &quot;Exploreaza&quot;
-              </p>
-              <p className="text-xs text-gray-600">
-                AI-ul va analiza datele tale de performance si va genera unghiuri creative
-                personalizate cu predictii de scor.
-              </p>
-            </div>
+          {/* Right side: intent analysis / help */}
+          <div className="rounded-xl bg-white/[0.01] border border-dashed border-white/[0.06] p-6 space-y-4">
+            {intentResult ? (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-2 h-2 rounded-full ${
+                    intentResult.confidence > 0.7 ? "bg-emerald-400" : intentResult.confidence > 0.4 ? "bg-yellow-400" : "bg-gray-400"
+                  }`} />
+                  <span className="text-xs font-medium text-gray-300">
+                    Intenție detectată: <span className="text-white capitalize">{intentResult.intent.replace("_", " ")}</span>
+                  </span>
+                  <span className="text-[10px] text-gray-500">
+                    ({Math.round(intentResult.confidence * 100)}%)
+                  </span>
+                </div>
+                {intentResult.reason && (
+                  <p className="text-xs text-gray-400">{intentResult.reason}</p>
+                )}
+                {intentResult.clarificationNeeded && (
+                  <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3">
+                    <p className="text-xs text-yellow-300 font-medium mb-1">💡 Sugestie:</p>
+                    <p className="text-xs text-yellow-200/80">{intentResult.clarificationNeeded}</p>
+                  </div>
+                )}
+                {intentResult.suggestedFollowUp && (
+                  <button
+                    onClick={() => setContent((prev) => prev + "\n\n" + intentResult!.suggestedFollowUp)}
+                    className="text-xs text-brand-400 hover:text-brand-300 underline"
+                  >
+                    + {intentResult.suggestedFollowUp}
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <Brain className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 mb-2">
+                  Scrie ideea ta si apasă &quot;Explorează&quot;
+                </p>
+                <p className="text-xs text-gray-600">
+                  AI-ul va analiza datele tale de performance si va genera unghiuri creative
+                  personalizate cu predicții de scor.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
