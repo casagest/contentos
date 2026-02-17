@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
+import { motion, useInView } from "framer-motion";
 
-/* ─── Scroll-triggered fade-in wrapper ─── */
+/* ─── Scroll-triggered fade-in wrapper (Framer Motion) ─── */
 function FadeIn({
   children,
   className = "",
@@ -14,34 +15,22 @@ function FadeIn({
   delay?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
-    <div
+    <motion.div
       ref={ref}
-      className={`transition-all duration-700 ease-out ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      } ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{
+        duration: 0.6,
+        delay: delay / 1000,
+        ease: [0.25, 0.46, 0.45, 0.94],
+      }}
+      className={className}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -288,9 +277,9 @@ export default function HomePageClient() {
         }`}
       >
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 max-w-7xl mx-auto">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm group-hover:shadow-lg group-hover:shadow-brand-500/30 transition-shadow">
-              C
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/25 group-hover:shadow-brand-500/40 transition-shadow">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
             </div>
             <span className="text-lg font-bold text-white tracking-tight">
               ContentOS
@@ -325,9 +314,10 @@ export default function HomePageClient() {
             </Link>
             <Link
               href="/login"
-              className="text-sm px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition shadow-md shadow-brand-600/20 hover:shadow-brand-500/30"
+              className="group text-sm px-5 py-2 rounded-lg bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-medium transition shadow-md shadow-brand-600/20 hover:shadow-brand-500/30 relative overflow-hidden"
             >
-              Începe gratuit
+              <span className="relative z-10">Începe gratuit</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
             </Link>
           </div>
 
@@ -402,65 +392,92 @@ export default function HomePageClient() {
 
       {/* ── Hero ── */}
       <section className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 md:pt-36 pb-12 sm:pb-16 text-center">
-        <FadeIn>
-          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-medium mb-6 sm:mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-medium mb-8 backdrop-blur-sm">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400" />
+            </span>
             Primul AI de conținut nativ românesc
           </div>
-        </FadeIn>
+        </motion.div>
 
-        <FadeIn delay={100}>
-          <h1 className="text-3xl sm:text-5xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-4 sm:mb-6">
-            Conținut viral cu{" "}
+        <motion.h1
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="text-3xl sm:text-5xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.08] tracking-tight mb-5 sm:mb-6"
+        >
+          Conținut viral cu{" "}
+          <span className="relative inline-block">
             <span className="bg-gradient-to-r from-brand-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
               AI românesc
             </span>
-            <br />
-            pe toate platformele
-          </h1>
-        </FadeIn>
+            <motion.span
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
+              className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-400 via-purple-400 to-pink-400 rounded-full origin-left"
+            />
+          </span>
+          <br />
+          pe toate platformele
+        </motion.h1>
 
-        <FadeIn delay={200}>
-          <p className="text-sm sm:text-base md:text-lg text-gray-400 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
-            ContentOS analizează algoritmii Facebook, Instagram, TikTok și
-            YouTube, apoi generează conținut optimizat cu AI care înțelege limba
-            română — cu diacritice, slang și context cultural.
-          </p>
-        </FadeIn>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="text-sm sm:text-base md:text-lg text-gray-400 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed"
+        >
+          ContentOS analizează algoritmii Facebook, Instagram, TikTok și
+          YouTube, apoi generează conținut optimizat cu AI care înțelege limba
+          română — cu diacritice, slang și context cultural.
+        </motion.p>
 
-        <FadeIn delay={300}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-            <Link
-              href="/register"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5"
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.45 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+        >
+          <Link
+            href="/register"
+            className="group w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-semibold transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 relative overflow-hidden"
+          >
+            <span className="relative z-10">Încearcă gratuit →</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          </Link>
+          <Link
+            href="#cum-functioneaza"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/[0.08] hover:border-white/[0.15] text-gray-300 hover:text-white font-medium transition-all hover:-translate-y-0.5 backdrop-blur-sm"
+          >
+            Cum funcționează?
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.7 }}
+          className="mt-10 sm:mt-14 flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 gap-y-2 sm:gap-y-3 text-xs sm:text-sm text-gray-500"
+        >
+          {["4 platforme", "AI nativ românesc", "GDPR compliant", "Gratis pentru început"].map((label, i) => (
+            <motion.span
+              key={label}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 + i * 0.1 }}
+              className="flex items-center gap-1.5"
             >
-              Încearcă gratuit →
-            </Link>
-            <Link
-              href="#cum-functioneaza"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white font-medium transition-all hover:-translate-y-0.5"
-            >
-              Cum funcționează?
-            </Link>
-          </div>
-        </FadeIn>
-
-        <FadeIn delay={400}>
-          <div className="mt-10 sm:mt-14 flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 gap-y-2 sm:gap-y-3 text-xs sm:text-sm text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <span className="text-brand-400">✦</span> 4 platforme
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-brand-400">✦</span> AI nativ românesc
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-brand-400">✦</span> GDPR compliant
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-brand-400">✦</span> Gratis pentru început
-            </span>
-          </div>
-        </FadeIn>
+              <span className="text-brand-400">✦</span> {label}
+            </motion.span>
+          ))}
+        </motion.div>
       </section>
 
       {/* ── How it works ── */}
@@ -520,17 +537,24 @@ export default function HomePageClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((feature, i) => (
             <FadeIn key={feature.title} delay={i * 80}>
-              <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-brand-500/30 hover:bg-white/[0.04] transition-all duration-300 group cursor-default h-full">
-                <div className="text-2xl sm:text-3xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
+              <motion.div
+                whileHover={{ y: -4, scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-brand-500/25 hover:shadow-xl hover:shadow-brand-500/5 transition-all duration-300 group cursor-default h-full relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-500/[0.03] to-purple-500/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative">
+                  <div className="text-2xl sm:text-3xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-2 group-hover:text-brand-300 transition">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-gray-400 leading-relaxed">
+                    {feature.desc}
+                  </p>
                 </div>
-                <h3 className="text-base sm:text-lg font-semibold text-white mb-2 group-hover:text-brand-300 transition">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-gray-400 leading-relaxed">
-                  {feature.desc}
-                </p>
-              </div>
+              </motion.div>
             </FadeIn>
           ))}
         </div>
@@ -583,11 +607,13 @@ export default function HomePageClient() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-start">
           {plans.map((plan, i) => (
             <FadeIn key={plan.name} delay={i * 100}>
-              <div
-                className={`relative rounded-2xl p-6 sm:p-7 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 ${
+              <motion.div
+                whileHover={{ y: -6, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className={`relative rounded-2xl p-6 sm:p-7 h-full flex flex-col transition-all duration-300 ${
                   plan.highlighted
                     ? "bg-gradient-to-b from-brand-500/10 to-pink-500/5 border-2 border-brand-500/40 shadow-xl shadow-brand-500/10"
-                    : "bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12]"
+                    : "bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] hover:shadow-lg hover:shadow-brand-500/5"
                 }`}
               >
                 {plan.highlighted && (
@@ -624,15 +650,18 @@ export default function HomePageClient() {
                 </ul>
                 <Link
                   href="/register"
-                  className={`block text-center px-5 py-2.5 sm:py-3 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5 ${
+                  className={`group/cta block text-center px-5 py-2.5 sm:py-3 rounded-xl text-sm font-semibold transition-all relative overflow-hidden ${
                     plan.highlighted
-                      ? "bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white shadow-lg shadow-brand-500/25"
+                      ? "bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white shadow-lg shadow-brand-500/25"
                       : "bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.1]"
                   }`}
                 >
-                  {plan.cta}
+                  <span className="relative z-10">{plan.cta}</span>
+                  {plan.highlighted && (
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/cta:translate-x-full transition-transform duration-700" />
+                  )}
                 </Link>
-              </div>
+              </motion.div>
             </FadeIn>
           ))}
         </div>
