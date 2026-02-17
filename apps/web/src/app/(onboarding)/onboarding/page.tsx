@@ -115,14 +115,14 @@ export default function OnboardingPage() {
                   ? "bg-brand-500 text-white"
                   : i === step
                     ? "bg-brand-600/20 text-brand-300 border border-brand-500/40"
-                    : "bg-white/[0.04] text-gray-600"
+                    : "bg-muted text-gray-600"
               }`}
             >
               {i < step ? <Check className="w-4 h-4" /> : i + 1}
             </div>
             {i < STEPS.length - 1 && (
               <div
-                className={`w-8 h-0.5 ${i < step ? "bg-brand-500" : "bg-white/[0.06]"}`}
+                className={`w-8 h-0.5 ${i < step ? "bg-brand-500" : "bg-input"}`}
               />
             )}
           </div>
@@ -135,7 +135,7 @@ export default function OnboardingPage() {
           <h1 className="text-2xl font-bold text-white mb-2">
             Bine ai venit in ContentOS!
           </h1>
-          <p className="text-gray-400 mb-8">
+          <p className="text-muted-foreground mb-8">
             In ce industrie activezi? Vom personaliza experienta pentru tine.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -143,7 +143,7 @@ export default function OnboardingPage() {
               <button
                 key={ind.id}
                 onClick={() => handleIndustrySelect(ind.id)}
-                className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:border-brand-500/40 hover:bg-brand-500/5 transition text-center"
+                className="p-4 rounded-xl border border-border bg-card hover:border-brand-500/40 hover:bg-brand-500/5 transition text-center"
               >
                 <div className="text-2xl mb-2">{ind.icon}</div>
                 <div className="text-sm text-gray-300">{ind.label}</div>
@@ -152,7 +152,7 @@ export default function OnboardingPage() {
           </div>
           <button
             onClick={() => goToStep(1)}
-            className="mt-4 text-sm text-gray-500 hover:text-gray-300 transition"
+            className="mt-4 text-sm text-muted-foreground hover:text-gray-300 transition"
           >
             Sari peste
           </button>
@@ -165,22 +165,22 @@ export default function OnboardingPage() {
           <h2 className="text-xl font-bold text-white mb-2 text-center">
             Spune-ne despre afacerea ta
           </h2>
-          <p className="text-gray-400 text-sm mb-6 text-center">
+          <p className="text-muted-foreground text-sm mb-6 text-center">
             AI-ul va folosi aceste informatii pentru a genera continut relevant.
           </p>
           <div className="space-y-4 max-w-md mx-auto">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Numele afacerii</label>
+              <label className="block text-xs text-muted-foreground mb-1">Numele afacerii</label>
               <input
                 type="text"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 placeholder="ex: Clinica Dentara Smile"
-                className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">
+              <label className="block text-xs text-muted-foreground mb-1">
                 Descriere scurta (ce faci, pentru cine)
               </label>
               <textarea
@@ -188,7 +188,7 @@ export default function OnboardingPage() {
                 onChange={(e) => setBusinessDescription(e.target.value)}
                 rows={3}
                 placeholder="ex: Oferim servicii stomatologice premium in Bucuresti. Publicul nostru: familii tinere, profesionisti 25-45 ani."
-                className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
               />
             </div>
             <div className="flex gap-3">
@@ -207,7 +207,7 @@ export default function OnboardingPage() {
               </button>
               <button
                 onClick={() => goToStep(2)}
-                className="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-300 transition"
+                className="px-4 py-2.5 text-sm text-muted-foreground hover:text-gray-300 transition"
               >
                 Sari peste
               </button>
@@ -222,7 +222,7 @@ export default function OnboardingPage() {
           <h2 className="text-xl font-bold text-white mb-2">
             Conecteaza platformele sociale
           </h2>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             Conecteaza cel putin o platforma pentru a publica continut direct din ContentOS.
           </p>
           <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-6">
@@ -239,7 +239,7 @@ export default function OnboardingPage() {
           </div>
           <button
             onClick={() => goToStep(3)}
-            className="text-sm text-gray-500 hover:text-gray-300 transition"
+            className="text-sm text-muted-foreground hover:text-gray-300 transition"
           >
             Continua fara conectare
           </button>
@@ -252,7 +252,7 @@ export default function OnboardingPage() {
           <h2 className="text-xl font-bold text-white mb-2 text-center">
             Creeaza primul tau continut
           </h2>
-          <p className="text-gray-400 text-sm mb-6 text-center">
+          <p className="text-muted-foreground text-sm mb-6 text-center">
             Scrie o idee sau o tema, iar AI-ul o va transforma in continut optimizat.
           </p>
           <div className="max-w-md mx-auto space-y-4">
@@ -261,7 +261,7 @@ export default function OnboardingPage() {
               onChange={(e) => setBraindumpText(e.target.value)}
               rows={4}
               placeholder="ex: Am lansat un nou serviciu de albire dentara cu LED. Vreau sa atrag pacienti noi..."
-              className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
+              className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
             />
             {!generatedContent ? (
               <div className="flex gap-3">
@@ -282,7 +282,7 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   onClick={() => goToStep(4)}
-                  className="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-300 transition"
+                  className="px-4 py-2.5 text-sm text-muted-foreground hover:text-gray-300 transition"
                 >
                   Sari peste
                 </button>
@@ -315,7 +315,7 @@ export default function OnboardingPage() {
           <h2 className="text-2xl font-bold text-white mb-2">
             Totul e pregatit!
           </h2>
-          <p className="text-gray-400 mb-8">
+          <p className="text-muted-foreground mb-8">
             Contul tau e configurat. Esti gata sa creezi continut care performeaza.
           </p>
           <button

@@ -96,7 +96,7 @@ type Objective = "engagement" | "reach" | "leads" | "saves";
 const PLATFORM_CONFIG = {
   facebook: { label: "Facebook", color: "bg-blue-500", textColor: "text-blue-400" },
   instagram: { label: "Instagram", color: "bg-pink-500", textColor: "text-pink-400" },
-  tiktok: { label: "TikTok", color: "bg-gray-500", textColor: "text-gray-300" },
+  tiktok: { label: "TikTok", color: "bg-gray-500", textColor: "text-foreground/80" },
   youtube: { label: "YouTube", color: "bg-red-500", textColor: "text-red-400" },
 };
 
@@ -132,9 +132,9 @@ function HashtagList({ tags }: { tags: string[] }) {
 function TipsList({ tips }: { tips: string[] }) {
   if (!tips.length) return null;
   return (
-    <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1">
+    <div className="mt-3 pt-3 border-t border-border space-y-1">
       {tips.map((tip, i) => (
-        <p key={i} className="text-[11px] text-gray-500 flex items-start gap-1.5">
+        <p key={i} className="text-[11px] text-muted-foreground flex items-start gap-1.5">
           <Lightbulb className="w-3 h-3 mt-0.5 shrink-0 text-amber-500/60" />
           {tip}
         </p>
@@ -153,7 +153,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   return (
     <button
       onClick={copy}
-      className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-gray-500 hover:text-white bg-white/[0.03] hover:bg-white/[0.06] transition"
+      className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground hover:text-white bg-muted hover:bg-muted transition"
     >
       {copied ? <><Check className="w-3 h-3 text-green-400" /> Copiat</> : <><Copy className="w-3 h-3" /> {label}</>}
     </button>
@@ -162,7 +162,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 
 function FacebookCard({ data }: { data: FacebookResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+    <div className="rounded-xl bg-card border border-border p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -170,12 +170,12 @@ function FacebookCard({ data }: { data: FacebookResult }) {
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${
             data.estimatedEngagement === "High" || data.estimatedEngagement === "Viral Potential"
               ? "bg-green-500/10 text-green-400"
-              : "bg-white/[0.06] text-gray-400"
+              : "bg-input text-muted-foreground"
           }`}>{data.estimatedEngagement}</span>
         </div>
         <CopyButton text={data.content} label="Copiaza" />
       </div>
-      <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{data.content}</p>
+      <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.content}</p>
       <HashtagList tags={data.hashtags} />
       <TipsList tips={data.tips} />
     </div>
@@ -184,21 +184,21 @@ function FacebookCard({ data }: { data: FacebookResult }) {
 
 function InstagramCard({ data }: { data: InstagramResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+    <div className="rounded-xl bg-card border border-border p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-pink-500" />
           <span className="text-sm font-medium text-white">Instagram</span>
           {data.bestTimeToPost && (
-            <span className="text-[10px] text-gray-500 flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" /> {data.bestTimeToPost}
             </span>
           )}
         </div>
         <CopyButton text={data.caption} label="Copiaza" />
       </div>
-      <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{data.caption}</p>
-      {data.altText && <p className="text-[10px] text-gray-500 mt-2">Alt: {data.altText}</p>}
+      <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.caption}</p>
+      {data.altText && <p className="text-[10px] text-muted-foreground mt-2">Alt: {data.altText}</p>}
       <HashtagList tags={data.hashtags} />
       <TipsList tips={data.tips} />
     </div>
@@ -207,7 +207,7 @@ function InstagramCard({ data }: { data: InstagramResult }) {
 
 function TikTokCard({ data }: { data: TikTokResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+    <div className="rounded-xl bg-card border border-border p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-gray-500" />
@@ -215,13 +215,13 @@ function TikTokCard({ data }: { data: TikTokResult }) {
         </div>
         <CopyButton text={`${data.hook}\n\n${data.script}`} label="Copiaza" />
       </div>
-      <div className="bg-white/[0.03] rounded-lg p-2.5 mb-2">
+      <div className="bg-muted rounded-lg p-2.5 mb-2">
         <span className="text-[10px] text-brand-400 uppercase tracking-wider">Hook</span>
         <p className="text-sm text-white font-medium mt-0.5">{data.hook}</p>
       </div>
-      <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{data.script}</p>
+      <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.script}</p>
       {data.soundSuggestion && (
-        <p className="text-[10px] text-gray-500 mt-2 flex items-center gap-1">
+        <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
           <Volume2 className="w-3 h-3" /> {data.soundSuggestion}
         </p>
       )}
@@ -233,7 +233,7 @@ function TikTokCard({ data }: { data: TikTokResult }) {
 
 function YouTubeCard({ data }: { data: YouTubeResult }) {
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+    <div className="rounded-xl bg-card border border-border p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -241,13 +241,13 @@ function YouTubeCard({ data }: { data: YouTubeResult }) {
         </div>
         <CopyButton text={`${data.title}\n\n${data.description}`} label="Copiaza" />
       </div>
-      <div className="bg-white/[0.03] rounded-lg p-2.5 mb-2">
+      <div className="bg-muted rounded-lg p-2.5 mb-2">
         <span className="text-[10px] text-brand-400 uppercase tracking-wider">Titlu</span>
         <p className="text-sm text-white font-medium mt-0.5">{data.title}</p>
       </div>
-      <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{data.description}</p>
+      <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{data.description}</p>
       {data.thumbnailIdea && (
-        <p className="text-[10px] text-gray-500 mt-2 flex items-center gap-1">
+        <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
           <Type className="w-3 h-3" /> Thumbnail: {data.thumbnailIdea}
         </p>
       )}
@@ -259,12 +259,12 @@ function YouTubeCard({ data }: { data: YouTubeResult }) {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 animate-pulse">
-      <div className="h-3 w-24 bg-white/[0.06] rounded mb-3" />
+    <div className="rounded-xl bg-card border border-border p-4 animate-pulse">
+      <div className="h-3 w-24 bg-input rounded mb-3" />
       <div className="space-y-2">
-        <div className="h-2.5 bg-white/[0.04] rounded w-full" />
-        <div className="h-2.5 bg-white/[0.04] rounded w-4/5" />
-        <div className="h-2.5 bg-white/[0.04] rounded w-3/5" />
+        <div className="h-2.5 bg-muted rounded w-full" />
+        <div className="h-2.5 bg-muted rounded w-4/5" />
+        <div className="h-2.5 bg-muted rounded w-3/5" />
       </div>
     </div>
   );
@@ -526,7 +526,7 @@ export default function BrainDumpPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Brain Dump</h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Spune-mi orice — intrebare, idee, sau text brut
             </p>
           </div>
@@ -534,7 +534,7 @@ export default function BrainDumpPage() {
         {messages.length > 0 && (
           <button
             onClick={startOver}
-            className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white bg-muted hover:bg-accent transition flex items-center gap-1.5"
           >
             <RotateCcw className="w-3 h-3" /> Start nou
           </button>
@@ -550,8 +550,8 @@ export default function BrainDumpPage() {
               onClick={() => togglePlatform(p.id)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition ${
                 selectedPlatforms.includes(p.id)
-                  ? "bg-white/[0.08] text-white border border-brand-500/30"
-                  : "bg-white/[0.02] text-gray-500 border border-white/[0.06] hover:border-white/[0.1]"
+                  ? "bg-accent text-white border border-brand-500/30"
+                  : "bg-card text-muted-foreground border border-border hover:border-border"
               }`}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${p.color}`} />
@@ -568,7 +568,7 @@ export default function BrainDumpPage() {
               className={`px-2 py-1 rounded-lg text-[10px] border transition ${
                 objective === o.id
                   ? "bg-brand-600/20 text-brand-300 border-brand-500/40"
-                  : "bg-white/[0.03] text-gray-500 border-white/[0.06] hover:text-gray-300"
+                  : "bg-muted text-muted-foreground border-border hover:text-foreground/80"
               }`}
             >
               {o.label}
@@ -590,14 +590,14 @@ export default function BrainDumpPage() {
       )}
 
       {/* Chat area */}
-      <div className="flex-1 overflow-y-auto rounded-xl bg-white/[0.01] border border-white/[0.06] p-4 space-y-3 mb-3">
+      <div className="flex-1 overflow-y-auto rounded-xl bg-card/50 border border-border p-4 space-y-3 mb-3">
         {messages.length === 0 && !results && (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <Brain className="w-14 h-14 text-gray-600 mb-4" />
-            <p className="text-gray-400 text-sm mb-2">
+            <Brain className="w-14 h-14 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-sm mb-2">
               Scrie orice ai in minte
             </p>
-            <p className="text-gray-600 text-xs max-w-md">
+            <p className="text-muted-foreground text-xs max-w-md">
               Poti sa pui o intrebare, sa arunci o idee vaga, sau sa dai un text complet.
               AI-ul va detecta ce vrei si va raspunde inteligent.
             </p>
@@ -614,7 +614,7 @@ export default function BrainDumpPage() {
                     setInputText(suggestion);
                     sendMessage(suggestion);
                   }}
-                  className="px-3 py-1.5 rounded-lg text-xs text-gray-400 bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] hover:text-gray-300 transition text-left"
+                  className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground bg-muted border border-border hover:border-border hover:text-foreground/80 transition text-left"
                 >
                   {suggestion}
                 </button>
@@ -638,7 +638,7 @@ export default function BrainDumpPage() {
               className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                 msg.role === "user"
                   ? "bg-brand-600/15 text-white border border-brand-500/20 rounded-br-md"
-                  : "bg-white/[0.03] text-gray-300 border border-white/[0.06] rounded-bl-md"
+                  : "bg-muted text-foreground/80 border border-border rounded-bl-md"
               }`}
             >
               {msg.role === "assistant" && (
@@ -663,13 +663,13 @@ export default function BrainDumpPage() {
                     <button
                       key={option}
                       onClick={() => handleClarificationClick(option)}
-                      className="block px-3 py-1.5 rounded-lg text-xs text-gray-300 bg-white/[0.04] border border-white/[0.08] hover:border-brand-500/30 hover:text-white transition"
+                      className="block px-3 py-1.5 rounded-lg text-xs text-foreground/80 bg-muted border border-border hover:border-brand-500/30 hover:text-white transition"
                     >
                       {option}
                     </button>
                   ))
                 ) : (
-                  <p className="text-xs text-gray-500 italic">{c.question}</p>
+                  <p className="text-xs text-muted-foreground italic">{c.question}</p>
                 )}
               </div>
             ))}
@@ -685,13 +685,13 @@ export default function BrainDumpPage() {
             exit={{ opacity: 0, y: -8 }}
             className="flex justify-start"
           >
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2.5">
+            <div className="bg-muted border border-border rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2.5">
               <div className="flex gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "0ms" }} />
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "150ms" }} />
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
-              <span className="text-xs text-gray-500">ContentOS gândește...</span>
+              <span className="text-xs text-muted-foreground">ContentOS gândește...</span>
             </div>
           </motion.div>
         )}
@@ -768,7 +768,7 @@ export default function BrainDumpPage() {
       </div>
 
       {/* Input bar */}
-      <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3">
+      <div className="rounded-xl bg-card border border-border p-3">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -777,7 +777,7 @@ export default function BrainDumpPage() {
             onKeyDown={handleKeyDown}
             placeholder="Scrie ideea, intrebarea sau textul brut..."
             rows={2}
-            className="flex-1 bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none"
+            className="flex-1 bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none"
           />
           <button
             onClick={() => sendMessage()}
@@ -791,15 +791,15 @@ export default function BrainDumpPage() {
             )}
           </button>
         </div>
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06]">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
           <div className="flex items-center gap-2">
             <VoiceInput
               onTranscript={(text) => setInputText((prev) => prev + (prev ? " " : "") + text)}
               language="ro-RO"
             />
-            <span className="text-[10px] text-gray-600">Shift+Enter pentru linie nouă</span>
+            <span className="text-[10px] text-muted-foreground">Shift+Enter pentru linie nouă</span>
           </div>
-          <span className="text-[10px] text-gray-600">{inputText.length} caractere</span>
+          <span className="text-[10px] text-muted-foreground">{inputText.length} caractere</span>
         </div>
       </div>
     </div>

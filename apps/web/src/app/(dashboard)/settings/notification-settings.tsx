@@ -43,9 +43,9 @@ export default function NotificationSettings({
   }
 
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
+    <div className="rounded-xl bg-card border border-border p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Bell className="w-4 h-4 text-gray-400" />
+        <Bell className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-base font-semibold text-white">Notificari</h2>
       </div>
       <div className="space-y-3">
@@ -61,7 +61,7 @@ export default function NotificationSettings({
                 type="button"
                 onClick={() => toggle(item.key)}
                 className={`w-9 h-5 rounded-full transition ${
-                  isOn ? "bg-brand-600" : "bg-white/[0.1]"
+                  isOn ? "bg-brand-600" : "bg-accent"
                 }`}
               >
                 <div

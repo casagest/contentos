@@ -66,7 +66,7 @@ const PLATFORM_OPTIONS = [
 const platformBadge: Record<string, string> = {
   facebook: "bg-blue-500/10 text-blue-400",
   instagram: "bg-pink-500/10 text-pink-400",
-  tiktok: "bg-gray-500/10 text-gray-300",
+  tiktok: "bg-gray-500/10 text-foreground/80",
   youtube: "bg-red-500/10 text-red-400",
 };
 
@@ -152,18 +152,18 @@ function DraftCard({
         {draft.target_platforms.map((p) => (
           <span
             key={p}
-            className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase ${platformBadge[p] || "bg-gray-500/10 text-gray-400"}`}
+            className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase ${platformBadge[p] || "bg-gray-500/10 text-muted-foreground"}`}
           >
             {p.slice(0, 2)}
           </span>
         ))}
         {time && (
-          <span className="text-[9px] text-gray-500 ml-auto flex items-center gap-0.5">
+          <span className="text-[9px] text-muted-foreground ml-auto flex items-center gap-0.5">
             <Clock className="w-2.5 h-2.5" /> {time}
           </span>
         )}
       </div>
-      <p className="text-[11px] text-gray-300 truncate">
+      <p className="text-[11px] text-foreground/80 truncate">
         {draft.title || draft.body.slice(0, 60) || "Draft fără titlu"}
       </p>
     </button>
@@ -176,16 +176,16 @@ function PostCard({ post }: { post: CalendarPost }) {
   const engagement = post.likes_count + post.comments_count + post.shares_count;
 
   return (
-    <div className="w-full p-2 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+    <div className="w-full p-2 rounded-lg bg-card border border-border">
       <div className="flex items-center gap-1 mb-1">
-        <span className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase ${platformBadge[post.platform] || "bg-gray-500/10 text-gray-400"}`}>
+        <span className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase ${platformBadge[post.platform] || "bg-gray-500/10 text-muted-foreground"}`}>
           {post.platform.slice(0, 2)}
         </span>
-        <span className="text-[9px] text-gray-600 ml-auto">
+        <span className="text-[9px] text-muted-foreground ml-auto">
           {engagement > 0 ? `${engagement} eng.` : ""}
         </span>
       </div>
-      <p className="text-[11px] text-gray-500 truncate">
+      <p className="text-[11px] text-muted-foreground truncate">
         {post.text_content || "—"}
       </p>
     </div>
@@ -278,14 +278,14 @@ function DraftModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-[#0f1117] border border-white/[0.1] p-6 shadow-2xl">
+      <div className="w-full max-w-lg rounded-2xl bg-[#0f1117] border border-border p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-semibold text-white">
             {isEditing ? "Editează Draft" : "Creează Draft"}
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/[0.06] text-gray-400 hover:text-white transition"
+            className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-white transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -297,7 +297,7 @@ function DraftModal({
           placeholder="Titlu (opțional)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full mb-3 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          className="w-full mb-3 px-3 py-2 rounded-lg bg-muted border border-border text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
         />
 
         {/* Body */}
@@ -306,12 +306,12 @@ function DraftModal({
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={4}
-          className="w-full mb-3 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
+          className="w-full mb-3 px-3 py-2 rounded-lg bg-muted border border-border text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none"
         />
 
         {/* Platforms */}
         <div className="mb-3">
-          <div className="text-xs text-gray-500 mb-1.5">Platforme</div>
+          <div className="text-xs text-muted-foreground mb-1.5">Platforme</div>
           <div className="flex gap-2">
             {PLATFORM_OPTIONS.map((p) => {
               const Icon = p.icon;
@@ -322,8 +322,8 @@ function DraftModal({
                   onClick={() => togglePlatform(p.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                     selected
-                      ? "bg-white/[0.1] text-white border border-white/[0.15]"
-                      : "bg-white/[0.03] text-gray-500 border border-white/[0.06] hover:text-gray-300"
+                      ? "bg-accent text-white border border-border"
+                      : "bg-muted text-muted-foreground border border-border hover:text-foreground/80"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -336,12 +336,12 @@ function DraftModal({
 
         {/* Schedule date/time */}
         <div className="mb-5">
-          <div className="text-xs text-gray-500 mb-1.5">Programează pentru</div>
+          <div className="text-xs text-muted-foreground mb-1.5">Programează pentru</div>
           <input
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 [color-scheme:dark]"
+            className="w-full px-3 py-2 rounded-lg bg-muted border border-border text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 [color-scheme:dark]"
           />
         </div>
 
@@ -369,7 +369,7 @@ function DraftModal({
             <button
               onClick={() => handleSave(true)}
               disabled={saving}
-              className="px-4 py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-sm font-medium transition"
+              className="px-4 py-2.5 rounded-lg bg-muted hover:bg-accent text-foreground/80 text-sm font-medium transition"
             >
               <Save className="w-4 h-4" />
             </button>
@@ -531,7 +531,7 @@ export default function CalendarPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Calendar Conținut</h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Planifică și programează postările
             </p>
           </div>
@@ -551,24 +551,24 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigateWeek(-1)}
-            className="p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] text-gray-400 hover:text-white transition"
+            className="p-2 rounded-lg bg-muted hover:bg-muted text-muted-foreground hover:text-white transition"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => navigateWeek(1)}
-            className="p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] text-gray-400 hover:text-white transition"
+            className="p-2 rounded-lg bg-muted hover:bg-muted text-muted-foreground hover:text-white transition"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
             onClick={goToToday}
-            className="px-3 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] text-xs text-gray-400 hover:text-white transition"
+            className="px-3 py-1.5 rounded-lg bg-muted hover:bg-muted text-xs text-muted-foreground hover:text-white transition"
           >
             Azi
           </button>
         </div>
-        <span className="text-sm text-gray-400 font-medium">
+        <span className="text-sm text-muted-foreground font-medium">
           {formatDateRange(weekStart)}
         </span>
       </div>
@@ -576,7 +576,7 @@ export default function CalendarPage() {
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center h-48">
-          <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+          <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
         </div>
       )}
 
@@ -589,22 +589,22 @@ export default function CalendarPage() {
               className={`rounded-xl border p-3 min-h-[180px] flex flex-col transition ${
                 day.isToday
                   ? "bg-brand-500/5 border-brand-500/20"
-                  : "bg-white/[0.02] border-white/[0.06]"
+                  : "bg-card border-border"
               }`}
             >
               {/* Day header */}
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <div className={`text-[10px] font-medium ${day.isToday ? "text-brand-400" : "text-gray-500"}`}>
+                  <div className={`text-[10px] font-medium ${day.isToday ? "text-brand-400" : "text-muted-foreground"}`}>
                     {day.label}
                   </div>
-                  <div className={`text-sm font-semibold ${day.isToday ? "text-white" : "text-gray-300"}`}>
+                  <div className={`text-sm font-semibold ${day.isToday ? "text-white" : "text-foreground/80"}`}>
                     {day.date.getDate()}
                   </div>
                 </div>
                 <button
                   onClick={() => openCreate(day.dateStr)}
-                  className="p-1 rounded-md hover:bg-white/[0.06] text-gray-600 hover:text-brand-400 transition md:opacity-0 md:group-hover:opacity-100"
+                  className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-brand-400 transition md:opacity-0 md:group-hover:opacity-100"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -642,12 +642,12 @@ export default function CalendarPage() {
 
       {/* Empty state */}
       {!loading && isEmpty && (
-        <div className="mt-4 rounded-xl border border-dashed border-white/[0.08] p-8 text-center">
-          <CalendarCheck className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+        <div className="mt-4 rounded-xl border border-dashed border-border p-8 text-center">
+          <CalendarCheck className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
           <h3 className="text-sm font-medium text-white mb-1">
             Nicio postare programată
           </h3>
-          <p className="text-xs text-gray-500 mb-4">
+          <p className="text-xs text-muted-foreground mb-4">
             Creează un draft sau programează conținut din Brain Dump sau Composer.
           </p>
           <div className="flex items-center justify-center gap-2">
@@ -660,7 +660,7 @@ export default function CalendarPage() {
             </button>
             <button
               onClick={() => router.push("/braindump")}
-              className="px-4 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-sm font-medium transition"
+              className="px-4 py-2 rounded-lg bg-muted hover:bg-accent text-foreground/80 text-sm font-medium transition"
             >
               Brain Dump
             </button>

@@ -381,10 +381,10 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
   const hasWarnings = compliance.some((c) => c.severity === "warning");
 
   return (
-    <div className={`rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden ${className}`}>
+    <div className={`rounded-xl bg-card border border-border overflow-hidden ${className}`}>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-3 hover:bg-white/[0.02] transition"
+        className="w-full flex items-center justify-between p-3 hover:bg-card transition"
       >
         <div className="flex items-center gap-2">
           <Shield className={`w-4 h-4 ${hasErrors ? "text-red-400" : hasWarnings ? "text-yellow-400" : "text-emerald-400"}`} />
@@ -399,7 +399,7 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
           animate={{ rotate: expanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </motion.div>
       </button>
 
@@ -416,7 +416,7 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
           {/* CMSR Compliance */}
           {isDental && compliance.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Conformitate CMSR</p>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Conformitate CMSR</p>
               {compliance.map((issue, i) => (
                 <div key={i} className={`flex items-start gap-2 p-2 rounded-lg text-xs ${
                   issue.severity === "error" ? "bg-red-500/10 border border-red-500/20" :
@@ -430,7 +430,7 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
                     <p className={`font-medium ${issue.severity === "error" ? "text-red-300" : "text-yellow-300"}`}>
                       &ldquo;{issue.match}&rdquo; — {issue.rule}
                     </p>
-                    <p className="text-gray-400 mt-0.5">💡 {issue.suggestion}</p>
+                    <p className="text-muted-foreground mt-0.5">💡 {issue.suggestion}</p>
                   </div>
                 </div>
               ))}
@@ -448,16 +448,16 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
           {text.length > 20 && (() => {
             const readability = checkReadability(text);
             return (
-              <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider">Lizibilitate</span>
+              <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/50">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Lizibilitate</span>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-bold ${
                     readability.score >= 60 ? "text-emerald-400" : readability.score >= 40 ? "text-yellow-400" : "text-red-400"
                   }`}>
                     {readability.score}/100
                   </span>
-                  <span className="text-[10px] text-gray-400">{readability.grade}</span>
-                  <span className="text-[10px] text-gray-600">({readability.wordCount} cuvinte, {readability.sentenceCount} propoziții)</span>
+                  <span className="text-[10px] text-muted-foreground">{readability.grade}</span>
+                  <span className="text-[10px] text-muted-foreground">({readability.wordCount} cuvinte, {readability.sentenceCount} propoziții)</span>
                 </div>
               </div>
             );
@@ -467,7 +467,7 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
           {fits.map((fit) => (
             <div key={fit.platform} className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                   {PLATFORM_SPECS[fit.platform]?.label || fit.platform}
                 </p>
                 <span className={`text-xs font-bold ${fit.score >= 80 ? "text-emerald-400" : fit.score >= 50 ? "text-yellow-400" : "text-red-400"}`}>
@@ -475,7 +475,7 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
                 </span>
               </div>
               {/* Animated progress bar */}
-              <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
+              <div className="h-1 rounded-full bg-muted overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${fit.score}%` }}
@@ -488,8 +488,8 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
                   {check.status === "ok" ? <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" /> :
                    check.status === "warn" ? <AlertTriangle className="w-3 h-3 text-yellow-400 shrink-0" /> :
                    <XCircle className="w-3 h-3 text-red-400 shrink-0" />}
-                  <span className="text-gray-400">{check.label}:</span>
-                  <span className={check.status === "ok" ? "text-gray-300" : check.status === "warn" ? "text-yellow-300" : "text-red-300"}>
+                  <span className="text-muted-foreground">{check.label}:</span>
+                  <span className={check.status === "ok" ? "text-foreground/80" : check.status === "warn" ? "text-yellow-300" : "text-red-300"}>
                     {check.detail}
                   </span>
                 </div>
@@ -500,7 +500,7 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
           {/* Media Requirements */}
           {platforms.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider flex items-center gap-1">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                 <Ruler className="w-3 h-3" /> Specificații Media
               </p>
               {platforms.map((p) => {
@@ -508,16 +508,16 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
                 if (!spec) return null;
                 return (
                   <div key={p} className="text-[11px] space-y-0.5">
-                    <p className="text-gray-400 font-medium">{spec.label}:</p>
+                    <p className="text-muted-foreground font-medium">{spec.label}:</p>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 pl-2">
                       {spec.imageSizes.slice(0, 3).map((s) => (
-                        <span key={s.type} className="text-gray-500">
-                          <ImageIcon className="w-2.5 h-2.5 inline mr-1" />{s.type}: <span className="text-gray-400">{s.size}</span>
+                        <span key={s.type} className="text-muted-foreground">
+                          <ImageIcon className="w-2.5 h-2.5 inline mr-1" />{s.type}: <span className="text-muted-foreground">{s.size}</span>
                         </span>
                       ))}
                       {spec.videoSpecs.slice(0, 2).map((v) => (
-                        <span key={v.type} className="text-gray-500">
-                          <Film className="w-2.5 h-2.5 inline mr-1" />{v.type}: <span className="text-gray-400">{v.duration}</span>
+                        <span key={v.type} className="text-muted-foreground">
+                          <Film className="w-2.5 h-2.5 inline mr-1" />{v.type}: <span className="text-muted-foreground">{v.duration}</span>
                         </span>
                       ))}
                     </div>
@@ -563,14 +563,14 @@ export function VisualSuggestion({ platform, contentType, isDental }: VisualSugg
       <p className="text-[10px] font-medium text-purple-300 uppercase tracking-wider flex items-center gap-1">
         <Smartphone className="w-3 h-3" /> Sugestie vizuală — {spec.label}
       </p>
-      <div className="text-[11px] text-gray-400 space-y-0.5">
+      <div className="text-[11px] text-muted-foreground space-y-0.5">
         <p>📐 Format recomandat: <span className="text-white">{bestFormat.size}</span> ({bestFormat.ratio})</p>
         <p>🎬 Video: <span className="text-white">{bestVideo.ratio}</span>, {bestVideo.duration}</p>
         {dentalTips.length > 0 && dentalTips.map((tip, i) => (
           <p key={i}>{tip}</p>
         ))}
         {spec.tips.slice(0, 2).map((tip, i) => (
-          <p key={`tip-${i}`} className="text-gray-500">💡 {tip}</p>
+          <p key={`tip-${i}`} className="text-muted-foreground">💡 {tip}</p>
         ))}
       </div>
     </div>

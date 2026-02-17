@@ -65,7 +65,7 @@ export default async function SettingsPage({
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Setari</h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Administreaza contul, conexiunile si abonamentul
           </p>
         </div>

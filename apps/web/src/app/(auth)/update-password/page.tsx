@@ -44,7 +44,7 @@ export default function UpdatePasswordPage() {
         <h1 className="text-2xl font-bold text-white mb-2">
           Parolă nouă
         </h1>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-muted-foreground">
           Alege o parolă nouă pentru contul tău
         </p>
       </div>
@@ -68,7 +68,7 @@ export default function UpdatePasswordPage() {
             placeholder="Minim 6 caractere"
             required
             minLength={6}
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
+            className="w-full px-3 py-2.5 rounded-lg bg-muted border border-border text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
           />
         </div>
 
@@ -84,7 +84,7 @@ export default function UpdatePasswordPage() {
             placeholder="Repetă parola"
             required
             minLength={6}
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
+            className="w-full px-3 py-2.5 rounded-lg bg-muted border border-border text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/40 transition"
           />
         </div>
 

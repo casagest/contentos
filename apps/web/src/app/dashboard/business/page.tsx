@@ -238,7 +238,7 @@ function KpiCard({
 
   return (
     <div
-      className="group relative rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
+      className="group relative rounded-xl bg-muted border border-border p-4 hover:border-border transition-all duration-300 cursor-pointer"
       onClick={() => !editing && setEditing(true)}
     >
       <div className="flex items-center justify-between mb-3">
@@ -249,7 +249,7 @@ function KpiCard({
           <DynamicIcon name={kpi.icon} className="w-4 h-4" style={{ color: kpi.color }} />
         </div>
         {!editing && (
-          <span className="text-[10px] text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
             click to edit
           </span>
         )}
@@ -266,7 +266,7 @@ function KpiCard({
               if (e.key === "Escape") setEditing(false);
             }}
             autoFocus
-            className="w-full bg-white/[0.06] border border-white/[0.12] rounded-lg px-2 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            className="w-full bg-input border border-border rounded-lg px-2 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           />
           <button
             onClick={handleSave}
@@ -281,7 +281,7 @@ function KpiCard({
         </div>
       )}
 
-      <div className="text-xs text-gray-500 mt-1 truncate">{kpi.label}</div>
+      <div className="text-xs text-muted-foreground mt-1 truncate">{kpi.label}</div>
     </div>
   );
 }
@@ -311,9 +311,9 @@ function FunnelVisualization({ stages, counts }: { stages: FunnelStage[]; counts
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-white">{stage.label}</span>
-                  <span className="text-xs text-gray-500">{hasData ? count : "—"}</span>
+                  <span className="text-xs text-muted-foreground">{hasData ? count : "—"}</span>
                 </div>
-                <div className="h-6 bg-white/[0.03] rounded-lg overflow-hidden">
+                <div className="h-6 bg-muted rounded-lg overflow-hidden">
                   <div
                     className="h-full rounded-lg transition-all duration-1000 ease-out dashboard-bar-animate"
                     style={{
@@ -326,7 +326,7 @@ function FunnelVisualization({ stages, counts }: { stages: FunnelStage[]; counts
               </div>
             </div>
             {i < stages.length - 1 && (
-              <div className="ml-[18px] h-4 border-l border-dashed border-white/[0.06]" />
+              <div className="ml-[18px] h-4 border-l border-dashed border-border" />
             )}
           </div>
         );
@@ -382,10 +382,10 @@ function ContentCalendarPreview() {
         return (
           <div
             key={day.date}
-            className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2 text-center hover:border-brand-500/30 transition group"
+            className="rounded-lg bg-card border border-border p-2 text-center hover:border-brand-500/30 transition group"
           >
-            <div className="text-[10px] text-gray-500 font-medium">{day.label}</div>
-            <div className="text-xs text-gray-400 mb-2">{day.date}</div>
+            <div className="text-[10px] text-muted-foreground font-medium">{day.label}</div>
+            <div className="text-xs text-muted-foreground mb-2">{day.date}</div>
             <div className="h-8 flex items-center justify-center">
               {count > 0 ? (
                 <span className="text-brand-400 text-sm font-bold">{count}</span>
@@ -424,10 +424,10 @@ function AiContentSuggestions({ config }: { config: IndustryConfig }) {
       {suggestions.map((s, i) => (
         <div
           key={i}
-          className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-brand-500/20 transition"
+          className="p-3 rounded-lg bg-card border border-border hover:border-brand-500/20 transition"
         >
           <div className="text-sm text-white font-medium mb-1">{s.title}</div>
-          <div className="flex items-center gap-3 text-xs text-gray-500">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="px-2 py-0.5 rounded bg-brand-600/10 text-brand-300 text-[10px]">
               {s.platform}
             </span>
@@ -455,10 +455,10 @@ function IndustryTips({ tips }: { tips: string[] }) {
       {tips.map((tip, i) => (
         <div
           key={i}
-          className="flex items-start gap-2 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+          className="flex items-start gap-2 p-3 rounded-lg bg-card border border-border"
         >
           <Lightbulb className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-          <span className="text-sm text-gray-300">{tip}</span>
+          <span className="text-sm text-foreground/80">{tip}</span>
         </div>
       ))}
     </div>
@@ -504,7 +504,7 @@ function AutopilotCard() {
         </div>
         <div>
           <h2 className="text-base font-semibold text-white">Autopilot</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Generează 7 postări pentru toată săptămâna cu un click
           </p>
         </div>
@@ -562,14 +562,14 @@ function QuickActions() {
           <Link
             key={action.href}
             href={action.href}
-            className="group flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-brand-500/30 transition"
+            className="group flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-brand-500/30 transition"
           >
             <div
               className={`w-9 h-9 rounded-lg bg-gradient-to-br ${action.gradient} flex items-center justify-center flex-shrink-0`}
             >
               <Icon className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm text-gray-300 group-hover:text-white transition">
+            <span className="text-sm text-foreground/80 group-hover:text-white transition">
               {action.label}
             </span>
           </Link>
@@ -596,7 +596,7 @@ function SocialPerformance({
           <Share2 className="w-4 h-4 text-blue-400" />
           Performanță Social Media
         </h2>
-        <p className="text-sm text-gray-400 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           Conectează-ți conturile de social media pentru a vedea performanța
           reală a postărilor tale.
         </p>
@@ -614,7 +614,7 @@ function SocialPerformance({
   const totalFollowers = accounts.reduce((sum, a) => sum + (a.followers_count || 0), 0);
 
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+    <div className="rounded-xl bg-card border border-border p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-white flex items-center gap-2">
           <Share2 className="w-4 h-4 text-blue-400" />
@@ -633,7 +633,7 @@ function SocialPerformance({
         {accounts.map((account) => (
           <div
             key={account.id}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted border border-border"
           >
             {account.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -649,7 +649,7 @@ function SocialPerformance({
             )}
             <div>
               <div className="text-xs font-medium text-white">{account.platform_name}</div>
-              <div className="text-[10px] text-gray-500">
+              <div className="text-[10px] text-muted-foreground">
                 {account.followers_count.toLocaleString("ro-RO")} urmăritori
               </div>
             </div>
@@ -662,10 +662,10 @@ function SocialPerformance({
       </div>
 
       {/* Total followers */}
-      <div className="flex items-center gap-4 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] mb-4">
+      <div className="flex items-center gap-4 p-3 rounded-lg bg-card border border-border mb-4">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-brand-400" />
-          <span className="text-sm text-gray-400">Total urmăritori:</span>
+          <span className="text-sm text-muted-foreground">Total urmăritori:</span>
         </div>
         <span className="text-lg font-bold text-white">
           {totalFollowers.toLocaleString("ro-RO")}
@@ -675,21 +675,21 @@ function SocialPerformance({
       {/* Recent posts performance */}
       {recentPosts.length > 0 ? (
         <div className="space-y-2">
-          <div className="text-xs text-gray-500 mb-2">Ultimele postări:</div>
+          <div className="text-xs text-muted-foreground mb-2">Ultimele postări:</div>
           {recentPosts.slice(0, 5).map((post) => (
             <div
               key={post.id}
-              className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+              className="flex items-center gap-3 p-2.5 rounded-lg bg-card border border-border"
             >
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-gray-300 truncate">
+                <div className="text-xs text-foreground/80 truncate">
                   {post.text_content || "—"}
                 </div>
-                <div className="text-[10px] text-gray-600 mt-0.5">
+                <div className="text-[10px] text-muted-foreground mt-0.5">
                   {new Date(post.published_at).toLocaleDateString("ro-RO")}
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-shrink-0">
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-shrink-0">
                 <span className="flex items-center gap-1">
                   <ThumbsUp className="w-3 h-3" />
                   {post.likes_count}
@@ -707,7 +707,7 @@ function SocialPerformance({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-gray-600 text-center py-2">
+        <p className="text-xs text-muted-foreground text-center py-2">
           Nicio postare sincronizată încă. Postările vor apărea automat.
         </p>
       )}
@@ -721,7 +721,7 @@ function SocialPerformance({
 const platformColorMap: Record<string, { bg: string; text: string; bar: string }> = {
   facebook: { bg: "bg-blue-500/10", text: "text-blue-400", bar: "bg-blue-500" },
   instagram: { bg: "bg-pink-500/10", text: "text-pink-400", bar: "bg-pink-500" },
-  tiktok: { bg: "bg-gray-500/10", text: "text-gray-300", bar: "bg-gray-400" },
+  tiktok: { bg: "bg-gray-500/10", text: "text-foreground/80", bar: "bg-gray-400" },
   youtube: { bg: "bg-red-500/10", text: "text-red-400", bar: "bg-red-500" },
 };
 
@@ -738,7 +738,7 @@ function EngagementOverview({ data }: { data: AnalyticsData | null }) {
   const maxPlatform = Math.max(...data.platformBreakdown.map((p) => p.engagement), 1);
 
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+    <div className="rounded-xl bg-card border border-border p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-white flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-brand-400" />
@@ -754,38 +754,38 @@ function EngagementOverview({ data }: { data: AnalyticsData | null }) {
 
       {/* 4 stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+        <div className="rounded-lg bg-muted border border-border p-3 text-center">
           <div className="text-xl font-bold text-white">{data.totalPosts}</div>
-          <div className="text-[10px] text-gray-500 mt-0.5">Total postări</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">Total postări</div>
         </div>
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+        <div className="rounded-lg bg-muted border border-border p-3 text-center">
           <div className="text-xl font-bold text-white">{formatEngNumber(data.totalEngagement)}</div>
-          <div className="text-[10px] text-gray-500 mt-0.5">Total engagement</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">Total engagement</div>
         </div>
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+        <div className="rounded-lg bg-muted border border-border p-3 text-center">
           <div className="text-xl font-bold text-white">{formatEngNumber(data.avgEngagement)}</div>
-          <div className="text-[10px] text-gray-500 mt-0.5">Medie / postare</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">Medie / postare</div>
         </div>
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+        <div className="rounded-lg bg-muted border border-border p-3 text-center">
           <div className="text-xl font-bold text-white">{data.bestDay}</div>
-          <div className="text-[10px] text-gray-500 mt-0.5">Cea mai bună zi</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">Cea mai bună zi</div>
         </div>
       </div>
 
       {/* 7-day trend */}
       <div className="mb-5">
-        <div className="text-xs text-gray-500 mb-2">Trend ultimele 7 zile</div>
+        <div className="text-xs text-muted-foreground mb-2">Trend ultimele 7 zile</div>
         <div className="space-y-1.5">
           {data.weeklyTrend.map((day) => (
             <div key={day.date} className="flex items-center gap-2">
-              <span className="text-[10px] text-gray-500 w-8 text-right flex-shrink-0">{day.label}</span>
-              <div className="flex-1 h-5 bg-white/[0.03] rounded overflow-hidden">
+              <span className="text-[10px] text-muted-foreground w-8 text-right flex-shrink-0">{day.label}</span>
+              <div className="flex-1 h-5 bg-muted rounded overflow-hidden">
                 <div
                   className="h-full rounded bg-brand-500/60 transition-all duration-700"
                   style={{ width: `${Math.max((day.engagement / maxTrend) * 100, 2)}%` }}
                 />
               </div>
-              <span className="text-[10px] text-gray-400 w-10 text-right flex-shrink-0">
+              <span className="text-[10px] text-muted-foreground w-10 text-right flex-shrink-0">
                 {day.engagement > 0 ? formatEngNumber(day.engagement) : "—"}
               </span>
             </div>
@@ -796,22 +796,22 @@ function EngagementOverview({ data }: { data: AnalyticsData | null }) {
       {/* Platform breakdown */}
       {data.platformBreakdown.length > 0 && (
         <div className="mb-5">
-          <div className="text-xs text-gray-500 mb-2">Per platformă</div>
+          <div className="text-xs text-muted-foreground mb-2">Per platformă</div>
           <div className="space-y-2">
             {data.platformBreakdown.map((p) => {
-              const colors = platformColorMap[p.platform] || { bg: "bg-gray-500/10", text: "text-gray-400", bar: "bg-gray-500" };
+              const colors = platformColorMap[p.platform] || { bg: "bg-gray-500/10", text: "text-muted-foreground", bar: "bg-gray-500" };
               return (
                 <div key={p.platform} className="flex items-center gap-2">
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${colors.bg} ${colors.text} w-16 text-center flex-shrink-0`}>
                     {p.platform}
                   </span>
-                  <div className="flex-1 h-4 bg-white/[0.03] rounded overflow-hidden">
+                  <div className="flex-1 h-4 bg-muted rounded overflow-hidden">
                     <div
                       className={`h-full rounded ${colors.bar} opacity-50 transition-all duration-700`}
                       style={{ width: `${(p.engagement / maxPlatform) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[10px] text-gray-400 w-14 text-right flex-shrink-0">
+                  <span className="text-[10px] text-muted-foreground w-14 text-right flex-shrink-0">
                     {formatEngNumber(p.engagement)} · {p.posts}
                   </span>
                 </div>
@@ -824,27 +824,27 @@ function EngagementOverview({ data }: { data: AnalyticsData | null }) {
       {/* Top 3 posts */}
       {data.topPosts.length > 0 && (
         <div>
-          <div className="text-xs text-gray-500 mb-2">Top postări</div>
+          <div className="text-xs text-muted-foreground mb-2">Top postări</div>
           <div className="space-y-2">
             {data.topPosts.map((post) => {
-              const colors = platformColorMap[post.platform] || { bg: "bg-gray-500/10", text: "text-gray-400", bar: "bg-gray-500" };
+              const colors = platformColorMap[post.platform] || { bg: "bg-gray-500/10", text: "text-muted-foreground", bar: "bg-gray-500" };
               return (
                 <div
                   key={post.id}
-                  className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+                  className="flex items-center gap-3 p-2.5 rounded-lg bg-card border border-border"
                 >
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${colors.bg} ${colors.text} flex-shrink-0`}>
                     {post.platform}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-300 truncate">
+                    <p className="text-xs text-foreground/80 truncate">
                       {post.text_content || `[${post.content_type}]`}
                     </p>
-                    <p className="text-[10px] text-gray-600 mt-0.5">
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {new Date(post.published_at).toLocaleDateString("ro-RO")}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-gray-500 flex-shrink-0">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-shrink-0">
                     <span className="flex items-center gap-0.5">
                       <ThumbsUp className="w-3 h-3" /> {post.likes}
                     </span>
@@ -884,7 +884,7 @@ function OnboardingCard({
         <h2 className="text-xl font-bold text-white mb-2">
           Bine ai venit la ContentOS!
         </h2>
-        <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto">
+        <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
           Configurează profilul afacerii tale pentru un dashboard personalizat.
           Selectează industria ta pentru a începe.
         </p>
@@ -904,7 +904,7 @@ function OnboardingCard({
                 key={ind.value}
                 onClick={() => onSelectIndustry(ind.value)}
                 disabled={isPending}
-                className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.2] hover:bg-white/[0.06] transition-all duration-200 disabled:opacity-50"
+                className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-muted border border-border hover:border-white/[0.2] hover:bg-muted transition-all duration-200 disabled:opacity-50"
               >
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
@@ -912,7 +912,7 @@ function OnboardingCard({
                 >
                   <Icon className="w-5 h-5" style={{ color: ind.color }} />
                 </div>
-                <span className="text-xs text-gray-400 group-hover:text-white transition">
+                <span className="text-xs text-muted-foreground group-hover:text-white transition">
                   {ind.label}
                 </span>
               </button>
@@ -1087,30 +1087,30 @@ export default function BusinessDashboardPage() {
         {/* Header skeleton */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="h-6 w-48 rounded-lg bg-white/[0.06]" />
-            <div className="h-3 w-32 rounded bg-white/[0.04]" />
+            <div className="h-6 w-48 rounded-lg bg-input" />
+            <div className="h-3 w-32 rounded bg-muted" />
           </div>
-          <div className="h-9 w-28 rounded-lg bg-white/[0.06]" />
+          <div className="h-9 w-28 rounded-lg bg-input" />
         </div>
         {/* KPI cards skeleton */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 space-y-3">
-              <div className="h-3 w-20 rounded bg-white/[0.06]" />
-              <div className="h-8 w-16 rounded bg-white/[0.06]" />
-              <div className="h-2 w-full rounded bg-white/[0.04]" />
+            <div key={i} className="rounded-xl bg-card border border-border p-4 space-y-3">
+              <div className="h-3 w-20 rounded bg-input" />
+              <div className="h-8 w-16 rounded bg-input" />
+              <div className="h-2 w-full rounded bg-muted" />
             </div>
           ))}
         </div>
         {/* Content skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-48" />
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-32" />
+            <div className="rounded-xl bg-card border border-border p-4 h-48" />
+            <div className="rounded-xl bg-card border border-border p-4 h-32" />
           </div>
           <div className="space-y-4">
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-40" />
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 h-28" />
+            <div className="rounded-xl bg-card border border-border p-4 h-40" />
+            <div className="rounded-xl bg-card border border-border p-4 h-28" />
           </div>
         </div>
       </div>
@@ -1166,7 +1166,7 @@ export default function BusinessDashboardPage() {
                 {config.label}
               </span>
             </div>
-            <p className="text-xs text-gray-500 capitalize">{dateStr}</p>
+            <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>
           </div>
         </div>
 
@@ -1175,10 +1175,10 @@ export default function BusinessDashboardPage() {
             <span className="w-2 h-2 rounded-full bg-green-400 dashboard-live-pulse" />
             <span className="text-xs font-medium text-green-400">LIVE</span>
           </div>
-          <span className="text-sm text-gray-400">{timeStr}</span>
+          <span className="text-sm text-muted-foreground">{timeStr}</span>
           <Link
             href="/settings"
-            className="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 hover:text-white transition"
+            className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-white transition"
           >
             <Settings className="w-4 h-4" />
           </Link>
@@ -1211,19 +1211,19 @@ export default function BusinessDashboardPage() {
         {/* Left Column (60%) */}
         <div className="lg:col-span-3 space-y-6">
           {/* Funnel Visualization */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-white flex items-center gap-2">
                 <Target className="w-4 h-4 text-brand-400" />
                 Funnel de Conversie
               </h2>
-              <span className="text-[10px] text-gray-600">Conectează conturile pentru date reale</span>
+              <span className="text-[10px] text-muted-foreground">Conectează conturile pentru date reale</span>
             </div>
             <FunnelVisualization stages={config.funnelStages} />
           </div>
 
           {/* Content Calendar Preview */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-white flex items-center gap-2">
                 <CalendarCheck className="w-4 h-4 text-purple-400" />
@@ -1240,7 +1240,7 @@ export default function BusinessDashboardPage() {
           </div>
 
           {/* AI Content Suggestions */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-yellow-400" />
@@ -1254,7 +1254,7 @@ export default function BusinessDashboardPage() {
         {/* Right Column (40%) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Recent Activity */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400" />
               Activitate Recentă
@@ -1264,20 +1264,20 @@ export default function BusinessDashboardPage() {
                 {recentPosts.map((post) => (
                   <div
                     key={post.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                       <Send className="w-4 h-4 text-brand-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-gray-300 truncate">
+                      <div className="text-xs text-foreground/80 truncate">
                         {post.text_content || "Postare publicată"}
                       </div>
-                      <div className="text-[10px] text-gray-600 mt-0.5">
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         {post.platform} · {new Date(post.published_at).toLocaleDateString("ro-RO")}
                       </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground flex-shrink-0">
                       {post.likes_count + post.comments_count + post.shares_count} eng.
                     </span>
                   </div>
@@ -1288,18 +1288,18 @@ export default function BusinessDashboardPage() {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-gray-600" />
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="h-3 w-2/3 bg-white/[0.04] rounded" />
-                      <div className="h-2 w-1/3 bg-white/[0.03] rounded mt-1.5" />
+                      <div className="h-3 w-2/3 bg-muted rounded" />
+                      <div className="h-2 w-1/3 bg-muted rounded mt-1.5" />
                     </div>
                   </div>
                 ))}
-                <p className="text-xs text-gray-600 text-center py-2">
+                <p className="text-xs text-muted-foreground text-center py-2">
                   Nicio activitate recentă. Creează primul tău post!
                 </p>
               </div>
@@ -1307,7 +1307,7 @@ export default function BusinessDashboardPage() {
           </div>
 
           {/* Industry Tips */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
               <Lightbulb className="w-4 h-4 text-yellow-400" />
               Tips pentru {config.label}
@@ -1321,7 +1321,7 @@ export default function BusinessDashboardPage() {
           {/* Mini Reporting integrated into dashboard — no separate component */}
 
           {/* Quick Actions */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
               <Zap className="w-4 h-4 text-orange-400" />
               Acțiuni Rapide

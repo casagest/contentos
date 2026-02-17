@@ -18,7 +18,7 @@ interface MemoryStats {
 const LEVEL_CONFIG = {
   empty: {
     label: "Nou",
-    color: "text-gray-400",
+    color: "text-muted-foreground",
     bg: "bg-gray-500/10",
     border: "border-gray-500/20",
     icon: AlertCircle,
@@ -64,9 +64,9 @@ export default function MemoryHealth() {
 
   if (loading) {
     return (
-      <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 animate-pulse">
-        <div className="h-4 bg-white/[0.04] rounded w-32 mb-3" />
-        <div className="h-3 bg-white/[0.04] rounded w-48" />
+      <div className="rounded-xl bg-card border border-border p-4 animate-pulse">
+        <div className="h-4 bg-muted rounded w-32 mb-3" />
+        <div className="h-3 bg-muted rounded w-48" />
       </div>
     );
   }
@@ -96,22 +96,22 @@ export default function MemoryHealth() {
         </span>
       </div>
 
-      <p className="text-xs text-gray-400 mb-3">{config.message}</p>
+      <p className="text-xs text-muted-foreground mb-3">{config.message}</p>
 
       {/* Layer bars */}
       <div className="grid grid-cols-4 gap-2">
         {layers.map((layer) => (
           <div key={layer.label} title={layer.tip} className="text-center">
             <div className="text-lg font-bold text-white">{layer.count}</div>
-            <div className="text-[10px] text-gray-500">{layer.label}</div>
+            <div className="text-[10px] text-muted-foreground">{layer.label}</div>
           </div>
         ))}
       </div>
 
       {stats.total > 0 && (
-        <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-1.5">
+        <div className="mt-3 pt-3 border-t border-border flex items-center gap-1.5">
           <Zap className="w-3 h-3 text-brand-400" />
-          <span className="text-[10px] text-gray-500">
+          <span className="text-[10px] text-muted-foreground">
             {stats.total} memorii totale — AI-ul folosește aceste date la fiecare generare
           </span>
         </div>

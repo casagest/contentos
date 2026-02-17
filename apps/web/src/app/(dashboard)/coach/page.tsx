@@ -112,7 +112,7 @@ export default function CoachPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">AI Content Coach</h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Întreabă orice despre strategia ta de conținut
             </p>
           </div>
@@ -129,7 +129,7 @@ export default function CoachPage() {
             <h2 className="text-lg font-semibold text-white mb-2">
               Salut! Sunt AI Coach-ul tău de conținut.
             </h2>
-            <p className="text-sm text-gray-400 max-w-md mb-8">
+            <p className="text-sm text-muted-foreground max-w-md mb-8">
               Cu ce te pot ajuta?
             </p>
             <div className="space-y-2 w-full max-w-lg">
@@ -139,10 +139,10 @@ export default function CoachPage() {
                   <button
                     key={s.label}
                     onClick={() => sendMessage(s.label)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/30 text-left transition"
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-emerald-500/30 text-left transition"
                   >
                     <Icon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                    <span className="text-sm text-gray-300">{s.label}</span>
+                    <span className="text-sm text-foreground/80">{s.label}</span>
                   </button>
                 );
               })}
@@ -163,7 +163,7 @@ export default function CoachPage() {
                 className={`max-w-[75%] rounded-xl px-4 py-3 text-sm whitespace-pre-wrap ${
                   msg.role === "user"
                     ? "bg-brand-600 text-white"
-                    : "bg-white/[0.04] border border-white/[0.06] text-gray-300"
+                    : "bg-muted border border-border text-foreground/80"
                 }`}
               >
                 {msg.role === "assistant" && msg.mode && (
@@ -181,7 +181,7 @@ export default function CoachPage() {
                 )}
                 {msg.content}
                 {msg.warning && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.06] text-[10px] text-yellow-400/70">
+                  <div className="mt-2 pt-2 border-t border-border text-[10px] text-yellow-400/70">
                     ⚠️ {msg.warning}
                   </div>
                 )}
@@ -199,7 +199,7 @@ export default function CoachPage() {
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
               <Bot className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3">
+            <div className="bg-muted border border-border rounded-xl px-4 py-3">
               <div className="flex gap-1">
                 <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" />
                 <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce [animation-delay:0.15s]" />
@@ -217,7 +217,7 @@ export default function CoachPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Întreabă ceva despre conținut, strategie, algoritmi..."
-          className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40"
+          className="flex-1 bg-muted border border-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40"
         />
         <button
           type="submit"

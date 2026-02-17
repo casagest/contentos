@@ -132,11 +132,11 @@ export default function MiniReporting({ className = "" }: { className?: string }
 
   if (loading) {
     return (
-      <div className={`rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden ${className}`}>
-        <div className="p-4 border-b border-white/[0.04]">
+      <div className={`rounded-xl bg-card border border-border overflow-hidden ${className}`}>
+        <div className="p-4 border-b border-border/50">
           <Skeleton className="h-4 w-28" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/[0.04]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-muted">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-[#0a0a0a] p-3 flex flex-col items-center gap-2">
               <Skeleton className="w-4 h-4 rounded" />
@@ -165,43 +165,43 @@ export default function MiniReporting({ className = "" }: { className?: string }
 
   return (
     <FadeIn>
-    <div className={`rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden hover:border-white/[0.08] transition-colors ${className}`}>
-      <div className="p-4 border-b border-white/[0.04]">
+    <div className={`rounded-xl bg-card border border-border overflow-hidden hover:border-border transition-colors ${className}`}>
+      <div className="p-4 border-b border-border/50">
         <div className="flex items-center gap-2 mb-1">
           <BarChart3 className="w-4 h-4 text-brand-400" />
           <h3 className="text-sm font-medium text-white">Raport Rapid</h3>
         </div>
-        <p className="text-[10px] text-gray-500">Performanța contului tău</p>
+        <p className="text-[10px] text-muted-foreground">Performanța contului tău</p>
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/[0.04]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-muted">
         <div className="bg-[#08080D] p-3 text-center">
-          <FileText className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <FileText className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.thisMonthPosts} duration={1} /></p>
-          <p className="text-[10px] text-gray-500">Postări luna asta</p>
+          <p className="text-[10px] text-muted-foreground">Postări luna asta</p>
         </div>
         <div className="bg-[#08080D] p-3 text-center">
-          <ThumbsUp className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <ThumbsUp className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.totalLikes} /></p>
-          <p className="text-[10px] text-gray-500">Like-uri total</p>
+          <p className="text-[10px] text-muted-foreground">Like-uri total</p>
         </div>
         <div className="bg-[#08080D] p-3 text-center">
-          <MessageCircle className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <MessageCircle className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.totalComments} /></p>
-          <p className="text-[10px] text-gray-500">Comentarii</p>
+          <p className="text-[10px] text-muted-foreground">Comentarii</p>
         </div>
         <div className="bg-[#08080D] p-3 text-center">
-          <TrendingUp className="w-3.5 h-3.5 text-gray-600 mx-auto mb-1" />
+          <TrendingUp className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-white"><CountUp value={stats.avgEngagement} /></p>
-          <p className="text-[10px] text-gray-500">Eng. mediu/post</p>
+          <p className="text-[10px] text-muted-foreground">Eng. mediu/post</p>
         </div>
       </div>
 
       <div className="p-4 space-y-3">
         {/* Pipeline */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-500">Pipeline:</span>
+          <span className="text-muted-foreground">Pipeline:</span>
           <div className="flex gap-3">
             <span className="text-yellow-400">{stats.draftsCount} draft-uri</span>
             <span className="text-blue-400">{stats.scheduledCount} programate</span>
@@ -212,10 +212,10 @@ export default function MiniReporting({ className = "" }: { className?: string }
         {/* Platform breakdown */}
         {Object.keys(stats.platformBreakdown).length > 0 && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-500">Platforme:</span>
+            <span className="text-muted-foreground">Platforme:</span>
             <div className="flex gap-2">
               {Object.entries(stats.platformBreakdown).map(([platform, count]) => (
-                <span key={platform} className={PLATFORM_COLORS[platform] || "text-gray-300"}>
+                <span key={platform} className={PLATFORM_COLORS[platform] || "text-foreground/80"}>
                   {platform}: {count}
                 </span>
               ))}
@@ -226,7 +226,7 @@ export default function MiniReporting({ className = "" }: { className?: string }
         {/* Impressions */}
         {stats.totalImpressions > 0 && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-500 flex items-center gap-1"><Eye className="w-3 h-3" /> Impresii:</span>
+            <span className="text-muted-foreground flex items-center gap-1"><Eye className="w-3 h-3" /> Impresii:</span>
             <span className="text-white font-medium">{stats.totalImpressions.toLocaleString("ro-RO")}</span>
           </div>
         )}
@@ -234,7 +234,7 @@ export default function MiniReporting({ className = "" }: { className?: string }
         {/* Shares */}
         {stats.totalShares > 0 && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-500 flex items-center gap-1"><Share2 className="w-3 h-3" /> Distribuiri:</span>
+            <span className="text-muted-foreground flex items-center gap-1"><Share2 className="w-3 h-3" /> Distribuiri:</span>
             <span className="text-white font-medium">{stats.totalShares}</span>
           </div>
         )}
@@ -246,9 +246,9 @@ export default function MiniReporting({ className = "" }: { className?: string }
               <Award className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-[10px] font-medium text-amber-300 uppercase tracking-wider">Cea mai bună postare</span>
             </div>
-            <p className="text-xs text-gray-300 line-clamp-2">{stats.bestPost.text}...</p>
+            <p className="text-xs text-foreground/80 line-clamp-2">{stats.bestPost.text}...</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className={`text-[10px] ${PLATFORM_COLORS[stats.bestPost.platform] || "text-gray-400"}`}>
+              <span className={`text-[10px] ${PLATFORM_COLORS[stats.bestPost.platform] || "text-muted-foreground"}`}>
                 {stats.bestPost.platform}
               </span>
               <span className="text-[10px] text-amber-400 font-medium">
@@ -271,9 +271,9 @@ export default function MiniReporting({ className = "" }: { className?: string }
         {/* Empty state */}
         {stats.totalPosts === 0 && stats.draftsCount === 0 && (
           <div className="text-center py-4">
-            <Calendar className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-            <p className="text-xs text-gray-500">Nicio postare încă</p>
-            <p className="text-[10px] text-gray-600">Creează primul tău draft din Brain Dump sau Compune</p>
+            <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">Nicio postare încă</p>
+            <p className="text-[10px] text-muted-foreground">Creează primul tău draft din Brain Dump sau Compune</p>
           </div>
         )}
       </div>

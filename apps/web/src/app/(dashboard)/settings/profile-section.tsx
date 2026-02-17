@@ -27,16 +27,16 @@ export default function ProfileSection({
   }
 
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
+    <div className="rounded-xl bg-card border border-border p-6">
       <div className="flex items-center gap-2 mb-4">
-        <User className="w-4 h-4 text-gray-400" />
+        <User className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-base font-semibold text-white">Profil</h2>
       </div>
       <div className="space-y-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Email</label>
+          <label className="block text-xs text-muted-foreground mb-1">Email</label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-gray-300">
+            <div className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm text-gray-300">
               {email || "—"}
             </div>
             <span className="flex items-center gap-1 text-xs text-green-400">
@@ -45,7 +45,7 @@ export default function ProfileSection({
           </div>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Nume</label>
+          <label className="block text-xs text-muted-foreground mb-1">Nume</label>
           <input
             type="text"
             value={name}
@@ -54,7 +54,7 @@ export default function ProfileSection({
               setSaved(false);
             }}
             placeholder="Numele tau"
-            className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           />
         </div>
         <button

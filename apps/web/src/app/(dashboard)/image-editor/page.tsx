@@ -12,13 +12,13 @@ export default function ImageEditorPage() {
         </div>
         <div>
           <h1 className="text-lg font-semibold text-white">Editor Imagine</h1>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Creează imagini cu text overlay pentru social media
           </p>
         </div>
       </div>
 
-      <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+      <div className="rounded-xl bg-card border border-border p-4">
         <ImageEditor />
       </div>
     </div>

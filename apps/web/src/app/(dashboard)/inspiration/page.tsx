@@ -54,10 +54,10 @@ interface InspirationsResponseItem {
 const platformColors: Record<string, string> = {
   facebook: "bg-blue-500/10 text-blue-400",
   instagram: "bg-pink-500/10 text-pink-400",
-  tiktok: "bg-gray-500/10 text-gray-300",
+  tiktok: "bg-gray-500/10 text-foreground/80",
   youtube: "bg-red-500/10 text-red-400",
   twitter: "bg-cyan-500/10 text-cyan-400",
-  other: "bg-white/10 text-gray-300",
+  other: "bg-white/10 text-foreground/80",
 };
 
 function isLikelyUrl(value: string): boolean {
@@ -330,7 +330,7 @@ export default function InspirationPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Inspiratie</h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Salveaza URL-uri si idei, apoi repurposeaza direct cu AI
             </p>
           </div>
@@ -338,7 +338,7 @@ export default function InspirationPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => void loadInspirations()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-xs text-white transition"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-input hover:bg-accent text-xs text-white transition"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Refresh
           </button>
@@ -352,14 +352,14 @@ export default function InspirationPage() {
       </div>
 
       {showAddForm && (
-        <div className="rounded-xl bg-white/[0.03] border border-brand-500/20 p-4 mb-4">
+        <div className="rounded-xl bg-muted border border-brand-500/20 p-4 mb-4">
           <div className="flex items-center gap-3">
             <input
               type="text"
               value={newInput}
               onChange={(e) => setNewInput(e.target.value)}
               placeholder="Lipeste URL-ul postarii sau scrie o idee..."
-              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+              className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500/40"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -382,7 +382,7 @@ export default function InspirationPage() {
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="p-2 text-gray-400 hover:text-white transition"
+              className="p-2 text-muted-foreground hover:text-white transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -398,13 +398,13 @@ export default function InspirationPage() {
 
       {allTags.length > 0 && (
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <Filter className="w-4 h-4 text-gray-500" />
+          <Filter className="w-4 h-4 text-muted-foreground" />
           <button
             onClick={() => setFilterTag(null)}
             className={`px-2.5 py-1 rounded-lg text-xs transition ${
               !filterTag
                 ? "bg-brand-600/20 text-brand-300 border border-brand-500/30"
-                : "bg-white/[0.02] text-gray-400 border border-white/[0.06] hover:border-white/[0.1]"
+                : "bg-card text-muted-foreground border border-border hover:border-border"
             }`}
           >
             Toate
@@ -416,7 +416,7 @@ export default function InspirationPage() {
               className={`px-2.5 py-1 rounded-lg text-xs transition ${
                 filterTag === tag
                   ? "bg-brand-600/20 text-brand-300 border border-brand-500/30"
-                  : "bg-white/[0.02] text-gray-400 border border-white/[0.06] hover:border-white/[0.1]"
+                  : "bg-card text-muted-foreground border border-border hover:border-border"
               }`}
             >
               {tag}
@@ -426,14 +426,14 @@ export default function InspirationPage() {
       )}
 
       {isLoading ? (
-        <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-gray-400 text-sm">
+        <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-muted-foreground text-sm">
           Incarc inspiratiile...
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
-          <Bookmark className="w-10 h-10 text-gray-600 mx-auto mb-4" />
+          <Bookmark className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-white mb-2">Nicio intrare salvata</h2>
-          <p className="text-gray-400 text-sm max-w-md mx-auto">
+          <p className="text-muted-foreground text-sm max-w-md mx-auto">
             Salveaza URL-uri publice (blog, articol, video) sau idei manuale. Le poti trimite
             instant in BrainDump pentru repurposing.
           </p>
@@ -445,7 +445,7 @@ export default function InspirationPage() {
             return (
               <div
                 key={post.id}
-                className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 hover:border-white/[0.1] transition"
+                className="rounded-xl bg-card border border-border p-4 hover:border-border transition"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -455,9 +455,9 @@ export default function InspirationPage() {
                       >
                         {post.platform}
                       </span>
-                      <span className="text-xs text-gray-500">{post.author}</span>
-                      <span className="text-xs text-gray-600">{post.savedAt}</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-white/[0.05] text-gray-400 uppercase inline-flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground">{post.author}</span>
+                      <span className="text-xs text-muted-foreground">{post.savedAt}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-input text-muted-foreground uppercase inline-flex items-center gap-1">
                         <Globe className="w-3 h-3" /> {post.source}
                       </span>
                     </div>
@@ -466,9 +466,9 @@ export default function InspirationPage() {
                       <p className="text-sm text-brand-300 mb-1 line-clamp-1">{post.title}</p>
                     ) : null}
 
-                    <p className="text-sm text-gray-300 mb-3 whitespace-pre-wrap line-clamp-5">{post.text}</p>
+                    <p className="text-sm text-foreground/80 mb-3 whitespace-pre-wrap line-clamp-5">{post.text}</p>
 
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
                       <span className="flex items-center gap-1">
                         <Heart className="w-3 h-3" /> {formatNumber(post.likes)}
                       </span>
@@ -484,7 +484,7 @@ export default function InspirationPage() {
                       {post.tags.map((tag) => (
                         <span
                           key={`${post.id}-${tag}`}
-                          className="px-2 py-0.5 rounded text-[10px] bg-white/[0.04] text-gray-400"
+                          className="px-2 py-0.5 rounded text-[10px] bg-muted text-muted-foreground"
                         >
                           {tag}
                         </span>
@@ -495,7 +495,7 @@ export default function InspirationPage() {
                   <div className="flex gap-1 flex-shrink-0">
                     <button
                       onClick={() => repurposeWithAI(post)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-brand-400 hover:bg-white/[0.04] transition"
+                      className="p-2 rounded-lg text-muted-foreground hover:text-brand-400 hover:bg-muted transition"
                       title="Trimite in BrainDump"
                     >
                       <Wand2 className="w-4 h-4" />
@@ -506,7 +506,7 @@ export default function InspirationPage() {
                         href={post.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.04] transition"
+                        className="p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-muted transition"
                         title="Deschide sursa"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -515,7 +515,7 @@ export default function InspirationPage() {
 
                     <button
                       onClick={() => void removePost(post.id)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-white/[0.04] transition"
+                      className="p-2 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-muted transition"
                       title="Sterge"
                     >
                       <X className="w-4 h-4" />

@@ -131,7 +131,7 @@ export default function VoiceInput({ onTranscript, language = "ro-RO", className
         className={`p-2 rounded-lg transition-all ${
           isListening
             ? "bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse"
-            : "bg-white/[0.04] text-gray-400 border border-white/[0.06] hover:text-white hover:border-white/[0.1]"
+            : "bg-muted text-muted-foreground border border-border hover:text-white hover:border-border"
         }`}
         title={isListening ? "Oprește înregistrarea" : "Dictează (voce → text)"}
       >
@@ -144,7 +144,7 @@ export default function VoiceInput({ onTranscript, language = "ro-RO", className
         </div>
       )}
       {interim && (
-        <span className="text-xs text-gray-500 italic max-w-[200px] truncate">{interim}</span>
+        <span className="text-xs text-muted-foreground italic max-w-[200px] truncate">{interim}</span>
       )}
     </div>
   );
