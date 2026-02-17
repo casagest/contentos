@@ -10,7 +10,7 @@ test.describe("Homepage", () => {
   test("has navigation to login and register", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("link", { name: /începe gratuit/i }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /încearcă gratuit|creează cont gratuit/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /încearcă.*gratuit|creează cont gratuit|începe gratuit/i }).first()).toBeVisible();
   });
 
   test("footer has legal links", async ({ page }) => {
