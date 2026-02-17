@@ -1,50 +1,36 @@
-"use client";
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-import { cva, type VariantProps } from "class-variance-authority";
-import { clsx } from "clsx";
-import { type HTMLAttributes } from "react";
+import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full font-medium transition-colors",
+  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "bg-white/[0.06] text-gray-300 border border-white/[0.08]",
-        brand: "bg-brand-500/10 text-brand-300 border border-brand-500/20",
-        success: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20",
-        warning: "bg-yellow-500/10 text-yellow-300 border border-yellow-500/20",
-        danger: "bg-red-500/10 text-red-300 border border-red-500/20",
-        info: "bg-blue-500/10 text-blue-300 border border-blue-500/20",
-        facebook: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
-        instagram: "bg-pink-500/10 text-pink-400 border border-pink-500/20",
-        tiktok: "bg-white/[0.08] text-white border border-white/[0.12]",
-        youtube: "bg-red-500/10 text-red-400 border border-red-500/20",
-      },
-      size: {
-        sm: "px-1.5 py-0.5 text-[10px]",
-        md: "px-2 py-0.5 text-xs",
-        lg: "px-3 py-1 text-sm",
+        default:
+          "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
+        outline: "text-foreground",
       },
     },
     defaultVariants: {
       variant: "default",
-      size: "md",
     },
   }
-);
+)
 
 export interface BadgeProps
-  extends HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {
-  dot?: boolean;
-  dotColor?: string;
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  )
 }
 
-export function Badge({ className, variant, size, dot, dotColor, children, ...props }: BadgeProps) {
-  return (
-    <span className={clsx(badgeVariants({ variant, size }), className)} {...props}>
-      {dot && <span className={`w-1.5 h-1.5 rounded-full ${dotColor || "bg-current"}`} />}
-      {children}
-    </span>
-  );
-}
+export { Badge, badgeVariants }
