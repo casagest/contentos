@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import MediaUpload from "../compose/media-upload";
+import { createClient } from "@/lib/supabase/client";
 import {
   Brain,
   Wand2,
@@ -278,6 +280,19 @@ export default function BrainDumpPage() {
   const [objective, setObjective] = useState<Objective>("engagement");
   const [qualityMode, setQualityMode] = useState<"economy" | "balanced" | "premium">("economy");
 
+  // Media state
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [organizationId, setOrganizationId] = useState<string>("");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("users").select("organization_id").eq("id", user.id).single()
+        .then(({ data }) => { if (data?.organization_id) setOrganizationId(data.organization_id); });
+    });
+  }, []);
+
   // Results state
   const [results, setResults] = useState<AIResponse | null>(null);
   const [clarifications, setClarifications] = useState<ClarificationQuestion[]>([]);
@@ -427,6 +442,7 @@ export default function BrainDumpPage() {
           hashtags,
           target_platforms: selectedPlatforms,
           platform_versions: platformVersions,
+          media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
           ai_suggestions: { meta: results.meta || {} },
           source: "braindump",
         }),
@@ -511,6 +527,18 @@ export default function BrainDumpPage() {
           ))}
         </div>
       </div>
+
+      {/* Media Upload */}
+      {organizationId && (
+        <div className="mb-3">
+          <MediaUpload
+            mediaUrls={mediaUrls}
+            onChange={setMediaUrls}
+            organizationId={organizationId}
+            maxImages={10}
+          />
+        </div>
+      )}
 
       {/* Chat area */}
       <div className="flex-1 overflow-y-auto rounded-xl bg-white/[0.01] border border-white/[0.06] p-4 space-y-3 mb-3">
