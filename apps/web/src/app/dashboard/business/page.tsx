@@ -150,7 +150,7 @@ function DynamicIcon({
 function formatKpiValue(value: number, format: string): string {
   switch (format) {
     case "currency":
-      return `€${value.toLocaleString("ro-RO")}`;
+      return `${value.toLocaleString("ro-RO")} RON`;
     case "percent":
       return `${value}%`;
     case "multiplier":

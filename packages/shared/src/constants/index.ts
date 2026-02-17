@@ -1,9 +1,9 @@
 export const PLANS = {
-  free: { name: "Free", priceEur: 0, platforms: 1, postsPerMonth: 50 },
-  starter: { name: "Starter", priceEur: 19, platforms: 2, postsPerMonth: -1 },
-  pro: { name: "Pro", priceEur: 49, platforms: 5, postsPerMonth: -1 },
-  agency: { name: "Agency", priceEur: 99, platforms: 5, postsPerMonth: -1 },
-  dental: { name: "Dental", priceEur: 79, platforms: 5, postsPerMonth: -1 },
+  free: { name: "Free", priceRon: 0, platforms: 1, postsPerMonth: 50 },
+  starter: { name: "Starter", priceRon: 99, platforms: 2, postsPerMonth: -1 },
+  pro: { name: "Pro", priceRon: 249, platforms: 5, postsPerMonth: -1 },
+  agency: { name: "Agency", priceRon: 499, platforms: 5, postsPerMonth: -1 },
+  dental: { name: "Dental", priceRon: 399, platforms: 5, postsPerMonth: -1 },
 } as const;
 
 export const PLATFORM_COLORS = {

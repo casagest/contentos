@@ -137,7 +137,7 @@ const steps = [
 const plans = [
   {
     name: "Starter",
-    price: "19",
+    price: "99",
     period: "/ lună",
     desc: "Pentru creatori la început de drum",
     features: [
@@ -152,7 +152,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "49",
+    price: "249",
     period: "/ lună",
     desc: "Tot ce ai nevoie pentru conținut viral",
     features: [
@@ -170,7 +170,7 @@ const plans = [
   },
   {
     name: "Agency",
-    price: "99",
+    price: "499",
     period: "/ lună",
     desc: "Pentru echipe și agenții de marketing",
     features: [
@@ -843,7 +843,7 @@ export default function HomePageClient() {
                   <h3 className="text-xl font-bold text-black mb-1">{plan.name}</h3>
                   <p className="text-body text-gray-600 mb-5">{plan.desc}</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-extrabold text-black">€{displayPrice}</span>
+                    <span className="text-4xl font-extrabold text-black">{displayPrice} RON</span>
                     <span className="text-gray-500 ml-1">/ {annual ? "lună, facturat anual" : "lună"}</span>
                   </div>
                   <ul className="space-y-3 mb-8 flex-1">
