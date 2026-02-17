@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { pushNotification } from "@/components/notification-center";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
 import {
@@ -323,8 +324,11 @@ export default function ComposePage() {
 
   const saveDraft = async () => {
     if (Object.keys(generatedContent).length === 0) return;
+
+    // Optimistic: show success immediately
     setSavingDraft(true);
-    setDraftSaved(null);
+    setDraftSaved("Draft salvat! Mergi la Calendar pentru a programa.");
+
     try {
       const firstPlatform = selectedPlatforms[0];
       const firstResult = generatedContent[firstPlatform];
@@ -372,12 +376,20 @@ export default function ComposePage() {
         }),
       });
 
-      if (res.ok) {
-        setDraftSaved("Draft salvat! Mergi la Calendar pentru a programa.");
-        setTimeout(() => setDraftSaved(null), 4000);
+      if (!res.ok) {
+        // Revert optimistic state on server error
+        setDraftSaved("Eroare la salvare. Încearcă din nou.");
+        pushNotification({ type: "error", title: "Eroare salvare draft", message: "Serverul a returnat o eroare. Încearcă din nou." });
+        setTimeout(() => setDraftSaved(null), 3000);
+        return;
       }
+      // Server confirmed — keep optimistic success, auto-dismiss
+      pushNotification({ type: "success", title: "Draft salvat", message: content.slice(0, 60) || "Draft nou" });
+      setTimeout(() => setDraftSaved(null), 4000);
     } catch {
-      // silent
+      // Revert optimistic state on network error
+      setDraftSaved("Eroare de rețea. Verifică conexiunea.");
+      setTimeout(() => setDraftSaved(null), 3000);
     } finally {
       setSavingDraft(false);
     }
@@ -884,7 +896,11 @@ export default function ComposePage() {
           </div>
 
           {draftSaved && (
-            <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-sm text-green-400">
+            <div className={`px-3 py-2 rounded-lg text-sm ${
+              draftSaved.startsWith("Eroare")
+                ? "bg-red-500/10 border border-red-500/20 text-red-400"
+                : "bg-green-500/10 border border-green-500/20 text-green-400"
+            }`}>
               {draftSaved}
             </div>
           )}
