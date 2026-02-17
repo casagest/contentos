@@ -139,3 +139,36 @@ html {
 .dashboard-fade-in {
   animation: dashboard-fade-in 0.4s ease-out;
 }
+
+/* ── v0 Vision Animations ── */
+@keyframes mesh-move {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -20px) scale(1.1); }
+}
+@keyframes mesh-move-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, 30px) scale(1.15); }
+}
+@keyframes card-reveal {
+  from { opacity: 0; transform: translateY(40px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes progress-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(249, 115, 22, 0.15); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+  50% { border-color: rgba(249, 115, 22, 0.4); box-shadow: 0 0 30px -5px rgba(249, 115, 22, 0.12); }
+}
+@keyframes float-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-mesh-move { animation: mesh-move 20s ease-in-out infinite; }
+.animate-mesh-move-2 { animation: mesh-move-2 25s ease-in-out infinite; }
+.animate-card-reveal { animation: card-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-progress-shimmer { background-size: 200% 100%; animation: progress-shimmer 2s linear infinite; }
+.animate-border-glow { animation: border-glow 4s ease-in-out infinite; }
+.animate-float-subtle { animation: float-subtle 6s ease-in-out infinite; }
