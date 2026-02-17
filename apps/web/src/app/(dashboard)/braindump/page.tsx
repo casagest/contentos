@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import MediaUpload from "../compose/media-upload";
+import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import { createClient } from "@/lib/supabase/client";
 import {
   Brain,
@@ -283,13 +284,28 @@ export default function BrainDumpPage() {
   // Media state
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [organizationId, setOrganizationId] = useState<string>("");
+  const [isDental, setIsDental] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase.from("users").select("organization_id").eq("id", user.id).single()
-        .then(({ data }) => { if (data?.organization_id) setOrganizationId(data.organization_id); });
+        .then(({ data }) => {
+          if (data?.organization_id) {
+            setOrganizationId(data.organization_id);
+            supabase
+              .from("business_profiles")
+              .select("industry")
+              .eq("organization_id", data.organization_id)
+              .single()
+              .then(({ data: bp }) => {
+                if (bp?.industry?.toLowerCase().includes("dental") || bp?.industry?.toLowerCase().includes("stomatolog")) {
+                  setIsDental(true);
+                }
+              });
+          }
+        });
     });
   }, []);
 
@@ -659,6 +675,17 @@ export default function BrainDumpPage() {
             {results.platforms.instagram && <InstagramCard data={results.platforms.instagram} />}
             {results.platforms.tiktok && <TikTokCard data={results.platforms.tiktok} />}
             {results.platforms.youtube && <YouTubeCard data={results.platforms.youtube} />}
+
+            {/* Content Checker */}
+            <ContentChecker
+              text={Object.values(results.platforms).map((p) => ("text" in p ? (p as { text: string }).text : "")).join("\n")}
+              hashtags={Object.values(results.platforms).flatMap((p) => ("hashtags" in p ? (p as { hashtags: string[] }).hashtags : []))}
+              platforms={selectedPlatforms}
+              isDental={isDental}
+            />
+            {selectedPlatforms.map((p) => (
+              <VisualSuggestion key={p} platform={p} isDental={isDental} />
+            ))}
 
             {/* Save draft */}
             <div className="flex gap-2">

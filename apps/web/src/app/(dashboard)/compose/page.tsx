@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import {
   PenTool,
   Copy,
@@ -119,8 +120,9 @@ export default function ComposePage() {
   // Media state
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [organizationId, setOrganizationId] = useState<string>("");
+  const [isDental, setIsDental] = useState(false);
 
-  // Load organization ID for media uploads
+  // Load organization ID + business profile
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -131,7 +133,19 @@ export default function ComposePage() {
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
-          if (data?.organization_id) setOrganizationId(data.organization_id);
+          if (data?.organization_id) {
+            setOrganizationId(data.organization_id);
+            supabase
+              .from("business_profiles")
+              .select("industry")
+              .eq("organization_id", data.organization_id)
+              .single()
+              .then(({ data: bp }) => {
+                if (bp?.industry?.toLowerCase().includes("dental") || bp?.industry?.toLowerCase().includes("stomatolog")) {
+                  setIsDental(true);
+                }
+              });
+          }
         });
     });
   }, []);
@@ -765,6 +779,16 @@ export default function ComposePage() {
                     </p>
                   </div>
                 )}
+                {/* Content verification */}
+                <div className="mt-3">
+                  <ContentChecker
+                    text={result.text}
+                    hashtags={result.hashtags}
+                    platforms={[platformId]}
+                    isDental={isDental}
+                  />
+                </div>
+                <VisualSuggestion platform={platformId} isDental={isDental} />
               </div>
             );
           })}
