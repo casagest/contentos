@@ -204,9 +204,9 @@ export default function AnalyticsPage() {
                 iconType="circle"
                 iconSize={8}
               />
-              <Area type="monotone" dataKey="likes" name="Likes" stroke="#3b82f6" fill="url(#gradLikes)" strokeWidth={2} />
-              <Area type="monotone" dataKey="comments" name="Comentarii" stroke="#10b981" fill="url(#gradComments)" strokeWidth={2} />
-              <Area type="monotone" dataKey="shares" name="Shares" stroke="#8b5cf6" fill="url(#gradShares)" strokeWidth={2} />
+              <Area type="monotone" dataKey="likes" name="Likes" stroke="#3b82f6" fill="url(#gradLikes)" strokeWidth={2} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="comments" name="Comentarii" stroke="#10b981" fill="url(#gradComments)" strokeWidth={2} animationBegin={200} animationDuration={1200} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="shares" name="Shares" stroke="#8b5cf6" fill="url(#gradShares)" strokeWidth={2} animationBegin={400} animationDuration={1200} animationEasing="ease-out" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -227,8 +227,8 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="platform" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={formatNum} />
                 <ReTooltip content={<ChartTooltip />} />
-                <Bar dataKey="avgEngagement" name="Avg Eng." fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="totalReach" name="Total Reach" fill="#8b5cf6" radius={[4, 4, 0, 0]} opacity={0.6} />
+                <Bar dataKey="avgEngagement" name="Avg Eng." fill="#6366f1" radius={[4, 4, 0, 0]} animationBegin={0} animationDuration={800} animationEasing="ease-out" />
+                <Bar dataKey="totalReach" name="Total Reach" fill="#8b5cf6" radius={[4, 4, 0, 0]} opacity={0.6} animationBegin={200} animationDuration={800} animationEasing="ease-out" />
               </BarChart>
             </ResponsiveContainer>
             <div className="mt-3 flex flex-wrap gap-3">
@@ -376,7 +376,7 @@ export default function AnalyticsPage() {
               <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={formatNum} />
               <ReTooltip content={<ChartTooltip />} />
-              <Area type="monotone" dataKey="followers" name="Urmaritori" stroke="#10b981" fill="url(#gradFollowers)" strokeWidth={2} />
+              <Area type="monotone" dataKey="followers" name="Urmaritori" stroke="#10b981" fill="url(#gradFollowers)" strokeWidth={2} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
