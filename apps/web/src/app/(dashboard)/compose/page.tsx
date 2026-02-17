@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
+import VoiceInput from "../components/voice-input";
 import {
   PenTool,
   Copy,
@@ -17,6 +18,7 @@ import {
   Brain,
   Target,
   TrendingUp,
+  MessageSquare,
   Zap,
   ArrowRight,
   ArrowLeft,
@@ -164,6 +166,54 @@ export default function ComposePage() {
   const [error, setError] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState<string | null>(null);
+
+  // Refinement state
+  const [refinementInput, setRefinementInput] = useState("");
+  const [isRefining, setIsRefining] = useState(false);
+
+  const refineContent = useCallback(async () => {
+    if (!refinementInput.trim() || Object.keys(generatedContent).length === 0) return;
+    setIsRefining(true);
+    setError(null);
+
+    try {
+      // Get current content for the first platform
+      const currentTexts = Object.entries(generatedContent)
+        .map(([p, v]) => `[${p}]: ${v.text}`)
+        .join("\n\n");
+
+      const response = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: `Conținutul actual:\n${currentTexts}\n\nInstrucțiune de rafinare: ${refinementInput}`,
+          platforms: selectedPlatforms,
+          objective,
+          tone,
+          includeHashtags,
+          includeEmoji,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Eroare la rafinare");
+      }
+
+      const data = await response.json();
+      if (data.platformVersions) {
+        setGeneratedContent(data.platformVersions);
+      }
+      if (data.meta) {
+        setGenerationMeta(data.meta);
+      }
+      setRefinementInput("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Eroare la rafinare");
+    } finally {
+      setIsRefining(false);
+    }
+  }, [refinementInput, generatedContent, selectedPlatforms, objective, tone, includeHashtags, includeEmoji]);
 
   const togglePlatform = (id: string) => {
     setSelectedPlatforms((prev) =>
@@ -411,7 +461,11 @@ export default function ComposePage() {
                 className="w-full bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none"
               />
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  <VoiceInput
+                    onTranscript={(text) => setContent((prev) => prev + (prev ? " " : "") + text)}
+                    language="ro-RO"
+                  />
                   <button
                     onClick={() => setIncludeHashtags(!includeHashtags)}
                     className={`p-1.5 rounded-lg transition ${includeHashtags ? "text-brand-400 bg-brand-600/10" : "text-gray-500 hover:text-white hover:bg-white/[0.04]"}`}
@@ -822,6 +876,50 @@ export default function ComposePage() {
               {draftSaved}
             </div>
           )}
+
+          {/* Refinement chat */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Rafinează rezultatul</p>
+            <div className="flex items-end gap-2">
+              <textarea
+                value={refinementInput}
+                onChange={(e) => setRefinementInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    refineContent();
+                  }
+                }}
+                placeholder="Ex: fă-l mai scurt, schimbă tonul în profesional, adaugă CTA..."
+                rows={2}
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none"
+              />
+              <button
+                onClick={refineContent}
+                disabled={!refinementInput.trim() || isRefining}
+                className="p-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white transition shrink-0"
+              >
+                {isRefining ? (
+                  <RotateCcw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <MessageSquare className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {["Fă-l mai scurt", "Ton mai profesional", "Adaugă CTA", "Mai multă emoție", "Adaugă urgency"].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => {
+                    setRefinementInput(suggestion);
+                  }}
+                  className="text-[10px] px-2 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-gray-500 hover:text-white hover:border-white/[0.1] transition"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

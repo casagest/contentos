@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import MediaUpload from "../compose/media-upload";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
+import VoiceInput from "../components/voice-input";
 import { createClient } from "@/lib/supabase/client";
 import {
   Brain,
@@ -743,7 +744,11 @@ export default function BrainDumpPage() {
         </div>
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06]">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-600">Shift+Enter pentru linie noua</span>
+            <VoiceInput
+              onTranscript={(text) => setInputText((prev) => prev + (prev ? " " : "") + text)}
+              language="ro-RO"
+            />
+            <span className="text-[10px] text-gray-600">Shift+Enter pentru linie nouă</span>
           </div>
           <span className="text-[10px] text-gray-600">{inputText.length} caractere</span>
         </div>
