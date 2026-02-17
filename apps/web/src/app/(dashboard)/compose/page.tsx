@@ -498,14 +498,16 @@ export default function ComposePage() {
 
             {/* Platform selection */}
             <div className="rounded-xl bg-card border border-border p-4">
-              <label className="block text-sm font-medium text-foreground/80 mb-3">
+              <label className="block text-sm font-medium text-foreground/80 mb-3" id="compose-platforms-label">
                 Platforme
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" role="group" aria-labelledby="compose-platforms-label">
                 {platforms.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => togglePlatform(p.id)}
+                    role="switch"
+                    aria-checked={selectedPlatforms.includes(p.id)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition ${
                       selectedPlatforms.includes(p.id)
                         ? "bg-accent text-white border border-brand-500/30"

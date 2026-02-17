@@ -494,7 +494,7 @@ export default function InspirationPage() {
                       <a
                         href={post.url}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-muted transition"
                         title="Deschide sursa"
                       >

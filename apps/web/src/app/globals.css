@@ -1,12 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --font-dm-sans: 'DM Sans', system-ui, sans-serif;
+    --font-dm-sans: var(--font-dm-sans-loaded, 'DM Sans'), system-ui, sans-serif;
     /* shadcn/ui CSS variables — dark theme for dashboard */
     --background: 230 20% 5%;
     --foreground: 0 0% 98%;

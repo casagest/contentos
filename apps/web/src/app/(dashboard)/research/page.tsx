@@ -387,7 +387,7 @@ export default function ResearchPage() {
                 key={idea.url}
                 href={idea.url}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="rounded-lg border border-border bg-card p-3 hover:border-brand-500/40 transition"
               >
                 <div className="text-xs text-brand-300 mb-1 line-clamp-1">{idea.title}</div>
@@ -458,7 +458,7 @@ export default function ResearchPage() {
                   <a
                     href={item.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="p-1 text-muted-foreground hover:text-white transition"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />

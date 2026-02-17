@@ -22,7 +22,7 @@ export default function GdprPage() {
         </Link>
         <h1 className="text-3xl font-bold mb-6">GDPR și Drepturile Tale</h1>
         <p className="text-gray-400 mb-8">
-          Ultima actualizare: {new Date().toLocaleDateString("ro-RO")}
+          Ultima actualizare: 17 februarie 2026
         </p>
         <div className="prose prose-invert max-w-none space-y-6 text-gray-300">
           <p>

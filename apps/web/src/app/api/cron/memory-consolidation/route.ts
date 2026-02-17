@@ -221,7 +221,7 @@ async function handleConsolidation(request: Request) {
     stats.durationMs = Date.now() - startTime;
 
     // Log summary
-    console.log("cron_memory_consolidation_complete", stats);
+    // memory consolidation complete
 
     return NextResponse.json({ ok: true, stats });
   } catch (err) {

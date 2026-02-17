@@ -5,7 +5,8 @@ import {
   Type,
   Download,
   RotateCcw,
-  Square,
+  Undo2,
+  Redo2,
   Palette,
   Bold,
   AlignCenter,
@@ -14,6 +15,48 @@ import {
   X,
   Image as ImageIcon,
 } from "lucide-react";
+
+// ─── Undo/Redo History Hook ─────────────────────────────────
+const MAX_HISTORY = 50;
+
+function useHistory<T>(initial: T) {
+  const [past, setPast] = useState<T[]>([]);
+  const [present, setPresent] = useState<T>(initial);
+  const [future, setFuture] = useState<T[]>([]);
+
+  const canUndo = past.length > 0;
+  const canRedo = future.length > 0;
+
+  const push = useCallback((newState: T) => {
+    setPast((prev) => [...prev.slice(-MAX_HISTORY), present]);
+    setPresent(newState);
+    setFuture([]);
+  }, [present]);
+
+  const undo = useCallback(() => {
+    if (past.length === 0) return;
+    const previous = past[past.length - 1];
+    setPast((prev) => prev.slice(0, -1));
+    setFuture((prev) => [present, ...prev]);
+    setPresent(previous);
+  }, [past, present]);
+
+  const redo = useCallback(() => {
+    if (future.length === 0) return;
+    const next = future[0];
+    setFuture((prev) => prev.slice(1));
+    setPast((prev) => [...prev, present]);
+    setPresent(next);
+  }, [future, present]);
+
+  const reset = useCallback((value: T) => {
+    setPast([]);
+    setPresent(value);
+    setFuture([]);
+  }, []);
+
+  return { state: present, push, undo, redo, canUndo, canRedo, reset };
+}
 
 // ═══════════════════════════════════════════════════════════════
 // IMAGE TEXT OVERLAY EDITOR
@@ -67,7 +110,15 @@ export default function ImageEditor({
   className = "",
 }: ImageEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [overlays, setOverlays] = useState<TextOverlay[]>([]);
+  const {
+    state: overlays,
+    push: pushOverlays,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset: resetOverlays,
+  } = useHistory<TextOverlay[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(initialWidth);
   const [canvasHeight, setCanvasHeight] = useState(initialHeight);
@@ -96,18 +147,38 @@ export default function ImageEditor({
       bgColor: "#000000",
       bgOpacity: 0.5,
     };
-    setOverlays((prev) => [...prev, newOverlay]);
+    pushOverlays([...overlays, newOverlay]);
     setSelectedId(newOverlay.id);
-  }, [canvasWidth, canvasHeight]);
+  }, [canvasWidth, canvasHeight, overlays, pushOverlays]);
 
   const updateOverlay = useCallback((id: string, updates: Partial<TextOverlay>) => {
-    setOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, ...updates } : o)));
-  }, []);
+    pushOverlays(overlays.map((o) => (o.id === id ? { ...o, ...updates } : o)));
+  }, [overlays, pushOverlays]);
 
   const removeOverlay = useCallback((id: string) => {
-    setOverlays((prev) => prev.filter((o) => o.id !== id));
+    pushOverlays(overlays.filter((o) => o.id !== id));
     if (selectedId === id) setSelectedId(null);
-  }, [selectedId]);
+  }, [selectedId, overlays, pushOverlays]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
 
   // Render canvas
   useEffect(() => {
@@ -244,7 +315,26 @@ export default function ImageEditor({
         <div className="flex-1" />
 
         <button
-          onClick={() => { setOverlays([]); setSelectedId(null); }}
+          onClick={undo}
+          disabled={!canUndo}
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Undo (Ctrl+Z)"
+          aria-label="Undo"
+        >
+          <Undo2 className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={redo}
+          disabled={!canRedo}
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo"
+        >
+          <Redo2 className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => { resetOverlays([]); setSelectedId(null); }}
           className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white transition"
         >
           <RotateCcw className="w-3 h-3" /> Reset

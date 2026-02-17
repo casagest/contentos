@@ -90,8 +90,8 @@ export default function HistoryPage() {
       setTotal(data.total);
       setStats(data.stats);
       setHasAccounts(true);
-    } catch (err) {
-      console.error("Load posts error:", err);
+    } catch {
+      // Load posts error — silent in production
     } finally {
       setIsLoading(false);
     }

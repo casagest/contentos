@@ -438,8 +438,8 @@ export default function CalendarPage() {
           if (day) day.posts.push(post);
         }
       }
-    } catch (err) {
-      console.error("Calendar load error:", err);
+    } catch {
+      // Calendar load error — silent in production
     }
 
     setDays(weekDays);
@@ -568,63 +568,73 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Weekly grid */}
+      {/* Weekly grid — stacks vertically on mobile, full grid on desktop */}
       {!loading && (
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day) => (
-            <div
-              key={day.dateStr}
-              className={`rounded-xl border p-3 min-h-[180px] flex flex-col transition ${
-                day.isToday
-                  ? "bg-brand-500/5 border-brand-500/20"
-                  : "bg-card border-border"
-              }`}
-            >
-              {/* Day header */}
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <div className={`text-[10px] font-medium ${day.isToday ? "text-brand-400" : "text-muted-foreground"}`}>
-                    {day.label}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+          {days.map((day) => {
+            const hasContent = day.drafts.length > 0 || day.posts.length > 0;
+            return (
+              <div
+                key={day.dateStr}
+                className={`rounded-xl border p-3 min-h-[120px] lg:min-h-[180px] flex flex-col transition group ${
+                  day.isToday
+                    ? "bg-brand-500/5 border-brand-500/20"
+                    : "bg-card border-border"
+                }`}
+              >
+                {/* Day header */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`text-[10px] font-medium ${day.isToday ? "text-brand-400" : "text-muted-foreground"}`}>
+                      {day.label}
+                    </div>
+                    <div className={`text-sm font-semibold ${day.isToday ? "text-white" : "text-foreground/80"}`}>
+                      {day.date.getDate()}
+                    </div>
+                    {hasContent && (
+                      <span className="text-[9px] text-muted-foreground lg:hidden">
+                        ({day.drafts.length + day.posts.length})
+                      </span>
+                    )}
                   </div>
-                  <div className={`text-sm font-semibold ${day.isToday ? "text-white" : "text-foreground/80"}`}>
-                    {day.date.getDate()}
-                  </div>
+                  <button
+                    onClick={() => openCreate(day.dateStr)}
+                    className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-brand-400 transition opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                    aria-label={`Creează draft pentru ${day.label} ${day.date.getDate()}`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => openCreate(day.dateStr)}
-                  className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-brand-400 transition md:opacity-0 md:group-hover:opacity-100"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+
+                {/* Draft cards */}
+                <div className="space-y-1.5 flex-1">
+                  {day.drafts.map((draft) => (
+                    <DraftCard
+                      key={draft.id}
+                      draft={draft}
+                      onClick={() => openEdit(draft)}
+                    />
+                  ))}
+
+                  {/* Published posts */}
+                  {day.posts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+
+                {/* Empty day click area */}
+                {!hasContent && (
+                  <button
+                    onClick={() => openCreate(day.dateStr)}
+                    className="flex-1 flex items-center justify-center text-gray-700 hover:text-brand-400 transition"
+                    aria-label={`Adaugă conținut pentru ${day.label}`}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-
-              {/* Draft cards */}
-              <div className="space-y-1.5 flex-1">
-                {day.drafts.map((draft) => (
-                  <DraftCard
-                    key={draft.id}
-                    draft={draft}
-                    onClick={() => openEdit(draft)}
-                  />
-                ))}
-
-                {/* Published posts */}
-                {day.posts.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
-              </div>
-
-              {/* Empty day click area */}
-              {day.drafts.length === 0 && day.posts.length === 0 && (
-                <button
-                  onClick={() => openCreate(day.dateStr)}
-                  className="flex-1 flex items-center justify-center text-gray-700 hover:text-brand-400 transition"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

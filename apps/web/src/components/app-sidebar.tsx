@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   Brain,
   PenTool,
@@ -17,7 +18,10 @@ import {
   Video,
   Image,
   Sparkles,
+  LogOut,
+  User,
 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 import {
   Sidebar,
@@ -75,6 +79,28 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ draftCount, scheduledCount, ...props }: AppSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [userEmail, setUserEmail] = useState<string>("")
+  const [userName, setUserName] = useState<string>("")
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUserEmail(user.email || "")
+        setUserName(user.user_metadata?.full_name || "")
+      }
+    })
+  }, [])
+
+  const handleSignOut = async () => {
+    await fetch("/api/auth/signout", { method: "POST" })
+    router.push("/login")
+  }
+
+  const initials = userName
+    ? userName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : userEmail ? userEmail[0].toUpperCase() : "U"
 
   return (
     <Sidebar variant="sidebar" collapsible="icon" {...props}>
@@ -125,7 +151,7 @@ export function AppSidebar({ draftCount, scheduledCount, ...props }: AppSidebarP
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="border-t border-sidebar-border space-y-1">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname === "/settings"} tooltip="Setări">
@@ -136,6 +162,29 @@ export function AppSidebar({ draftCount, scheduledCount, ...props }: AppSidebarP
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
+        {/* User profile section */}
+        <div className="px-2 py-2 group-data-[collapsible=icon]:px-0">
+          <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-300 text-xs font-bold">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+              {userName && (
+                <p className="text-xs font-medium text-foreground truncate">{userName}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground truncate">{userEmail}</p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition group-data-[collapsible=icon]:hidden"
+              title="Deconectare"
+              aria-label="Deconectare"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
       </SidebarFooter>
 
       <SidebarRail />
