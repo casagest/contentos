@@ -80,7 +80,7 @@ export default function BillingSection({
         <div className="flex items-center gap-2">
           {isPaid && (
             <span className="text-sm font-bold text-white">
-              {planConfig.priceEur}&euro;/luna
+              {planConfig.priceRon} RON/lună
             </span>
           )}
           <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-600/10 text-brand-300 border border-brand-500/20">
@@ -134,7 +134,7 @@ export default function BillingSection({
                   </ul>
                   <div className="flex items-center justify-between">
                     <div className="text-lg font-bold text-white">
-                      {plan.priceEur}&euro;
+                      {plan.priceRon} RON
                       <span className="text-xs text-muted-foreground font-normal">/luna</span>
                     </div>
                     <button
