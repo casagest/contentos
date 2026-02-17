@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { login } from "../actions";
 import { SubmitButton } from "./submit-button";
+import { sanitizeRedirectPath } from "@/lib/redirect";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 
 export const metadata = {
@@ -14,7 +15,8 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   const error = params.error;
-  const redirectTo = params.redirect || "";
+  // Sanitize la nivel de pagină: nu punem niciodată URL-uri externe în formular
+  const redirectTo = sanitizeRedirectPath(params.redirect);
 
   return (
     <div className="rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] p-8 shadow-2xl w-full">
