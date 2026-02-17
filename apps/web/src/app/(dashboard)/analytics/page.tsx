@@ -145,19 +145,8 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Analytics</h1>
-            <p className="text-muted-foreground text-sm">Performanta reala a continutului tau</p>
-          </div>
-        </div>
-
-        {/* Range selector */}
+      {/* Range selector */}
+      <div className="flex justify-end mb-4">
         <div className="flex items-center gap-1 bg-muted border border-border rounded-lg p-1">
           {RANGES.map((r) => (
             <button

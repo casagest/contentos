@@ -523,20 +523,8 @@ export default function CalendarPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
-            <CalendarCheck className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Calendar Conținut</h1>
-            <p className="text-muted-foreground text-sm">
-              Planifică și programează postările
-            </p>
-          </div>
-        </div>
-
+      {/* Top actions */}
+      <div className="flex justify-end mb-4">
         <button
           onClick={() => openCreate(toDateStr(new Date()))}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium transition"

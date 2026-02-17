@@ -180,17 +180,6 @@ export default function HistoryPage() {
   if (hasAccounts === false) {
     return (
       <div>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-            <CalendarDays className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Post History</h1>
-            <p className="text-muted-foreground text-sm">
-              Analizează performanța postărilor tale
-            </p>
-          </div>
-        </div>
         <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
           <CalendarDays className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-white mb-2">
@@ -215,17 +204,7 @@ export default function HistoryPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-            <CalendarDays className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Post History</h1>
-            <p className="text-muted-foreground text-sm">
-              Analizează performanța postărilor tale
-            </p>
-          </div>
-        </div>
+        <div />
         <button
           onClick={handleSync}
           disabled={isSyncing}

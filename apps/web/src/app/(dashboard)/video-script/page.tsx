@@ -135,17 +135,6 @@ export default function VideoScriptPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-purple-500/10">
-          <Film className="w-5 h-5 text-purple-400" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold text-white">Script Video</h1>
-          <p className="text-xs text-muted-foreground">Generează scripturi video profesionale cu AI</p>
-        </div>
-      </div>
-
       {/* Input form */}
       <div className="rounded-xl bg-card border border-border p-4 space-y-4">
         <div>
@@ -153,7 +142,7 @@ export default function VideoScriptPage() {
           <textarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="Ex: Cum funcționează implanturile dentare All-on-4 — explicat simplu pentru pacienți"
+            placeholder="Ex: 5 trucuri de productivitate — explicat simplu in 60 de secunde"
             rows={3}
             className="w-full bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none border border-border rounded-lg p-3"
           />

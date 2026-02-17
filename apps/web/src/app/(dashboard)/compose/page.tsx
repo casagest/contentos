@@ -402,19 +402,6 @@ export default function ComposePage() {
   // ---------- Render ----------
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-          <PenTool className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-white">Content Composer</h1>
-          <p className="text-muted-foreground text-sm">
-            Genius creativ cu inteligenta bazata pe date
-          </p>
-        </div>
-      </div>
-
       {/* Phase indicator */}
       <div className="flex items-center gap-2 mb-6">
         {(["input", "explore", "generate"] as Phase[]).map((p, idx) => (

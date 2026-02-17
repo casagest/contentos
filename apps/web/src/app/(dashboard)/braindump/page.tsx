@@ -518,28 +518,17 @@ export default function BrainDumpPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-            <Brain className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Brain Dump</h1>
-            <p className="text-muted-foreground text-sm">
-              Spune-mi orice — intrebare, idee, sau text brut
-            </p>
-          </div>
-        </div>
-        {messages.length > 0 && (
+      {/* Top controls */}
+      {messages.length > 0 && (
+        <div className="flex justify-end mb-2">
           <button
             onClick={startOver}
             className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white bg-muted hover:bg-accent transition flex items-center gap-1.5"
           >
             <RotateCcw className="w-3 h-3" /> Start nou
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Config bar */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -603,10 +592,10 @@ export default function BrainDumpPage() {
             </p>
             <div className="flex flex-wrap gap-2 mt-4">
               {[
-                "Am o clinica dentara si vreau sa postez pe social media",
+                "Vreau sa postez ceva interesant pe social media",
                 "Cum sa cresc engagement-ul pe Instagram?",
-                "Top 5 sfaturi de nutritie pentru pacienti",
-                "Vreau sa promovez o oferta de Black Friday",
+                "Top 5 idei de continut pentru aceasta saptamana",
+                "Vreau sa promovez o oferta speciala",
               ].map((suggestion) => (
                 <button
                   key={suggestion}
