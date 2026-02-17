@@ -175,45 +175,70 @@ function sanitizePlatforms(
   return normalized;
 }
 
-function buildBusinessContextPrompt(profile: BusinessProfile | null): string {
-  if (!profile) return "";
+function buildBusinessContextPrompt(
+  profile: BusinessProfile | null,
+  brandVoice: Record<string, unknown> | null
+): string {
+  const lines: string[] = [];
 
-  const lines = [
-    "BUSINESS_CONTEXT:",
-    `- Name: ${profile.name}`,
-    `- Industry: ${profile.industry}`,
-    `- Description: ${profile.description}`,
-    `- Target audience: ${profile.targetAudience}`,
-    `- Tone: ${profile.tones.join(", ")}`,
-    `- USP: ${profile.usps}`,
-  ];
+  if (profile) {
+    lines.push(
+      "BUSINESS_CONTEXT:",
+      `- Name: ${profile.name}`,
+      `- Industry: ${profile.industry}`,
+      `- Description: ${profile.description}`,
+      `- Target audience: ${profile.targetAudience}`,
+      `- Tone: ${profile.tones.join(", ")}`,
+      `- USP: ${profile.usps}`
+    );
 
-  if (profile.preferredPhrases) {
-    lines.push(`- Preferred phrases: ${profile.preferredPhrases}`);
+    if (profile.preferredPhrases) {
+      lines.push(`- Preferred phrases: ${profile.preferredPhrases}`);
+    }
+
+    if (profile.avoidPhrases) {
+      lines.push(`- Avoid phrases: ${profile.avoidPhrases}`);
+    }
+
+  if (Array.isArray(profile.compliance)) {
+    if (profile.compliance.includes("cmsr_2025")) {
+      lines.push("- Compliance: CMSR_2025 strict mode (no absolute claims, no guaranteed results).");
+    }
+    if (profile.compliance.includes("anaf")) {
+      lines.push("- Compliance: ANAF awareness for financial statements.");
+    }
+  }
   }
 
-  if (profile.avoidPhrases) {
-    lines.push(`- Avoid phrases: ${profile.avoidPhrases}`);
+  if (brandVoice?.summary) {
+    lines.push(
+      "",
+      "BRAND_VOICE (learned from past content — USE THIS):",
+      `- Summary: ${brandVoice.summary}`,
+      brandVoice.tone ? `- Tone: ${brandVoice.tone}` : "",
+      Array.isArray(brandVoice.phrases) && brandVoice.phrases.length > 0
+        ? `- Preferred phrases: ${brandVoice.phrases.join(", ")}`
+        : "",
+      Array.isArray(brandVoice.avoid) && brandVoice.avoid.length > 0
+        ? `- Avoid: ${brandVoice.avoid.join(", ")}`
+        : ""
+    );
   }
 
-  if (profile.compliance.includes("cmsr_2025")) {
-    lines.push("- Compliance: CMSR_2025 strict mode (no absolute claims, no guaranteed results).");
-  }
-
-  if (profile.compliance.includes("anaf")) {
-    lines.push("- Compliance: ANAF awareness for financial statements.");
-  }
-
-  return `${lines.join("\n")}\n`;
+  return lines.filter(Boolean).length ? `${lines.filter(Boolean).join("\n")}\n` : "";
 }
 
 function buildSystemPrompt(params: {
   platforms: BrainDumpPlatform[];
   businessProfile: BusinessProfile | null;
+  brandVoice: Record<string, unknown> | null;
   language: Language;
   qualityMode: QualityMode;
 }): string {
-  const businessContext = buildBusinessContextPrompt(params.businessProfile);
+  const businessContext = buildBusinessContextPrompt(
+    params.businessProfile,
+    params.brandVoice
+  );
 
   return [
     "You are a senior social media strategist for Romanian market brands.",
@@ -533,6 +558,11 @@ export async function POST(request: NextRequest) {
     businessProfile = settings.businessProfile as BusinessProfile;
   }
 
+  let brandVoice: Record<string, unknown> | null = null;
+  if (settings?.brandVoice && typeof settings.brandVoice === "object") {
+    brandVoice = settings.brandVoice as Record<string, unknown>;
+  }
+
   // --- Creative Intelligence Integration ---
   const primaryPlatform = requestedPlatforms[0] as CreativePlatform;
   const creativeInsights = await loadCreativeInsights({
@@ -603,6 +633,7 @@ export async function POST(request: NextRequest) {
       platforms: requestedPlatforms,
       language,
       warning,
+      compliance: businessProfile?.compliance || [],
     });
 
   const urlHashes = urls.map((url) => hashUrl(url));
@@ -703,12 +734,14 @@ export async function POST(request: NextRequest) {
   const baseSystemPromptRaw = buildSystemPrompt({
     platforms: requestedPlatforms,
     businessProfile,
+    brandVoice,
     language,
     qualityMode: baseQualityMode,
   });
   const premiumSystemPromptRaw = buildSystemPrompt({
     platforms: requestedPlatforms,
     businessProfile,
+    brandVoice,
     language,
     qualityMode: escalatedQualityMode,
   });
