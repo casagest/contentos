@@ -63,31 +63,32 @@ export default function DashboardShellClient({
       <AppSidebar />
       <CommandPalette />
       <SidebarInset>
-        {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+        {/* Top bar — glass morphism */}
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-white/[0.06] bg-background/80 backdrop-blur-xl px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 !h-4" />
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5">
             {breadcrumb && (
               <>
-                <span className="text-xs text-muted-foreground">{breadcrumb.group}</span>
-                <span className="text-xs text-muted-foreground">/</span>
+                <span className="text-xs text-muted-foreground/70">{breadcrumb.group}</span>
+                <span className="text-xs text-muted-foreground/40">/</span>
               </>
             )}
-            <h1 className="text-sm font-semibold">{title}</h1>
+            <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
           </nav>
 
           {/* Right-side header actions */}
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1.5">
             {/* ⌘K search trigger */}
             <button
               onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/20 transition"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.06] hover:border-white/[0.1] transition-all"
               aria-label="Deschide paleta de comenzi (Ctrl+K)"
             >
+              <svg className="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               <span className="hidden sm:inline">Caută...</span>
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-muted text-[10px] font-mono border border-border">
-                Ctrl+K
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[10px] font-mono text-muted-foreground/50 border border-white/[0.06]">
+                ⌘K
               </kbd>
             </button>
 
