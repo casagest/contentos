@@ -117,3 +117,37 @@ describe("PLATFORM_SPECS", () => {
     }
   });
 });
+
+import { checkReadability } from "../app/(dashboard)/components/content-checker";
+
+describe("checkReadability", () => {
+  it("returns high score for simple text", () => {
+    const result = checkReadability("Vino la noi. Te așteptăm. Zâmbet frumos.");
+    expect(result.score).toBeGreaterThan(30);
+    expect(result.wordCount).toBeGreaterThan(0);
+    expect(result.sentenceCount).toBe(3);
+  });
+
+  it("returns lower score for complex text", () => {
+    const result = checkReadability(
+      "Implantologia dentară contemporană utilizează protocoale chirurgicale minim invazive bazate pe tomografie computerizată tridimensională."
+    );
+    expect(result.score).toBeLessThan(50);
+  });
+
+  it("handles empty text", () => {
+    const result = checkReadability("");
+    expect(result.score).toBe(0);
+    expect(result.grade).toBe("—");
+  });
+
+  it("strips URLs and hashtags before analysis", () => {
+    const result = checkReadability("Vino la noi! https://clinic.ro #dental #implant");
+    expect(result.wordCount).toBe(3); // just "Vino la noi"
+  });
+
+  it("counts Romanian syllables correctly", () => {
+    const result = checkReadability("Stomatologie.");
+    expect(result.avgSyllablesPerWord).toBeGreaterThanOrEqual(4);
+  });
+});
