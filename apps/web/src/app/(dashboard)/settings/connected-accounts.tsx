@@ -140,12 +140,12 @@ export default function ConnectedAccounts({
 
   if (loading) {
     return (
-      <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
+      <div className="rounded-xl bg-card border border-border p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Wifi className="w-4 h-4 text-gray-400" />
+          <Wifi className="w-4 h-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-white">Conturi conectate</h2>
         </div>
-        <div className="text-center py-6 text-gray-500 text-sm">
+        <div className="text-center py-6 text-muted-foreground text-sm">
           <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
           Se incarca conturile...
         </div>
@@ -154,9 +154,9 @@ export default function ConnectedAccounts({
   }
 
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6">
+    <div className="rounded-xl bg-card border border-border p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Wifi className="w-4 h-4 text-gray-400" />
+        <Wifi className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-base font-semibold text-white">Conturi conectate</h2>
       </div>
 
@@ -178,7 +178,7 @@ export default function ConnectedAccounts({
           return (
             <div
               key={account.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]"
+              className="flex items-center justify-between p-3 rounded-lg bg-card border border-border"
             >
               <div className="flex items-center gap-3">
                 {account.avatar_url ? (
@@ -199,7 +199,7 @@ export default function ConnectedAccounts({
                   <div className="text-sm font-medium text-white">
                     {account.platform_name}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>@{account.platform_username}</span>
                   </div>
                 </div>
@@ -241,15 +241,15 @@ export default function ConnectedAccounts({
         })}
 
         {accounts.length === 0 && (
-          <div className="text-center py-6 text-gray-500 text-sm">
+          <div className="text-center py-6 text-muted-foreground text-sm">
             Niciun cont conectat. Conecteaza-ti conturile de social media
             pentru a incepe.
           </div>
         )}
 
         {/* Connect more platforms */}
-        <div className="pt-3 border-t border-white/[0.06]">
-          <p className="text-xs text-gray-500 mb-3">
+        <div className="pt-3 border-t border-border">
+          <p className="text-xs text-muted-foreground mb-3">
             Conecteaza mai multe platforme:
           </p>
           <div className="flex flex-wrap gap-2">
@@ -259,7 +259,7 @@ export default function ConnectedAccounts({
                 meta.comingSoon ? (
                   <span
                     key={key}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-500 text-xs font-medium bg-white/[0.04] border border-white/[0.06] cursor-default"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-muted-foreground text-xs font-medium bg-muted border border-border cursor-default"
                   >
                     {meta.label} &middot; In curand
                   </span>

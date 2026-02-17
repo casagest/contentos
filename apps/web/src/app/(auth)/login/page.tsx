@@ -15,10 +15,10 @@ export default async function LoginPage({
   const redirectTo = params.redirect || "";
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-sm">
+    <div className="rounded-2xl border border-border bg-card p-8 backdrop-blur-sm">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-white">Bine ai revenit</h1>
-        <p className="mt-2 text-sm text-gray-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           Conectează-te la contul tău ContentOS
         </p>
       </div>
@@ -45,7 +45,7 @@ export default async function LoginPage({
             required
             autoComplete="email"
             placeholder="tu@exemplu.ro"
-            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default async function LoginPage({
             required
             autoComplete="current-password"
             placeholder="••••••••"
-            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -80,7 +80,7 @@ export default async function LoginPage({
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-400">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Nu ai cont?{" "}
         <Link href="/register" className="text-brand-400 hover:text-brand-300 font-medium transition">
           Creează cont gratuit

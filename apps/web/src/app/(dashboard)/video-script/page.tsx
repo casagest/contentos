@@ -142,26 +142,26 @@ export default function VideoScriptPage() {
         </div>
         <div>
           <h1 className="text-lg font-semibold text-white">Script Video</h1>
-          <p className="text-xs text-gray-500">Generează scripturi video profesionale cu AI</p>
+          <p className="text-xs text-muted-foreground">Generează scripturi video profesionale cu AI</p>
         </div>
       </div>
 
       {/* Input form */}
-      <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 space-y-4">
+      <div className="rounded-xl bg-card border border-border p-4 space-y-4">
         <div>
-          <label className="block text-xs text-gray-400 mb-1.5">Subiect / Idee video</label>
+          <label className="block text-xs text-muted-foreground mb-1.5">Subiect / Idee video</label>
           <textarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="Ex: Cum funcționează implanturile dentare All-on-4 — explicat simplu pentru pacienți"
             rows={3}
-            className="w-full bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none border border-white/[0.06] rounded-lg p-3"
+            className="w-full bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none border border-border rounded-lg p-3"
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Platformă</label>
+            <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Platformă</label>
             <div className="flex flex-wrap gap-1.5">
               {PLATFORMS.map((p) => (
                 <button
@@ -169,8 +169,8 @@ export default function VideoScriptPage() {
                   onClick={() => setPlatform(p.id)}
                   className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] border transition ${
                     platform === p.id
-                      ? "bg-white/[0.08] text-white border-brand-500/30"
-                      : "bg-white/[0.02] text-gray-500 border-white/[0.06] hover:text-white"
+                      ? "bg-accent text-white border-brand-500/30"
+                      : "bg-card text-muted-foreground border-border hover:text-white"
                   }`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${p.color}`} />
@@ -181,7 +181,7 @@ export default function VideoScriptPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Durată</label>
+            <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Durată</label>
             <div className="flex flex-wrap gap-1.5">
               {DURATIONS.map((d) => (
                 <button
@@ -190,7 +190,7 @@ export default function VideoScriptPage() {
                   className={`px-2 py-1 rounded-lg text-[11px] border transition ${
                     duration === d.id
                       ? "bg-brand-600/20 text-brand-300 border-brand-500/40"
-                      : "bg-white/[0.02] text-gray-500 border-white/[0.06] hover:text-white"
+                      : "bg-card text-muted-foreground border-border hover:text-white"
                   }`}
                 >
                   {d.label}
@@ -200,7 +200,7 @@ export default function VideoScriptPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Stil</label>
+            <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Stil</label>
             <div className="flex flex-wrap gap-1.5">
               {STYLES.map((s) => (
                 <button
@@ -209,7 +209,7 @@ export default function VideoScriptPage() {
                   className={`px-2 py-1 rounded-lg text-[11px] border transition ${
                     style === s.id
                       ? "bg-brand-600/20 text-brand-300 border-brand-500/40"
-                      : "bg-white/[0.02] text-gray-500 border-white/[0.06] hover:text-white"
+                      : "bg-card text-muted-foreground border-border hover:text-white"
                   }`}
                 >
                   {s.emoji} {s.label}
@@ -244,11 +244,11 @@ export default function VideoScriptPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-white">{script.title}</h2>
             <div className="flex gap-2">
-              <button onClick={copyFullScript} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-400 hover:text-white bg-white/[0.04] transition">
+              <button onClick={copyFullScript} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-white bg-muted transition">
                 {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 {copied ? "Copiat!" : "Copiază"}
               </button>
-              <button onClick={downloadScript} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-400 hover:text-white bg-white/[0.04] transition">
+              <button onClick={downloadScript} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-white bg-muted transition">
                 <Download className="w-3 h-3" /> .md
               </button>
             </div>
@@ -257,7 +257,7 @@ export default function VideoScriptPage() {
           {/* Timeline */}
           <div className="space-y-2">
             {script.sections.map((section, i) => (
-              <div key={i} className={`rounded-xl border p-3 space-y-2 ${TYPE_COLORS[section.type] || "bg-white/[0.02] border-white/[0.06]"}`}>
+              <div key={i} className={`rounded-xl border p-3 space-y-2 ${TYPE_COLORS[section.type] || "bg-card border-border"}`}>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono font-medium">{section.timestamp}</span>
                   <span className="text-[10px] uppercase tracking-wider font-bold">{section.type}</span>
@@ -287,30 +287,30 @@ export default function VideoScriptPage() {
           {/* Metadata */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {script.musicSuggestion && (
-              <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2.5">
+              <div className="rounded-lg bg-card border border-border p-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Music className="w-3 h-3 text-purple-400" />
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Muzică</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Muzică</span>
                 </div>
-                <p className="text-xs text-gray-300">{script.musicSuggestion}</p>
+                <p className="text-xs text-foreground/80">{script.musicSuggestion}</p>
               </div>
             )}
             {script.equipmentNeeded && script.equipmentNeeded.length > 0 && (
-              <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2.5">
+              <div className="rounded-lg bg-card border border-border p-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Wrench className="w-3 h-3 text-orange-400" />
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Echipament</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Echipament</span>
                 </div>
-                <p className="text-xs text-gray-300">{script.equipmentNeeded.join(", ")}</p>
+                <p className="text-xs text-foreground/80">{script.equipmentNeeded.join(", ")}</p>
               </div>
             )}
             {script.estimatedProductionTime && (
-              <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-2.5">
+              <div className="rounded-lg bg-card border border-border p-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Clock className="w-3 h-3 text-blue-400" />
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Timp producție</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Timp producție</span>
                 </div>
-                <p className="text-xs text-gray-300">{script.estimatedProductionTime}</p>
+                <p className="text-xs text-foreground/80">{script.estimatedProductionTime}</p>
               </div>
             )}
           </div>
@@ -323,7 +323,7 @@ export default function VideoScriptPage() {
               </div>
               <ul className="space-y-1">
                 {script.tips.map((tip, i) => (
-                  <li key={i} className="text-xs text-gray-400">• {tip}</li>
+                  <li key={i} className="text-xs text-muted-foreground">• {tip}</li>
                 ))}
               </ul>
             </div>

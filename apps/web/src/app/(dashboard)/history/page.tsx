@@ -56,7 +56,7 @@ const platformTabs = [
 const platformColors: Record<string, string> = {
   facebook: "bg-blue-500/10 text-blue-400",
   instagram: "bg-pink-500/10 text-pink-400",
-  tiktok: "bg-gray-500/10 text-gray-300",
+  tiktok: "bg-gray-500/10 text-foreground/80",
   youtube: "bg-red-500/10 text-red-400",
 };
 
@@ -172,7 +172,7 @@ export default function HistoryPage() {
   if (hasAccounts === null || (hasAccounts && isLoading && posts.length === 0)) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
       </div>
     );
   }
@@ -186,17 +186,17 @@ export default function HistoryPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Post History</h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Analizează performanța postărilor tale
             </p>
           </div>
         </div>
         <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
-          <CalendarDays className="w-10 h-10 text-gray-600 mx-auto mb-4" />
+          <CalendarDays className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-white mb-2">
             Nicio postare încă
           </h2>
-          <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
+          <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto">
             Conectează-ți conturile sociale pentru a importa automat istoricul de
             postări și a vedea analiza performanței.
           </p>
@@ -221,7 +221,7 @@ export default function HistoryPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Post History</h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Analizează performanța postărilor tale
             </p>
           </div>
@@ -242,7 +242,7 @@ export default function HistoryPage() {
 
       {/* Sync message */}
       {syncMessage && (
-        <div className="mb-4 rounded-xl bg-white/[0.03] border border-white/[0.08] p-3 text-sm text-gray-300">
+        <div className="mb-4 rounded-xl bg-muted border border-border p-3 text-sm text-foreground/80">
           {syncMessage}
         </div>
       )}
@@ -255,8 +255,8 @@ export default function HistoryPage() {
             onClick={() => handlePlatformChange(tab.id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
               activePlatform === tab.id
-                ? "bg-white/[0.1] text-white"
-                : "bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-gray-200"
+                ? "bg-accent text-white"
+                : "bg-muted text-muted-foreground hover:bg-muted hover:text-gray-200"
             }`}
           >
             {tab.color && (
@@ -269,21 +269,21 @@ export default function HistoryPage() {
 
       {/* Stats summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+        <div className="rounded-xl bg-card border border-border p-4 text-center">
           <div className="text-2xl font-bold text-white">{total}</div>
-          <div className="text-xs text-gray-500 mt-1">Total postări</div>
+          <div className="text-xs text-muted-foreground mt-1">Total postări</div>
         </div>
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+        <div className="rounded-xl bg-card border border-border p-4 text-center">
           <div className="text-2xl font-bold text-white">
             {stats.avgEngagement > 0 ? formatNumber(stats.avgEngagement) : "--"}
           </div>
-          <div className="text-xs text-gray-500 mt-1">Engagement mediu</div>
+          <div className="text-xs text-muted-foreground mt-1">Engagement mediu</div>
         </div>
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+        <div className="rounded-xl bg-card border border-border p-4 text-center">
           <div className="text-2xl font-bold text-white">{stats.bestDay}</div>
-          <div className="text-xs text-gray-500 mt-1">Cea mai bună zi</div>
+          <div className="text-xs text-muted-foreground mt-1">Cea mai bună zi</div>
         </div>
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 text-center">
+        <div className="rounded-xl bg-card border border-border p-4 text-center">
           <div className="text-2xl font-bold text-white">
             {posts.length > 0
               ? formatNumber(
@@ -295,15 +295,15 @@ export default function HistoryPage() {
                 )
               : "--"}
           </div>
-          <div className="text-xs text-gray-500 mt-1">Total interacțiuni</div>
+          <div className="text-xs text-muted-foreground mt-1">Total interacțiuni</div>
         </div>
       </div>
 
       {/* Post list */}
       {posts.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/[0.08] p-8 text-center">
-          <CalendarDays className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-          <p className="text-sm text-gray-400 mb-3">
+        <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <CalendarDays className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground mb-3">
             {activePlatform !== "all"
               ? `Nicio postare pe ${platformTabs.find((t) => t.id === activePlatform)?.label}.`
               : "Nicio postare sincronizată încă."}
@@ -317,9 +317,9 @@ export default function HistoryPage() {
           </button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
-          <div className="p-4 border-b border-white/[0.06]">
-            <h3 className="text-sm font-medium text-gray-300">
+        <div className="rounded-xl bg-card border border-border overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h3 className="text-sm font-medium text-foreground/80">
               Postări recente
             </h3>
           </div>
@@ -327,10 +327,10 @@ export default function HistoryPage() {
             {posts.map((post) => (
               <div
                 key={post.id}
-                className="flex items-center gap-4 p-4 hover:bg-white/[0.02] transition"
+                className="flex items-center gap-4 p-4 hover:bg-card transition"
               >
                 <div
-                  className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${platformColors[post.platform] || "bg-gray-500/10 text-gray-400"}`}
+                  className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${platformColors[post.platform] || "bg-gray-500/10 text-muted-foreground"}`}
                 >
                   {post.platform}
                 </div>
@@ -338,11 +338,11 @@ export default function HistoryPage() {
                   <p className="text-sm text-white truncate">
                     {post.text_content || `[${post.content_type}]`}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {formatDate(post.published_at)}
                   </p>
                 </div>
-                <div className="hidden sm:flex items-center gap-4 text-xs text-gray-500">
+                <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Heart className="w-3 h-3" />{" "}
                     {formatNumber(post.likes_count)}
@@ -367,7 +367,7 @@ export default function HistoryPage() {
                     href={post.platform_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-600 hover:text-gray-400 transition"
+                    className="text-muted-foreground hover:text-muted-foreground transition"
                   >
                     <ArrowUpRight className="w-4 h-4" />
                   </a>
@@ -381,7 +381,7 @@ export default function HistoryPage() {
       {/* Loading indicator for filtering */}
       {isLoading && posts.length > 0 && (
         <div className="flex justify-center py-4">
-          <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+          <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
         </div>
       )}
     </div>

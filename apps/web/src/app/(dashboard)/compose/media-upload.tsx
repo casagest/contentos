@@ -195,7 +195,7 @@ export default function MediaUpload({
           {items.map((item, index) => (
             <div
               key={item.url}
-              className="relative group aspect-square rounded-lg overflow-hidden bg-white/[0.04] border border-white/[0.08]"
+              className="relative group aspect-square rounded-lg overflow-hidden bg-muted border border-border"
             >
               {item.type === "video" ? (
                 <div className="w-full h-full flex items-center justify-center bg-black/40">
@@ -251,18 +251,18 @@ export default function MediaUpload({
           className={`rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition ${
             dragOver
               ? "border-brand-500/50 bg-brand-500/5"
-              : "border-white/[0.08] hover:border-white/[0.15] hover:bg-white/[0.02]"
+              : "border-border hover:border-border hover:bg-card"
           }`}
         >
           {uploading ? (
             <div className="flex items-center justify-center gap-2 py-2">
               <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
-              <span className="text-sm text-gray-400">Se incarca...</span>
+              <span className="text-sm text-muted-foreground">Se incarca...</span>
             </div>
           ) : (
             <div className="py-2">
-              <Upload className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-              <p className="text-xs text-gray-400">
+              <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">
                 Trage fisiere aici sau <span className="text-brand-400">alege</span>
               </p>
               <p className="text-[10px] text-gray-600 mt-1">

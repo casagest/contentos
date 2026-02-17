@@ -218,7 +218,7 @@ export default function ImageEditor({
             setCanvasWidth(w);
             setCanvasHeight(h);
           }}
-          className="px-2 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-gray-300 focus:outline-none"
+          className="px-2 py-1.5 rounded-lg bg-muted border border-border text-xs text-foreground/80 focus:outline-none"
         >
           {PRESET_SIZES.map((s) => (
             <option key={`${s.width}x${s.height}`} value={`${s.width}x${s.height}`}>
@@ -229,7 +229,7 @@ export default function ImageEditor({
 
         {!loadedImage && (
           <div className="flex items-center gap-1">
-            <Palette className="w-3 h-3 text-gray-500" />
+            <Palette className="w-3 h-3 text-muted-foreground" />
             {PRESET_BG_COLORS.filter((c) => c !== "transparent").map((color) => (
               <button
                 key={color}
@@ -245,7 +245,7 @@ export default function ImageEditor({
 
         <button
           onClick={() => { setOverlays([]); setSelectedId(null); }}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-gray-500 hover:text-white transition"
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white transition"
         >
           <RotateCcw className="w-3 h-3" /> Reset
         </button>
@@ -259,7 +259,7 @@ export default function ImageEditor({
 
       {/* Canvas */}
       <div className="flex gap-4">
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-2 overflow-auto">
+        <div className="rounded-xl bg-card border border-border p-2 overflow-auto">
           <canvas
             ref={canvasRef}
             onClick={(e) => {
@@ -281,10 +281,10 @@ export default function ImageEditor({
         {selectedOverlay && (
           <div className="w-52 space-y-2 shrink-0">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-300 flex items-center gap-1">
+              <span className="text-xs font-medium text-foreground/80 flex items-center gap-1">
                 <Layers className="w-3 h-3" /> Text Layer
               </span>
-              <button onClick={() => removeOverlay(selectedOverlay.id)} className="text-gray-500 hover:text-red-400">
+              <button onClick={() => removeOverlay(selectedOverlay.id)} className="text-muted-foreground hover:text-red-400">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -293,11 +293,11 @@ export default function ImageEditor({
               value={selectedOverlay.text}
               onChange={(e) => updateOverlay(selectedOverlay.id, { text: e.target.value })}
               rows={2}
-              className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg p-2 text-xs text-white focus:outline-none resize-none"
+              className="w-full bg-muted border border-border rounded-lg p-2 text-xs text-white focus:outline-none resize-none"
             />
 
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-gray-500 w-12">Mărime</label>
+              <label className="text-[10px] text-muted-foreground w-12">Mărime</label>
               <input
                 type="range"
                 min={16}
@@ -306,11 +306,11 @@ export default function ImageEditor({
                 onChange={(e) => updateOverlay(selectedOverlay.id, { fontSize: Number(e.target.value) })}
                 className="flex-1"
               />
-              <span className="text-[10px] text-gray-400 w-6">{selectedOverlay.fontSize}</span>
+              <span className="text-[10px] text-muted-foreground w-6">{selectedOverlay.fontSize}</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-gray-500 w-12">Culoare</span>
+              <span className="text-[10px] text-muted-foreground w-12">Culoare</span>
               {PRESET_COLORS.map((color) => (
                 <button
                   key={color}
@@ -324,26 +324,26 @@ export default function ImageEditor({
             <div className="flex gap-1">
               <button
                 onClick={() => updateOverlay(selectedOverlay.id, { fontWeight: selectedOverlay.fontWeight === "bold" ? "normal" : "bold" })}
-                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.fontWeight === "bold" ? "bg-brand-600/20 text-brand-300" : "text-gray-500 hover:text-white"}`}
+                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.fontWeight === "bold" ? "bg-brand-600/20 text-brand-300" : "text-muted-foreground hover:text-white"}`}
               >
                 <Bold className="w-3 h-3" />
               </button>
               <button
                 onClick={() => updateOverlay(selectedOverlay.id, { textAlign: "left" })}
-                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.textAlign === "left" ? "bg-brand-600/20 text-brand-300" : "text-gray-500 hover:text-white"}`}
+                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.textAlign === "left" ? "bg-brand-600/20 text-brand-300" : "text-muted-foreground hover:text-white"}`}
               >
                 <AlignLeft className="w-3 h-3" />
               </button>
               <button
                 onClick={() => updateOverlay(selectedOverlay.id, { textAlign: "center" })}
-                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.textAlign === "center" ? "bg-brand-600/20 text-brand-300" : "text-gray-500 hover:text-white"}`}
+                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.textAlign === "center" ? "bg-brand-600/20 text-brand-300" : "text-muted-foreground hover:text-white"}`}
               >
                 <AlignCenter className="w-3 h-3" />
               </button>
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-gray-500 w-12">Opacitate</label>
+              <label className="text-[10px] text-muted-foreground w-12">Opacitate</label>
               <input
                 type="range"
                 min={0}
@@ -360,9 +360,9 @@ export default function ImageEditor({
 
       {overlays.length === 0 && (
         <div className="text-center py-6">
-          <ImageIcon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-          <p className="text-xs text-gray-500">Click &quot;Adaugă Text&quot; pentru a suprapune text pe imagine</p>
-          <p className="text-[10px] text-gray-600">Click pe canvas pentru a poziționa textul</p>
+          <ImageIcon className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">Click &quot;Adaugă Text&quot; pentru a suprapune text pe imagine</p>
+          <p className="text-[10px] text-muted-foreground">Click pe canvas pentru a poziționa textul</p>
         </div>
       )}
     </div>

@@ -96,7 +96,7 @@ export default function AnalyzePage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Algorithm Scorer</h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Verifică scorul algoritmic înainte de publicare
           </p>
         </div>
@@ -105,16 +105,16 @@ export default function AnalyzePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input */}
         <div className="space-y-4">
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+          <div className="rounded-xl bg-card border border-border p-4">
             <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium text-gray-300">
+              <label className="text-sm font-medium text-foreground/80">
                 Conținut de analizat
               </label>
               <div className="relative">
                 <select
                   value={platform}
                   onChange={(e) => setPlatform(e.target.value)}
-                  className="appearance-none bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 pr-8 text-xs text-white focus:outline-none focus:ring-2 focus:ring-orange-500/40"
+                  className="appearance-none bg-muted border border-border rounded-lg px-3 py-1.5 pr-8 text-xs text-white focus:outline-none focus:ring-2 focus:ring-orange-500/40"
                 >
                   {platforms.map((p) => (
                     <option key={p.id} value={p.id} className="bg-gray-900">
@@ -122,7 +122,7 @@ export default function AnalyzePage() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
               </div>
             </div>
             <textarea
@@ -130,7 +130,7 @@ export default function AnalyzePage() {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Lipește sau scrie postarea pe care vrei să o analizezi..."
               rows={10}
-              className="w-full bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none"
+              className="w-full bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none resize-none"
             />
           </div>
 
@@ -160,10 +160,10 @@ export default function AnalyzePage() {
         {/* Results */}
         <div>
           {!result ? (
-            <div className="h-full flex items-center justify-center rounded-xl bg-white/[0.01] border border-dashed border-white/[0.06] p-8 text-center">
+            <div className="h-full flex items-center justify-center rounded-xl bg-card/50 border border-dashed border-border p-8 text-center">
               <div>
-                <BarChart3 className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-                <p className="text-sm text-gray-500">
+                <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
                   Scrie conținut și apasă &quot;Analizează&quot; pentru a vedea scorul
                   algoritmic pe 9 metrici.
                 </p>
@@ -172,7 +172,7 @@ export default function AnalyzePage() {
           ) : (
             <div className="space-y-4">
               {/* Overall score */}
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6 text-center">
+              <div className="rounded-xl bg-card border border-border p-6 text-center">
                 <div
                   className={`inline-flex w-20 h-20 rounded-2xl bg-gradient-to-br ${gradeColors[result.grade] || gradeColors.C} items-center justify-center mb-3`}
                 >
@@ -185,7 +185,7 @@ export default function AnalyzePage() {
                     </div>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   Scor general:{" "}
                   <span className="text-white font-medium">
                     {result.overallScore}/100
@@ -214,14 +214,14 @@ export default function AnalyzePage() {
 
               {/* Summary */}
               {result.summary && (
-                <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                  <p className="text-sm text-gray-300">{result.summary}</p>
+                <div className="rounded-xl bg-card border border-border p-4">
+                  <p className="text-sm text-foreground/80">{result.summary}</p>
                 </div>
               )}
 
               {/* Metrics */}
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-4">
+              <div className="rounded-xl bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground/80 mb-4">
                   Metrici detaliate
                 </h3>
                 <div className="space-y-3">
@@ -236,7 +236,7 @@ export default function AnalyzePage() {
                           ) : (
                             <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                           )}
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-muted-foreground">
                             {metric.name}
                           </span>
                         </div>
@@ -244,7 +244,7 @@ export default function AnalyzePage() {
                           {metric.score}
                         </span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-input overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-700 ${
                             metric.status === "good"
@@ -257,7 +257,7 @@ export default function AnalyzePage() {
                         />
                       </div>
                       {metric.explanation && (
-                        <p className="text-[11px] text-gray-500 mt-1">{metric.explanation}</p>
+                        <p className="text-[11px] text-muted-foreground mt-1">{metric.explanation}</p>
                       )}
                     </div>
                   ))}
@@ -265,8 +265,8 @@ export default function AnalyzePage() {
               </div>
 
               {/* Improvements */}
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+              <div className="rounded-xl bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground/80 mb-3 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-brand-400" />
                   Sugestii de îmbunătățire
                 </h3>
@@ -274,7 +274,7 @@ export default function AnalyzePage() {
                   {result.improvements.map((imp, i) => (
                     <div
                       key={i}
-                      className="flex items-start gap-2 text-sm text-gray-400"
+                      className="flex items-start gap-2 text-sm text-muted-foreground"
                     >
                       <ArrowRight className="w-3.5 h-3.5 mt-0.5 text-brand-400 flex-shrink-0" />
                       <span>{imp}</span>

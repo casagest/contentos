@@ -53,7 +53,7 @@ const RANGES = [
 const platformColors: Record<string, { bg: string; text: string; fill: string }> = {
   facebook: { bg: "bg-blue-500/10", text: "text-blue-400", fill: "#3b82f6" },
   instagram: { bg: "bg-pink-500/10", text: "text-pink-400", fill: "#ec4899" },
-  tiktok: { bg: "bg-gray-500/10", text: "text-gray-300", fill: "#9ca3af" },
+  tiktok: { bg: "bg-gray-500/10", text: "text-foreground/80", fill: "#9ca3af" },
   youtube: { bg: "bg-red-500/10", text: "text-red-400", fill: "#ef4444" },
 };
 
@@ -72,12 +72,12 @@ function formatDate(dateStr: string): string {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg bg-[#1a1a2e] border border-white/[0.1] px-3 py-2 text-xs shadow-xl">
-      <p className="text-gray-400 mb-1">{label}</p>
+    <div className="rounded-lg bg-[#1a1a2e] border border-border px-3 py-2 text-xs shadow-xl">
+      <p className="text-muted-foreground mb-1">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-          <span className="text-gray-300">{p.name}:</span>
+          <span className="text-foreground/80">{p.name}:</span>
           <span className="text-white font-medium">{formatNum(p.value)}</span>
         </div>
       ))}
@@ -88,14 +88,14 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ---------- KPI Card ----------
 function KpiCard({ icon: Icon, label, value, color }: { icon: typeof TrendingUp; label: string; value: string; color: string }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
+    <div className="rounded-xl bg-muted border border-border p-4">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
           <Icon className="w-4 h-4" style={{ color }} />
         </div>
       </div>
       <div className="text-2xl font-bold text-white">{value}</div>
-      <div className="text-xs text-gray-500 mt-1">{label}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
@@ -135,8 +135,8 @@ export default function AnalyticsPage() {
   if (!data) {
     return (
       <div className="text-center py-20">
-        <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-        <p className="text-gray-400">Nu am putut incarca datele de analytics.</p>
+        <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground">Nu am putut incarca datele de analytics.</p>
       </div>
     );
   }
@@ -153,12 +153,12 @@ export default function AnalyticsPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Analytics</h1>
-            <p className="text-gray-400 text-sm">Performanta reala a continutului tau</p>
+            <p className="text-muted-foreground text-sm">Performanta reala a continutului tau</p>
           </div>
         </div>
 
         {/* Range selector */}
-        <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-muted border border-border rounded-lg p-1">
           {RANGES.map((r) => (
             <button
               key={r.value}
@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
                 range === r.value
                   ? "bg-brand-600/20 text-brand-300 border border-brand-500/40"
-                  : "text-gray-400 hover:text-white hover:bg-white/[0.04]"
+                  : "text-muted-foreground hover:text-white hover:bg-muted"
               }`}
             >
               {r.label}
@@ -185,7 +185,7 @@ export default function AnalyticsPage() {
 
       {/* Engagement Trend Chart */}
       {data.dailyEngagement.length > 0 && (
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+        <div className="rounded-xl bg-card border border-border p-5">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-brand-400" />
             Trend Engagement
@@ -227,7 +227,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Platform Comparison */}
         {data.platformComparison.length > 0 && (
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
               <Share2 className="w-4 h-4 text-blue-400" />
               Comparatie platforme
@@ -250,7 +250,7 @@ export default function AnalyticsPage() {
                     <span className={`px-1.5 py-0.5 rounded font-bold uppercase ${colors.bg} ${colors.text}`}>
                       {p.platform}
                     </span>
-                    <span className="text-gray-400">{p.posts} postari</span>
+                    <span className="text-muted-foreground">{p.posts} postari</span>
                   </div>
                 );
               })}
@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
         )}
 
         {/* Best Posting Hours */}
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+        <div className="rounded-xl bg-card border border-border p-5">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-400" />
             Cele mai bune ore de postare
@@ -278,20 +278,20 @@ export default function AnalyticsPage() {
                       minHeight: "4px",
                     }}
                   />
-                  <span className="text-[9px] text-gray-600">{h.hour}</span>
+                  <span className="text-[9px] text-muted-foreground">{h.hour}</span>
                   {/* Tooltip on hover */}
-                  <div className="absolute bottom-full mb-1 hidden group-hover:block z-10 bg-[#1a1a2e] border border-white/[0.1] rounded px-2 py-1 text-[10px] whitespace-nowrap">
+                  <div className="absolute bottom-full mb-1 hidden group-hover:block z-10 bg-[#1a1a2e] border border-border rounded px-2 py-1 text-[10px] whitespace-nowrap">
                     <span className="text-white font-medium">{h.hour}:00</span>
                     <br />
-                    <span className="text-gray-400">Avg: {formatNum(h.avgEngagement)}</span>
+                    <span className="text-muted-foreground">Avg: {formatNum(h.avgEngagement)}</span>
                     <br />
-                    <span className="text-gray-400">{h.postCount} postari</span>
+                    <span className="text-muted-foreground">{h.postCount} postari</span>
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="flex items-center justify-between mt-2 text-[10px] text-gray-600">
+          <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
             <span>6:00</span>
             <span>23:00</span>
           </div>
@@ -300,7 +300,7 @@ export default function AnalyticsPage() {
 
       {/* Content Type Performance */}
       {data.contentTypePerformance.length > 0 && (
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+        <div className="rounded-xl bg-card border border-border p-5">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-cyan-400" />
             Performanta per tip de continut
@@ -313,14 +313,14 @@ export default function AnalyticsPage() {
                 const pct = (ct.avgEngagement / maxCtEng) * 100;
                 return (
                   <div key={ct.type} className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400 w-20 capitalize flex-shrink-0">{ct.type}</span>
-                    <div className="flex-1 h-6 bg-white/[0.03] rounded overflow-hidden">
+                    <span className="text-xs text-muted-foreground w-20 capitalize flex-shrink-0">{ct.type}</span>
+                    <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
                       <div
                         className="h-full rounded bg-gradient-to-r from-brand-500/40 to-brand-500/70 transition-all duration-700"
                         style={{ width: `${Math.max(pct, 2)}%` }}
                       />
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-shrink-0">
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-shrink-0">
                       <span>{ct.count} postari</span>
                       <span className="text-white font-medium">{formatNum(ct.avgEngagement)} avg</span>
                     </div>
@@ -333,7 +333,7 @@ export default function AnalyticsPage() {
 
       {/* Hook Type Performance */}
       {data.hookPerformance.length > 0 && (
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+        <div className="rounded-xl bg-card border border-border p-5">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <Zap className="w-4 h-4 text-yellow-400" />
             Performanta Hook-uri (Creative Memory)
@@ -342,7 +342,7 @@ export default function AnalyticsPage() {
             {data.hookPerformance.slice(0, 9).map((hook) => (
               <div
                 key={hook.hookType}
-                className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 hover:border-brand-500/20 transition"
+                className="rounded-lg bg-muted border border-border p-3 hover:border-brand-500/20 transition"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-white capitalize">
@@ -353,12 +353,12 @@ export default function AnalyticsPage() {
                       ? "bg-green-500/10 text-green-400"
                       : hook.successRate >= 40
                         ? "bg-blue-500/10 text-blue-400"
-                        : "bg-gray-500/10 text-gray-400"
+                        : "bg-gray-500/10 text-muted-foreground"
                   }`}>
                     {hook.successRate}%
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-[10px] text-gray-500">
+                <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
                   <span>Avg: <span className="text-white font-medium">{formatNum(hook.avgEngagement)}</span></span>
                   <span>{hook.sampleSize} samples</span>
                 </div>
@@ -370,7 +370,7 @@ export default function AnalyticsPage() {
 
       {/* Followers Trend */}
       {data.followersTrend.length > 0 && (
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+        <div className="rounded-xl bg-card border border-border p-5">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
             Trend Urmaritori
@@ -395,7 +395,7 @@ export default function AnalyticsPage() {
 
       {/* Top Posts */}
       {data.topPosts.length > 0 && (
-        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
+        <div className="rounded-xl bg-card border border-border p-5">
           <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <ThumbsUp className="w-4 h-4 text-brand-400" />
             Top Postari ({data.range} zile)
@@ -406,17 +406,17 @@ export default function AnalyticsPage() {
               return (
                 <div
                   key={post.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-border transition"
                 >
-                  <span className="text-xs text-gray-600 w-5 text-right flex-shrink-0 font-mono">
+                  <span className="text-xs text-muted-foreground w-5 text-right flex-shrink-0 font-mono">
                     #{i + 1}
                   </span>
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${colors.bg} ${colors.text} flex-shrink-0`}>
                     {post.platform}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-300 truncate">{post.text || "[fara text]"}</p>
-                    <p className="text-[10px] text-gray-600 mt-0.5">
+                    <p className="text-xs text-foreground/80 truncate">{post.text || "[fara text]"}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {new Date(post.published_at).toLocaleDateString("ro-RO")}
                     </p>
                   </div>
@@ -428,7 +428,7 @@ export default function AnalyticsPage() {
                       href={post.platform_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-white transition flex-shrink-0"
+                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-white transition flex-shrink-0"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -442,10 +442,10 @@ export default function AnalyticsPage() {
 
       {/* Empty state */}
       {data.totalPosts === 0 && (
-        <div className="rounded-xl bg-white/[0.02] border border-dashed border-white/[0.06] p-12 text-center">
-          <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 mb-1">Nicio postare in ultimele {data.range} zile</p>
-          <p className="text-xs text-gray-600">
+        <div className="rounded-xl bg-card border border-dashed border-border p-12 text-center">
+          <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground mb-1">Nicio postare in ultimele {data.range} zile</p>
+          <p className="text-xs text-muted-foreground">
             Conecteaza conturile sociale si publica continut pentru a vedea analytics.
           </p>
         </div>

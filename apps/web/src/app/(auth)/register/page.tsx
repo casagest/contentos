@@ -16,14 +16,14 @@ export default async function RegisterPage({
 
   if (success) {
     return (
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-sm text-center">
+      <div className="rounded-2xl border border-border bg-card p-8 backdrop-blur-sm text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 border border-green-500/20">
           <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-white">Verifică-ți emailul</h1>
-        <p className="mt-2 text-sm text-gray-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           Am trimis un link de confirmare la adresa ta de email.
           Verifică inbox-ul și folder-ul de spam.
         </p>
@@ -38,10 +38,10 @@ export default async function RegisterPage({
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-sm">
+    <div className="rounded-2xl border border-border bg-card p-8 backdrop-blur-sm">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-white">Creează cont</h1>
-        <p className="mt-2 text-sm text-gray-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           Începe gratuit cu ContentOS
         </p>
       </div>
@@ -64,7 +64,7 @@ export default async function RegisterPage({
             required
             autoComplete="name"
             placeholder="Numele tău"
-            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -79,7 +79,7 @@ export default async function RegisterPage({
             required
             autoComplete="email"
             placeholder="tu@exemplu.ro"
-            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -95,7 +95,7 @@ export default async function RegisterPage({
             autoComplete="new-password"
             minLength={6}
             placeholder="Minimum 6 caractere"
-            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
+            className="w-full rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition"
           />
         </div>
 
@@ -107,7 +107,7 @@ export default async function RegisterPage({
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-400">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Ai deja cont?{" "}
         <Link href="/login" className="text-brand-400 hover:text-brand-300 font-medium transition">
           Conectare
