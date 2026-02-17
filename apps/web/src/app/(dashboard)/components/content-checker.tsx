@@ -226,6 +226,65 @@ interface FitResult {
   checks: { label: string; status: "ok" | "warn" | "error"; detail: string }[];
 }
 
+// ═══════════════════════════════════════════════════════════════
+// READABILITY SCORE (adapted for Romanian social media)
+// ═══════════════════════════════════════════════════════════════
+
+export interface ReadabilityResult {
+  score: number; // 0-100 (higher = easier to read)
+  grade: string; // "Foarte ușor" / "Ușor" / "Mediu" / "Greu" / "Foarte greu"
+  avgWordsPerSentence: number;
+  avgSyllablesPerWord: number;
+  sentenceCount: number;
+  wordCount: number;
+}
+
+function countSyllablesRO(word: string): number {
+  // Romanian syllable counting: count vowel groups
+  const vowels = /[aăâeêiîoôuüAĂÂEÊIÎOÔUÜ]/g;
+  const matches = word.match(vowels);
+  return matches ? Math.max(1, matches.length) : 1;
+}
+
+export function checkReadability(text: string): ReadabilityResult {
+  if (!text.trim()) return { score: 0, grade: "—", avgWordsPerSentence: 0, avgSyllablesPerWord: 0, sentenceCount: 0, wordCount: 0 };
+
+  // Clean text: remove URLs, hashtags, emojis
+  const cleaned = text
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/#\w+/g, "")
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
+    .trim();
+
+  const sentences = cleaned.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+  const words = cleaned.split(/\s+/).filter((w) => w.length > 0);
+
+  if (words.length === 0) return { score: 100, grade: "Foarte ușor", avgWordsPerSentence: 0, avgSyllablesPerWord: 0, sentenceCount: 0, wordCount: 0 };
+
+  const sentenceCount = Math.max(1, sentences.length);
+  const wordCount = words.length;
+  const totalSyllables = words.reduce((sum, w) => sum + countSyllablesRO(w), 0);
+
+  const avgWordsPerSentence = wordCount / sentenceCount;
+  const avgSyllablesPerWord = totalSyllables / wordCount;
+
+  // Flesch-Kincaid adapted for Romanian (similar formula, adjusted coefficients)
+  const score = Math.round(
+    Math.max(0, Math.min(100,
+      206.835 - 1.015 * avgWordsPerSentence - 84.6 * avgSyllablesPerWord
+    ))
+  );
+
+  let grade: string;
+  if (score >= 80) grade = "Foarte ușor";
+  else if (score >= 60) grade = "Ușor";
+  else if (score >= 40) grade = "Mediu";
+  else if (score >= 20) grade = "Greu";
+  else grade = "Foarte greu";
+
+  return { score, grade, avgWordsPerSentence: Math.round(avgWordsPerSentence * 10) / 10, avgSyllablesPerWord: Math.round(avgSyllablesPerWord * 10) / 10, sentenceCount, wordCount };
+}
+
 export function checkPlatformFit(text: string, hashtags: string[], platform: string): FitResult {
   const spec = PLATFORM_SPECS[platform];
   if (!spec) return { platform, score: 50, checks: [] };
@@ -371,6 +430,25 @@ export default function ContentChecker({ text, hashtags = [], platforms, isDenta
               <span className="text-xs text-emerald-300">Conformitate CMSR OK ✓</span>
             </div>
           )}
+
+          {/* Readability */}
+          {text.length > 20 && (() => {
+            const readability = checkReadability(text);
+            return (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                <span className="text-[10px] text-gray-500 uppercase tracking-wider">Lizibilitate</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold ${
+                    readability.score >= 60 ? "text-emerald-400" : readability.score >= 40 ? "text-yellow-400" : "text-red-400"
+                  }`}>
+                    {readability.score}/100
+                  </span>
+                  <span className="text-[10px] text-gray-400">{readability.grade}</span>
+                  <span className="text-[10px] text-gray-600">({readability.wordCount} cuvinte, {readability.sentenceCount} propoziții)</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Platform Fit */}
           {fits.map((fit) => (
