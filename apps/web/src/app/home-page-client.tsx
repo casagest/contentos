@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   BarChart3,
   Target,
@@ -291,34 +292,48 @@ export default function HomePageClient() {
         </div>
       </nav>
 
-      {/* ── Hero (dark section) ── */}
+      {/* ── Hero (dark section) — Stripe/Linear/Vercel level ── */}
       <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-28 px-6 overflow-hidden">
-        {/* Gradient mesh background */}
+        {/* 3 orbe animate + grid overlay */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.08)_0%,transparent_70%)] top-[-10%] left-[10%] blur-[80px] animate-[pulse_8s_ease-in-out_infinite]" />
-          <div className="absolute w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.05)_0%,transparent_70%)] bottom-[-10%] right-[5%] blur-[80px] animate-[pulse_12s_ease-in-out_infinite_3s]" />
-          <div className="absolute w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.04)_0%,transparent_70%)] top-[40%] left-[60%] blur-[60px] animate-[pulse_10s_ease-in-out_infinite_6s]" />
+          <div className="absolute w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.12)_0%,transparent_70%)] top-[-15%] left-[5%] blur-[120px] animate-[pulse_8s_ease-in-out_infinite]" />
+          <div className="absolute w-[350px] h-[350px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.08)_0%,transparent_70%)] bottom-[-15%] right-[10%] blur-[120px] animate-[pulse_10s_ease-in-out_infinite_2s]" />
+          <div className="absolute w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(34,197,94,0.06)_0%,transparent_70%)] top-[50%] left-[55%] blur-[120px] animate-[pulse_12s_ease-in-out_infinite_4s]" />
           <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
         </div>
 
         <div className="relative max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           {/* Left — Text */}
           <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] tracking-tight mb-6">
-              Creează Conținut{" "}
-              <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">Care Convertește</span>
-            </h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-6 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent"
+            >
+              Creează Conținut Care Convertește
+            </motion.h1>
 
-            <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed"
+            >
               Platforma AI care transformă orice idee în conținut optimizat per platformă. Brain dump → postări virale în 2 minute.
-            </p>
+            </motion.p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3"
+            >
               <Link
                 href="/register"
-                className="group relative w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold text-base transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
+                className="group relative w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold text-base transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-[1px] active:translate-y-0 overflow-hidden"
               >
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 <span className="relative flex items-center gap-2 justify-center">
                   Începe Gratuit
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
@@ -326,14 +341,19 @@ export default function HomePageClient() {
               </Link>
               <Link
                 href="#cum-functioneaza"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/20 text-gray-400 hover:text-white font-semibold text-base transition-all hover:-translate-y-0.5"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/25 text-gray-400 hover:text-white font-semibold text-base transition-all hover:-translate-y-[1px]"
               >
-                Vezi cum funcționează
+                Vezi demo
               </Link>
-            </div>
+            </motion.div>
 
             {/* Social proof */}
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5 sm:gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5 sm:gap-8"
+            >
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
                   {["bg-orange-400", "bg-blue-400", "bg-emerald-400", "bg-pink-400", "bg-purple-400"].map((color, i) => (
@@ -355,95 +375,148 @@ export default function HomePageClient() {
                 <span className="text-sm text-gray-500"><span className="text-white font-semibold">4.9</span>/5</span>
               </div>
               <span className="text-sm text-gray-500"><span className="text-white font-semibold">1M+</span> postări</span>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right — Floating UI Mockup */}
-          <div className="relative w-full max-w-md lg:max-w-lg shrink-0 animate-[pulse_6s_ease-in-out_infinite]" style={{ animationName: "none" }}>
-            {/* Main card */}
+          {/* Right — Brain Dump mockup card + floating badges */}
+          <motion.div
+            initial={{ opacity: 0, x: 48 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full max-w-md lg:max-w-lg shrink-0"
+          >
+            {/* Main glass card */}
             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-5 shadow-2xl shadow-black/30">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold">B</div>
-                  <div>
-                    <div className="text-sm font-semibold text-white">Brain Dump</div>
-                    <div className="text-[10px] text-white/40">3 platforme selectate</div>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  {[{ c: "bg-blue-500", l: "Fb" }, { c: "bg-pink-500", l: "Ig" }, { c: "bg-gray-600", l: "Tk" }].map((p) => (
-                    <span key={p.l} className={`${p.c} px-1.5 py-0.5 rounded text-[9px] font-bold text-white`}>{p.l}</span>
-                  ))}
-                </div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">B</div>
+                <span className="text-sm font-semibold text-white">Brain Dump</span>
               </div>
-              {/* Fake content lines */}
+              {/* 3 blur lines */}
               <div className="space-y-2 mb-4">
                 <div className="h-2.5 bg-white/[0.06] rounded-full w-full" />
                 <div className="h-2.5 bg-white/[0.06] rounded-full w-4/5" />
                 <div className="h-2.5 bg-white/[0.06] rounded-full w-3/5" />
               </div>
-              {/* Score row */}
-              <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                    <span className="text-green-400 font-extrabold text-sm">92</span>
-                  </div>
-                  <span className="text-[10px] text-white/40">Scor</span>
+              {/* Score + hashtags */}
+              <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                <div className="w-9 h-9 rounded-lg bg-green-500/15 border border-green-500/30 flex items-center justify-center">
+                  <span className="text-green-400 font-extrabold text-sm">92</span>
                 </div>
-                <div className="flex-1" />
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   {["#viral", "#trending", "#ContentOS"].map((tag) => (
-                    <span key={tag} className="px-1.5 py-0.5 rounded text-[8px] bg-orange-500/10 text-orange-400/80 border border-orange-500/20">{tag}</span>
+                    <span key={tag} className="px-2 py-0.5 rounded-md text-[9px] bg-white/[0.06] text-white/70 border border-white/[0.06]">{tag}</span>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Floating mini-cards */}
-            <div className="absolute -top-4 -right-4 rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-lg px-3 py-2 shadow-lg animate-[pulse_4s_ease-in-out_infinite]">
+            {/* Floating mini-cards animate */}
+            <div className="absolute -top-3 -right-2 rounded-xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl px-3 py-2 shadow-lg animate-[pulse_4s_ease-in-out_infinite]">
               <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                <div className="w-4 h-4 rounded-full bg-green-500/25 flex items-center justify-center shrink-0">
+                  <svg className="w-2.5 h-2.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 </div>
                 <span className="text-[10px] text-green-400 font-semibold">Optimizat AI</span>
               </div>
             </div>
-            <div className="absolute -bottom-3 -left-3 rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-lg px-3 py-2 shadow-lg animate-[pulse_5s_ease-in-out_infinite_2s]">
+            <div className="absolute -bottom-2 -left-2 rounded-xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl px-3 py-2 shadow-lg animate-[pulse_5s_ease-in-out_infinite_2s]">
               <div className="flex items-center gap-1.5">
-                <span className="text-orange-400 text-sm">⚡</span>
-                <span className="text-[10px] text-white/60 font-medium">2 min / postare</span>
+                <span className="text-orange-400 text-xs">⚡</span>
+                <span className="text-[10px] text-white/70 font-medium">2 min/postare</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ── Features Grid (warm section) ── */}
+      {/* ── Features Bento Grid (warm section) ── */}
       <section id="features" className="bg-landing-warm py-20 sm:py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
-              8 Tool-uri AI Puternice
+              Tot Ce Ai Nevoie Pentru Conținut de Impact
             </h2>
             <p className="text-base sm:text-lg text-gray-700 text-center mb-14 sm:mb-20 max-w-2xl mx-auto">
-              Tot ce ai nevoie pentru a crea conținut care crește engagement-ul și audiența.
+              8 instrumente AI într-o singură platformă.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {features.map((feature) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5">
+            {/* Primele 2 — carduri mari cu mini-mockup */}
+            {features.slice(0, 2).map((feature) => {
               const Icon = feature.icon;
               return (
-                <div key={feature.title}>
-                  <div className="bg-landing-warm-card rounded-2xl p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col items-center">
-                    <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-4" aria-hidden="true">
-                      <Icon className="w-7 h-7 text-orange-600" />
+                <div key={feature.title} className="md:col-span-2 lg:col-span-3">
+                  <div className="bg-landing-warm-card rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col md:flex-row items-start gap-4">
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/80 flex items-center justify-center shrink-0 mb-3" aria-hidden="true">
+                        <Icon className="w-6 h-6 text-orange-600" />
+                      </div>
+                      <h3 className="text-heading-3 text-black mb-2 tracking-tight">
+                        {feature.title}
+                      </h3>
+                      <p className="text-body text-gray-700 leading-relaxed">
+                        {feature.desc}
+                      </p>
+                    </div>
+                    <div className=" shrink-0 w-full md:w-36 lg:w-40">
+                      {feature.title === "AI Content Coach" ? (
+                        <div className="space-y-2 ml-auto">
+                          <div className="rounded-xl rounded-br-md bg-black/8 px-3 py-2 text-xs text-gray-800 w-[85%] ml-auto">
+                            Postează marți, 14:00 — Instagram
+                          </div>
+                          <div className="rounded-xl rounded-bl-md bg-orange-500/15 px-3 py-2 text-xs text-gray-800 w-[75%]">
+                            ✓ Analizat. Recomandare salvată.
+                          </div>
+                          <div className="rounded-xl rounded-br-md bg-black/8 px-3 py-2 text-xs text-gray-800 w-[90%] ml-auto">
+                            Ce topic preferi săptămâna asta?
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 bg-black/5 rounded-xl p-3">
+                          <div className="flex justify-between text-[10px] text-gray-600 font-medium">
+                            <span>Hook</span>
+                            <span>92</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-black/10 overflow-hidden">
+                            <div className="h-full w-[92%] rounded-full bg-emerald-500" />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-gray-600 font-medium">
+                            <span>CTA</span>
+                            <span>87</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-black/10 overflow-hidden">
+                            <div className="h-full w-[87%] rounded-full bg-emerald-400" />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-gray-600 font-medium">
+                            <span>Engagement</span>
+                            <span>94</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-black/10 overflow-hidden">
+                            <div className="h-full w-[94%] rounded-full bg-emerald-500" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Următoarele 6 — grid 3 coloane */}
+            {features.slice(2).map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div key={feature.title} className="lg:col-span-2">
+                  <div className="bg-landing-warm-card rounded-2xl p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/80 flex items-center justify-center shrink-0 mb-3" aria-hidden="true">
+                      <Icon className="w-6 h-6 text-orange-600" />
                     </div>
                     <h3 className="text-heading-3 text-black mb-2 tracking-tight">
                       {feature.title}
                     </h3>
-                    <p className="text-body text-gray-700 leading-relaxed">
+                    <p className="text-body text-gray-700 leading-relaxed flex-1">
                       {feature.desc}
                     </p>
                   </div>

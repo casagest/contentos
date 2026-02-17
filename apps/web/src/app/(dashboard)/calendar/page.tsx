@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarCheck,
   ChevronLeft,
@@ -112,6 +113,27 @@ function getWeekDays(weekStart: Date): DayData[] {
   return days;
 }
 
+function getMonthDays(monthStart: Date): DayData[] {
+  const today = toDateStr(new Date());
+  const days: DayData[] = [];
+  const monday = getMonday(monthStart);
+  const daysToShow = 42; // 6 weeks
+  for (let i = 0; i < daysToShow; i++) {
+    const date = new Date(monday);
+    date.setDate(date.getDate() + i);
+    const dateStr = toDateStr(date);
+    days.push({
+      date,
+      dateStr,
+      label: DAY_NAMES[date.getDay()],
+      isToday: dateStr === today,
+      drafts: [],
+      posts: [],
+    });
+  }
+  return days;
+}
+
 function getMonday(d: Date): Date {
   const date = new Date(d);
   const day = date.getDay();
@@ -130,6 +152,23 @@ function formatDateRange(start: Date): string {
   return `${startStr} — ${endStr}`;
 }
 
+function formatMonthYear(d: Date): string {
+  return d.toLocaleDateString("ro-RO", { month: "long", year: "numeric" });
+}
+
+function getMonthStart(d: Date): Date {
+  const date = new Date(d.getFullYear(), d.getMonth(), 1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+const PLATFORM_DOT: Record<string, string> = {
+  facebook: "bg-blue-500",
+  instagram: "bg-pink-500",
+  tiktok: "bg-gray-500",
+  youtube: "bg-red-500",
+};
+
 // ─── Draft Card ─────────────────────────────────────────────────────────────
 
 function DraftCard({
@@ -146,17 +185,17 @@ function DraftCard({
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-2 rounded-lg bg-brand-500/10 border border-brand-500/20 hover:border-brand-500/40 transition group"
+      className="w-full text-left p-2 rounded-lg bg-orange-500/5 border border-orange-500/20 hover:border-orange-500/40 transition group"
     >
       <div className="flex items-center gap-1 mb-1">
-        {draft.target_platforms.map((p) => (
-          <span
-            key={p}
-            className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase ${platformBadge[p] || "bg-gray-500/10 text-muted-foreground"}`}
-          >
-            {p.slice(0, 2)}
-          </span>
-        ))}
+        <div className="flex gap-0.5">
+          {draft.target_platforms.map((p) => (
+            <span
+              key={p}
+              className={`w-1.5 h-1.5 rounded-full ${PLATFORM_DOT[p] || "bg-gray-500"}`}
+            />
+          ))}
+        </div>
         {time && (
           <span className="text-[9px] text-muted-foreground ml-auto flex items-center gap-0.5">
             <Clock className="w-2.5 h-2.5" /> {time}
@@ -176,11 +215,9 @@ function PostCard({ post }: { post: CalendarPost }) {
   const engagement = post.likes_count + post.comments_count + post.shares_count;
 
   return (
-    <div className="w-full p-2 rounded-lg bg-card border border-border">
+    <div className="w-full p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
       <div className="flex items-center gap-1 mb-1">
-        <span className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase ${platformBadge[post.platform] || "bg-gray-500/10 text-muted-foreground"}`}>
-          {post.platform.slice(0, 2)}
-        </span>
+        <span className={`w-1.5 h-1.5 rounded-full ${PLATFORM_DOT[post.platform] || "bg-gray-500"}`} />
         <span className="text-[9px] text-muted-foreground ml-auto">
           {engagement > 0 ? `${engagement} eng.` : ""}
         </span>
@@ -277,8 +314,22 @@ function DraftModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="draft-modal-title">
-      <div className="w-full max-w-lg rounded-2xl bg-surface-ground border border-border p-6 shadow-2xl">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="draft-modal-title"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="w-full max-w-lg rounded-2xl bg-surface-overlay/95 backdrop-blur-xl border border-white/[0.08] p-6 shadow-2xl"
+      >
         <div className="flex items-center justify-between mb-5">
           <h3 id="draft-modal-title" className="text-lg font-semibold text-white">
             {isEditing ? "Editează Draft" : "Creează Draft"}
@@ -389,8 +440,8 @@ function DraftModal({
             </button>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -398,25 +449,27 @@ function DraftModal({
 
 export default function CalendarPage() {
   const router = useRouter();
-  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [viewMode, setViewMode] = useState<"month" | "week">("week");
+  const [periodStart, setPeriodStart] = useState(() => getMonday(new Date()));
   const [days, setDays] = useState<DayData[]>(() => getWeekDays(getMonday(new Date())));
   const [loading, setLoading] = useState(true);
   const [modalDraft, setModalDraft] = useState<CalendarDraft | null>(null);
   const [modalDate, setModalDate] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const loadWeek = useCallback(async (start: Date) => {
+  const loadPeriod = useCallback(async (start: Date, dayCount: number) => {
     setLoading(true);
-    const weekDays = getWeekDays(start);
-    const startStr = toDateStr(start);
-    const endDate = new Date(start);
-    endDate.setDate(endDate.getDate() + 7);
+    const isMonth = dayCount > 7;
+    const periodDays = isMonth ? getMonthDays(getMonthStart(start)) : getWeekDays(start);
+    const startStr = toDateStr(periodDays[0].date);
+    const endDate = new Date(periodDays[periodDays.length - 1].date);
+    endDate.setDate(endDate.getDate() + 1);
     const endStr = toDateStr(endDate);
 
     try {
       const [draftsRes, postsRes] = await Promise.all([
         fetch(`/api/drafts?status=all&start=${startStr}&end=${endStr}`),
-        fetch(`/api/posts?start=${startStr}&end=${endStr}&limit=100`),
+        fetch(`/api/posts?start=${startStr}&end=${endStr}&limit=200`),
       ]);
 
       if (draftsRes.ok) {
@@ -425,7 +478,7 @@ export default function CalendarPage() {
           const draftDate = draft.scheduled_at
             ? toDateStr(new Date(draft.scheduled_at))
             : toDateStr(new Date(draft.created_at));
-          const day = weekDays.find((d) => d.dateStr === draftDate);
+          const day = periodDays.find((d) => d.dateStr === draftDate);
           if (day) day.drafts.push(draft);
         }
       }
@@ -435,7 +488,7 @@ export default function CalendarPage() {
         for (const post of posts as CalendarPost[]) {
           if (!post.published_at) continue;
           const postDate = toDateStr(new Date(post.published_at));
-          const day = weekDays.find((d) => d.dateStr === postDate);
+          const day = periodDays.find((d) => d.dateStr === postDate);
           if (day) day.posts.push(post);
         }
       }
@@ -443,23 +496,32 @@ export default function CalendarPage() {
       // Calendar load error — silent in production
     }
 
-    setDays(weekDays);
+    setDays(periodDays);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadWeek fetches async data then sets state; this is the intended pattern
-    void loadWeek(weekStart);
-  }, [weekStart, loadWeek]);
+    const start = viewMode === "month" ? getMonthStart(periodStart) : periodStart;
+    const dayCount = viewMode === "month" ? 42 : 7;
+    const id = setTimeout(() => {
+      void loadPeriod(start, dayCount);
+    }, 0);
+    return () => clearTimeout(id);
+  }, [periodStart, viewMode, loadPeriod]);
 
-  function navigateWeek(direction: -1 | 1) {
-    const next = new Date(weekStart);
-    next.setDate(next.getDate() + direction * 7);
-    setWeekStart(next);
+  function navigatePeriod(direction: -1 | 1) {
+    if (viewMode === "month") {
+      const next = new Date(periodStart.getFullYear(), periodStart.getMonth() + direction, 1);
+      setPeriodStart(getMonday(next));
+    } else {
+      const next = new Date(periodStart);
+      next.setDate(next.getDate() + direction * 7);
+      setPeriodStart(next);
+    }
   }
 
   function goToToday() {
-    setWeekStart(getMonday(new Date()));
+    setPeriodStart(getMonday(new Date()));
   }
 
   function openCreate(dateStr: string) {
@@ -507,7 +569,7 @@ export default function CalendarPage() {
       );
     }
 
-    await loadWeek(weekStart);
+    await loadPeriod(viewMode === "month" ? getMonthStart(periodStart) : periodStart, viewMode === "month" ? 42 : 7);
   }
 
   async function handleDelete(id: string) {
@@ -517,49 +579,67 @@ export default function CalendarPage() {
         await readApiError(response, "Nu s-a putut sterge draft-ul.")
       );
     }
-    await loadWeek(weekStart);
+    await loadPeriod(viewMode === "month" ? getMonthStart(periodStart) : periodStart, viewMode === "month" ? 42 : 7);
   }
 
   const isEmpty = days.every((d) => d.drafts.length === 0 && d.posts.length === 0);
+  const displayMonth = viewMode === "month" ? getMonthStart(periodStart) : new Date(periodStart.getFullYear(), periodStart.getMonth(), 1);
 
   return (
     <div>
-      {/* Top actions */}
-      <div className="flex justify-end mb-4">
+      {/* Header: month nav + view toggle + Adaugă Draft */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex items-center justify-between sm:justify-start gap-3">
+          {/* Month navigation */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigatePeriod(-1)}
+              className="p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-white/[0.04] transition"
+              aria-label="Luna precedentă"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold text-white min-w-[140px] text-center capitalize">
+              {formatMonthYear(displayMonth)}
+            </h2>
+            <button
+              onClick={() => navigatePeriod(1)}
+              className="p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-white/[0.04] transition"
+              aria-label="Luna următoare"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+          {/* View toggle pills */}
+          <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-full p-0.5">
+            <button
+              onClick={() => {
+                setViewMode("month");
+                setPeriodStart((prev) => getMonday(getMonthStart(prev)));
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                viewMode === "month" ? "bg-orange-500/15 text-orange-400" : "text-muted-foreground hover:text-white/80"
+              }`}
+            >
+              Lună
+            </button>
+            <button
+              onClick={() => setViewMode("week")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                viewMode === "week" ? "bg-orange-500/15 text-orange-400" : "text-muted-foreground hover:text-white/80"
+              }`}
+            >
+              Săptămână
+            </button>
+          </div>
+        </div>
         <button
           onClick={() => openCreate(toDateStr(new Date()))}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium transition"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white text-sm font-semibold transition shadow-lg shadow-orange-500/25 hover:-translate-y-0.5 shrink-0"
         >
           <Plus className="w-4 h-4" />
-          Creează Draft
+          Adaugă Draft
         </button>
-      </div>
-
-      {/* Week navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigateWeek(-1)}
-            className="p-2 rounded-lg bg-muted hover:bg-muted text-muted-foreground hover:text-white transition"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => navigateWeek(1)}
-            className="p-2 rounded-lg bg-muted hover:bg-muted text-muted-foreground hover:text-white transition"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={goToToday}
-            className="px-3 py-1.5 rounded-lg bg-muted hover:bg-muted text-xs text-muted-foreground hover:text-white transition"
-          >
-            Azi
-          </button>
-        </div>
-        <span className="text-sm text-muted-foreground font-medium">
-          {formatDateRange(weekStart)}
-        </span>
       </div>
 
       {/* Loading */}
@@ -569,19 +649,31 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Weekly grid — stacks vertically on mobile, full grid on desktop */}
+      {/* Day headers (week view or month view) */}
+      {!loading && viewMode === "month" && (
+        <div className="max-lg:hidden lg:grid grid-cols-7 gap-2 mb-1">
+          {DAY_NAMES.map((name) => (
+            <div key={name} className="text-center text-[10px] font-medium text-muted-foreground py-1">
+              {name}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Calendar grid — 7-col pe lg, list pe mobile */}
       {!loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
           {days.map((day) => {
             const hasContent = day.drafts.length > 0 || day.posts.length > 0;
+            const isCurrentMonth = viewMode === "month" && day.date.getMonth() === displayMonth.getMonth();
             return (
               <div
                 key={day.dateStr}
-                className={`rounded-xl border p-3 min-h-[120px] lg:min-h-[180px] flex flex-col transition group ${
+                className={`rounded-lg border p-3 min-h-[100px] sm:min-h-[120px] lg:min-h-[140px] flex flex-col transition group ${
                   day.isToday
-                    ? "bg-brand-500/5 border-brand-500/20"
-                    : "bg-card border-border"
-                }`}
+                    ? "ring-2 ring-orange-500/50 bg-orange-500/5 border-orange-500/30"
+                    : "bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04]"
+                } ${viewMode === "month" && !isCurrentMonth ? "opacity-40" : ""}`}
               >
                 {/* Day header */}
                 <div className="flex items-center justify-between mb-2">
@@ -668,19 +760,22 @@ export default function CalendarPage() {
       )}
 
       {/* Modal */}
-      {showModal && (
-        <DraftModal
-          draft={modalDraft}
-          initialDate={modalDate || undefined}
-          onSave={handleSave}
-          onDelete={modalDraft ? handleDelete : undefined}
-          onClose={() => {
-            setShowModal(false);
-            setModalDraft(null);
-            setModalDate(null);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showModal && (
+          <DraftModal
+            key="draft-modal"
+            draft={modalDraft}
+            initialDate={modalDate || undefined}
+            onSave={handleSave}
+            onDelete={modalDraft ? handleDelete : undefined}
+            onClose={() => {
+              setShowModal(false);
+              setModalDraft(null);
+              setModalDate(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
