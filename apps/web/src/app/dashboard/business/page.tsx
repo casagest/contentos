@@ -67,6 +67,7 @@ import type { IndustryConfig, KpiConfig, FunnelStage } from "@/lib/dashboard/ind
 import type { BusinessProfile, Industry } from "@contentos/database";
 import { saveKpiValues, quickSetIndustry } from "./actions";
 import MemoryHealth from "@/app/(dashboard)/components/memory-health";
+import MiniReporting from "@/app/(dashboard)/components/mini-reporting";
 
 interface SocialAccountSummary {
   id: string;
@@ -1290,6 +1291,9 @@ export default function BusinessDashboardPage() {
 
           {/* Autopilot CTA */}
           <AutopilotCard />
+
+          {/* Mini Reporting */}
+          <MiniReporting />
 
           {/* Quick Actions */}
           <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
