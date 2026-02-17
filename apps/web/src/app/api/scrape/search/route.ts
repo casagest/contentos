@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { ScrapeProviderError, searchWebContent } from "@/lib/scrape";
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof ScrapeProviderError) {
       if (error.status === 501) {
         return NextResponse.json(
-          { error: "Search indisponibil: FIRECRAWL_API_KEY lipseste." },
+          { error: error.message || "Search indisponibil: configurează FIRECRAWL_API_KEY sau SERPER_API_KEY (serper.dev)." },
           { status: 501 }
         );
       }

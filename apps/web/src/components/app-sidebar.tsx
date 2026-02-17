@@ -40,15 +40,15 @@ const navGroups = [
   {
     label: "CREEAZĂ",
     items: [
-      { title: "Brain Dump", url: "/braindump", icon: Brain },
+      { title: "Creier Idei", url: "/braindump", icon: Brain },
       { title: "Compune", url: "/compose", icon: PenTool },
     ],
   },
   {
-    label: "AI TOOLS",
+    label: "INSTRUMENTE AI",
     items: [
-      { title: "AI Coach", url: "/coach", icon: MessageSquare },
-      { title: "Scorer", url: "/analyze", icon: Target },
+      { title: "Antrenor AI", url: "/coach", icon: MessageSquare },
+      { title: "Scorant", url: "/analyze", icon: Target },
       { title: "Cercetare", url: "/research", icon: Search },
       { title: "Inspirație", url: "/inspiration", icon: Lightbulb },
     ],

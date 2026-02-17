@@ -7,6 +7,7 @@ import type {
   Platform,
   Post,
 } from "@contentos/content-engine";
+import { sanitizeTextForCMSR } from "./cmsr-sanitize";
 
 type CorePlatform = "facebook" | "instagram" | "tiktok" | "youtube";
 
@@ -367,6 +368,7 @@ export function buildDeterministicGeneration(params: {
   includeHashtags?: boolean;
   includeEmoji?: boolean;
   language?: "ro" | "en";
+  compliance?: string[];
 }): ContentGenerationResult {
   const ideas = buildIdeas(params.input);
   const hook = buildHook(ideas.coreIdea, ideas.framework, params.language === "en" ? "en" : "ro");
@@ -405,14 +407,19 @@ export function buildDeterministicGeneration(params: {
       hashtags = params.includeHashtags === false ? [] : toHashtags(ideas.keyIdeas, 10);
     }
 
+    const needsCMSR =
+      Array.isArray(params.compliance) &&
+      params.compliance.some((c) => String(c).toLowerCase() === "cmsr_2025");
+    const finalText = needsCMSR ? sanitizeTextForCMSR(text) : text;
+
     const score = buildDeterministicScore({
-      content: text,
+      content: finalText,
       platform,
       contentType: pickContentType(corePlatform),
     });
 
     platformVersions[platform] = {
-      text,
+      text: finalText,
       hashtags,
       contentType: pickContentType(corePlatform),
       algorithmScore: score,
@@ -517,6 +524,8 @@ export function buildDeterministicBrainDump(params: {
   platforms: CorePlatform[];
   language?: "ro" | "en";
   warning?: string;
+  /** Când profilul are cmsr_2025, sanitizăm outputul pentru conformitate */
+  compliance?: string[];
 }): DeterministicBrainDumpResponse {
   const ideas = buildIdeas(params.rawInput);
   const language = params.language === "en" ? "en" : "ro";
@@ -586,12 +595,35 @@ export function buildDeterministicBrainDump(params: {
     };
   }
 
+  // CMSR 2025 sanitization — când profilul cere conformitate medicală
+  const needsCMSR =
+    Array.isArray(params.compliance) &&
+    params.compliance.some((c) => String(c).toLowerCase() === "cmsr_2025");
+
+  if (needsCMSR) {
+    if (platforms.facebook) {
+      platforms.facebook.content = sanitizeTextForCMSR(platforms.facebook.content);
+    }
+    if (platforms.instagram) {
+      platforms.instagram.caption = sanitizeTextForCMSR(platforms.instagram.caption);
+    }
+    if (platforms.tiktok) {
+      platforms.tiktok.hook = sanitizeTextForCMSR(platforms.tiktok.hook);
+      platforms.tiktok.script = sanitizeTextForCMSR(platforms.tiktok.script);
+    }
+    if (platforms.youtube) {
+      platforms.youtube.title = sanitizeTextForCMSR(platforms.youtube.title);
+      platforms.youtube.description = sanitizeTextForCMSR(platforms.youtube.description);
+    }
+  }
+
   return {
     platforms,
     meta: {
       mode: "deterministic",
       framework: ideas.framework,
       warning: params.warning,
+      ...(needsCMSR && { cmsrSanitized: true }),
     },
   };
 }

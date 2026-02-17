@@ -294,6 +294,10 @@ export async function POST(request: NextRequest) {
     businessProfile: businessProfileForBrief,
   });
 
+  const compliance = Array.isArray((orgSettings?.businessProfile as Record<string, unknown>)?.compliance)
+    ? ((orgSettings?.businessProfile as Record<string, unknown>).compliance as string[])
+    : [];
+
   const deterministic = buildDeterministicGeneration({
     input,
     targetPlatforms: platforms,
@@ -301,6 +305,7 @@ export async function POST(request: NextRequest) {
     includeHashtags,
     includeEmoji,
     language: deterministicLanguage,
+    compliance,
   });
 
   const intentHash = buildIntentCacheKey(ROUTE_KEY, {

@@ -423,6 +423,39 @@ async function scrapeWithFacebookAPI(
 }
 
 // ---------------------------------------------------------------------------
+// Jina Reader fallback (gratuit, fără API key)
+// https://r.jina.ai/{url} → markdown
+// ---------------------------------------------------------------------------
+
+async function scrapeWithJinaReader(
+  url: string,
+  maxChars: number,
+  minChars: number,
+  timeoutMs: number
+): Promise<ScrapeResult | null> {
+  try {
+    const jinaUrl = `https://r.jina.ai/${encodeURIComponent(url)}`;
+    const response = await safeFetch(jinaUrl, {
+      timeoutMs,
+      headers: { "X-Return-Format": "markdown", "X-No-Cache": "true" },
+    });
+    if (!response.ok) return null;
+
+    const text = await response.text();
+    const content = cleanMarkdownContent(text).slice(0, maxChars);
+    if (content.length < minChars) return null;
+
+    return {
+      url,
+      content,
+      source: "fallback",
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Generic HTML fallback
 // ---------------------------------------------------------------------------
 
@@ -488,6 +521,10 @@ export async function scrapeUrlContent(
   );
   if (firecrawlResult) return firecrawlResult;
 
+  // Jina Reader (gratuit) — funcționează pentru multe site-uri unde fetch direct eșuează
+  const jinaResult = await scrapeWithJinaReader(url, maxChars, minChars, timeoutMs);
+  if (jinaResult) return jinaResult;
+
   return scrapeWithFallback(url, maxChars, minChars, timeoutMs);
 }
 
@@ -495,7 +532,7 @@ function normalizeSearchResult(item: unknown): SearchResult | null {
   const record = asRecord(item);
   if (!record) return null;
 
-  const url = asString(record.url);
+  const url = asString(record.url) ?? asString(record.link);
   if (!url) return null;
 
   try {
@@ -513,6 +550,55 @@ function normalizeSearchResult(item: unknown): SearchResult | null {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Serper Search (fallback când Firecrawl lipsește/eșuează)
+// https://serper.dev — 2500 query-uri gratuite
+// ---------------------------------------------------------------------------
+
+const SERPER_ENDPOINT = "https://google.serper.dev/search";
+
+async function searchWithSerper(
+  query: string,
+  limit: number,
+  lang: string | undefined,
+  timeoutMs: number
+): Promise<SearchResult[]> {
+  const apiKey = process.env.SERPER_API_KEY?.trim();
+  if (!apiKey) return [];
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(SERPER_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        q: query,
+        num: limit,
+        ...(lang ? { gl: lang === "ro" ? "ro" : lang.slice(0, 2), hl: lang } : {}),
+      }),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return [];
+
+    const json = (await res.json()) as Record<string, unknown>;
+    const organic = Array.isArray(json.organic) ? json.organic : [];
+    return organic
+      .map(normalizeSearchResult)
+      .filter((item): item is SearchResult => item !== null);
+  } catch {
+    clearTimeout(timeout);
+    return [];
+  }
+}
+
 export async function searchWebContent(
   query: string,
   options?: SearchOptions
@@ -521,34 +607,55 @@ export async function searchWebContent(
   if (!cleanQuery) return [];
 
   const limit = Math.min(Math.max(options?.limit ?? 8, 1), 20);
+  const timeoutMs = options?.timeoutMs ?? FIRECRAWL_TIMEOUT_MS;
+  const lang = options?.lang?.trim();
 
-  const payload = (await firecrawlPostJson(
-    FIRECRAWL_SEARCH_ENDPOINT,
-    {
-      query: cleanQuery,
-      limit,
-      ...(options?.lang ? { lang: options.lang } : {}),
-    },
-    options?.timeoutMs ?? FIRECRAWL_TIMEOUT_MS
-  )) as unknown;
+  // 1) Încearcă Firecrawl (dacă e configurat)
+  try {
+    const payload = (await firecrawlPostJson(
+      FIRECRAWL_SEARCH_ENDPOINT,
+      {
+        query: cleanQuery,
+        limit,
+        ...(lang ? { lang } : {}),
+      },
+      timeoutMs
+    )) as unknown;
 
-  const root = asRecord(payload);
-  if (!root) {
+    const root = asRecord(payload);
+    if (root) {
+      const data = Array.isArray(root.data)
+        ? root.data
+        : Array.isArray(root.results)
+          ? root.results
+          : [];
+      const results = data
+        .map(normalizeSearchResult)
+        .filter((item): item is SearchResult => item !== null);
+      if (results.length > 0) return results;
+    }
+  } catch (error) {
+    // Firecrawl a eșuat — încercăm Serper (nu throw imediat)
+    if (error instanceof ScrapeProviderError && error.status === 501) {
+      // 501 = FIRECRAWL_API_KEY lipsă — Serper e singura opțiune
+    }
+  }
+
+  // 2) Fallback Serper (2500 gratuite)
+  const serperResults = await searchWithSerper(cleanQuery, limit, lang, timeoutMs);
+  if (serperResults.length > 0) return serperResults;
+
+  // 3) Niciun provider disponibil
+  const hasFirecrawl = !!process.env.FIRECRAWL_API_KEY?.trim();
+  const hasSerper = !!process.env.SERPER_API_KEY?.trim();
+  if (!hasFirecrawl && !hasSerper) {
     throw new ScrapeProviderError(
-      "Firecrawl search response invalid.",
-      502,
-      "firecrawl_invalid_payload",
+      "Search indisponibil: configurează FIRECRAWL_API_KEY sau SERPER_API_KEY (serper.dev — 2500 gratuite).",
+      501,
+      "search_no_provider",
       false
     );
   }
 
-  const data = Array.isArray(root.data)
-    ? root.data
-    : Array.isArray(root.results)
-      ? root.results
-      : [];
-
-  return data
-    .map(normalizeSearchResult)
-    .filter((item): item is SearchResult => item !== null);
+  return [];
 }

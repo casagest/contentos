@@ -41,24 +41,19 @@ export function CommandPalette() {
   }, [router]);
 
   const items: CommandItem[] = [
-    // Creează
-    { id: "braindump", label: "Brain Dump", icon: <Brain className="w-4 h-4" />, href: "/braindump", keywords: ["idei", "generare", "brainstorm"], group: "Creează" },
+    { id: "braindump", label: "Creier Idei", icon: <Brain className="w-4 h-4" />, href: "/braindump", keywords: ["idei", "generare", "brainstorm"], group: "Creează" },
     { id: "compose", label: "Compune Conținut", icon: <PenTool className="w-4 h-4" />, href: "/compose", keywords: ["scrie", "postare", "text"], group: "Creează" },
-    // AI Tools
-    { id: "coach", label: "AI Coach", icon: <Sparkles className="w-4 h-4" />, href: "/coach", keywords: ["sfaturi", "recomandari", "imbunatatire"], group: "AI Tools" },
-    { id: "analyze", label: "Algorithm Scorer", icon: <BarChart3 className="w-4 h-4" />, href: "/analyze", keywords: ["scor", "algoritm", "evaluare"], group: "AI Tools" },
-    { id: "research", label: "Cercetare Conturi", icon: <Search className="w-4 h-4" />, href: "/research", keywords: ["analiza", "competitori", "conturi"], group: "AI Tools" },
-    { id: "inspiration", label: "Inspirație", icon: <Lightbulb className="w-4 h-4" />, href: "/inspiration", keywords: ["idei", "trending", "viral"], group: "AI Tools" },
-    // Media
+    { id: "coach", label: "Antrenor AI", icon: <Sparkles className="w-4 h-4" />, href: "/coach", keywords: ["sfaturi", "recomandări", "îmbunătățire"], group: "Instrumente AI" },
+    { id: "analyze", label: "Scorant", icon: <BarChart3 className="w-4 h-4" />, href: "/analyze", keywords: ["scor", "algoritm", "evaluare"], group: "Instrumente AI" },
+    { id: "research", label: "Cercetare Conturi", icon: <Search className="w-4 h-4" />, href: "/research", keywords: ["analiză", "competitori", "conturi"], group: "Instrumente AI" },
+    { id: "inspiration", label: "Inspirație", icon: <Lightbulb className="w-4 h-4" />, href: "/inspiration", keywords: ["idei", "trending", "viral"], group: "Instrumente AI" },
     { id: "video-script", label: "Script Video", icon: <Video className="w-4 h-4" />, href: "/video-script", keywords: ["tiktok", "reels", "video", "script"], group: "Media" },
     { id: "image-editor", label: "Editor Imagine", icon: <ImageIcon className="w-4 h-4" />, href: "/image-editor", keywords: ["imagine", "text", "overlay"], group: "Media" },
-    // Monitorizare
     { id: "analytics", label: "Analiză Performanță", icon: <TrendingUp className="w-4 h-4" />, href: "/analytics", keywords: ["statistici", "engagement", "metrici"], group: "Monitorizare" },
-    { id: "calendar", label: "Calendar Conținut", icon: <CalendarDays className="w-4 h-4" />, href: "/calendar", keywords: ["programare", "planificare", "schedule"], group: "Monitorizare" },
-    { id: "history", label: "Istoric Postări", icon: <Clock className="w-4 h-4" />, href: "/history", keywords: ["postari", "publicate", "istoric"], group: "Monitorizare" },
-    // Cont
+    { id: "calendar", label: "Calendar Conținut", icon: <CalendarDays className="w-4 h-4" />, href: "/calendar", keywords: ["programare", "planificare"], group: "Monitorizare" },
+    { id: "history", label: "Istoric Postări", icon: <Clock className="w-4 h-4" />, href: "/history", keywords: ["postări", "publicate", "istoric"], group: "Monitorizare" },
     { id: "settings", label: "Setări", icon: <Settings className="w-4 h-4" />, href: "/settings", keywords: ["profil", "configurare", "plan"], group: "Cont" },
-    { id: "signout", label: "Deconectare", icon: <LogOut className="w-4 h-4" />, action: handleSignOut, keywords: ["logout", "iesire"], group: "Cont" },
+    { id: "signout", label: "Deconectare", icon: <LogOut className="w-4 h-4" />, action: handleSignOut, keywords: ["iesire"], group: "Cont" },
   ];
 
   // Keyboard shortcut: Ctrl+K / ⌘K

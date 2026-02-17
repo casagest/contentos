@@ -12,11 +12,11 @@ import { CommandPalette } from "@/components/command-palette";
 import { NotificationCenter } from "@/components/notification-center";
 
 const pageTitles: Record<string, string> = {
-  "/braindump": "Brain Dump",
-  "/compose": "Content Composer",
-  "/coach": "AI Content Coach",
-  "/analyze": "Algorithm Scorer",
-  "/research": "Account Research",
+  "/braindump": "Creier Idei",
+  "/compose": "Compune",
+  "/coach": "Antrenor AI",
+  "/analyze": "Scorant",
+  "/research": "Cercetare Conturi",
   "/inspiration": "Inspirație",
   "/video-script": "Script Video",
   "/image-editor": "Editor Imagine",
@@ -27,12 +27,12 @@ const pageTitles: Record<string, string> = {
 };
 
 const pageBreadcrumbs: Record<string, { group: string; label: string }> = {
-  "/braindump": { group: "Creează", label: "Brain Dump" },
+  "/braindump": { group: "Creează", label: "Creier Idei" },
   "/compose": { group: "Creează", label: "Compune" },
-  "/coach": { group: "AI Tools", label: "AI Coach" },
-  "/analyze": { group: "AI Tools", label: "Scorer" },
-  "/research": { group: "AI Tools", label: "Cercetare" },
-  "/inspiration": { group: "AI Tools", label: "Inspirație" },
+  "/coach": { group: "Instrumente AI", label: "Antrenor AI" },
+  "/analyze": { group: "Instrumente AI", label: "Scorant" },
+  "/research": { group: "Instrumente AI", label: "Cercetare" },
+  "/inspiration": { group: "Instrumente AI", label: "Inspirație" },
   "/video-script": { group: "Media", label: "Script Video" },
   "/image-editor": { group: "Media", label: "Editor Imagine" },
   "/analytics": { group: "Monitorizare", label: "Analiză" },

@@ -32,7 +32,11 @@ export default async function LoginPage({
       {error && (
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
           <div className="mt-0.5 w-2 h-2 rounded-full bg-red-400 shrink-0 animate-pulse" />
-          <span>{error === "Invalid login credentials" ? "Email sau parolă incorectă." : error}</span>
+          <span>
+            {error === "Invalid login credentials" && "Email sau parolă incorectă."}
+            {error === "Email not confirmed" && "Contul nu este încă confirmat. Verifică emailul și dă click pe link-ul de confirmare."}
+            {error !== "Invalid login credentials" && error !== "Email not confirmed" && error}
+          </span>
         </div>
       )}
 
