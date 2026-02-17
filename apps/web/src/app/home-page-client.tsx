@@ -538,8 +538,129 @@ export default function HomePageClient() {
         </div>
       </section>
 
+      {/* ── Testimonials (dark section) ── */}
+      <section className="bg-surface-ground py-20 sm:py-28 px-6">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white text-center tracking-tight mb-4">
+            Ce Spun Utilizatorii
+          </h2>
+          <p className="text-base sm:text-lg text-gray-400 text-center mb-14 max-w-xl mx-auto">
+            Creatori și agenții din România care cresc cu ContentOS.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Alexandra M.",
+                role: "Social Media Manager",
+                text: "Am redus timpul de creare conținut de la 6 ore pe zi la 45 de minute. Algorithm Scorer-ul e un game-changer — știu exact ce va funcționa înainte de a posta.",
+                rating: 5,
+              },
+              {
+                name: "Mihai D.",
+                role: "Fondator Agenție Marketing",
+                text: "Folosesc ContentOS pentru 12 clienți simultan. Brain Dump-ul transformă orice idee vagă în postări optimizate per platformă. Ne-a crescut productivitatea x10.",
+                rating: 5,
+              },
+              {
+                name: "Elena R.",
+                role: "Creator de conținut",
+                text: "Cel mai bun tool AI care înțelege limba română cu adevărat. Cu diacritice, slang actual și referințe locale. Nu mai sună ca un robot.",
+                rating: 5,
+              },
+            ].map((testimonial) => (
+              <div key={testimonial.name} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 backdrop-blur-sm hover:bg-white/[0.05] transition-colors">
+                <div className="flex gap-0.5 mb-4">
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-300 leading-relaxed mb-5">&ldquo;{testimonial.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold">
+                    {testimonial.name.split(" ").map((n) => n[0]).join("")}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Comparison Table (warm section) ── */}
+      <section className="bg-landing-warm py-20 sm:py-28 px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
+            De Ce ContentOS?
+          </h2>
+          <p className="text-base sm:text-lg text-gray-700 text-center mb-14 max-w-xl mx-auto">
+            Compară cu alternativele tradiționale.
+          </p>
+
+          <div className="rounded-2xl border border-black/5 overflow-hidden shadow-lg">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-landing-warm-card">
+                  <th className="text-left px-5 py-4 font-semibold text-black">Funcționalitate</th>
+                  <th className="px-5 py-4 font-bold text-orange-600 text-center">ContentOS</th>
+                  <th className="px-5 py-4 font-semibold text-gray-500 text-center">Manual</th>
+                  <th className="px-5 py-4 font-semibold text-gray-500 text-center">Alte tool-uri</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ["Conținut în limba română", true, false, "partial"],
+                  ["Scor algoritm per platformă", true, false, false],
+                  ["Brain Dump → postări virale", true, false, false],
+                  ["Cercetare competitori", true, "manual", "partial"],
+                  ["Optimizat per platformă", true, false, "partial"],
+                  ["Script video cu timeline", true, false, false],
+                  ["7 zile gratuit", true, "n/a", "partial"],
+                  ["Timp / postare", "~2 min", "~45 min", "~15 min"],
+                ].map(([feature, contentos, manual, altele], i) => (
+                  <tr key={i} className={i % 2 === 0 ? "bg-white/60" : "bg-white/30"}>
+                    <td className="px-5 py-3 text-black font-medium">{feature as string}</td>
+                    <td className="px-5 py-3 text-center">
+                      {contentos === true ? (
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/10"><svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></span>
+                      ) : (
+                        <span className="text-orange-600 font-bold">{contentos as string}</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      {manual === false ? (
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/10"><svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></span>
+                      ) : manual === "n/a" ? (
+                        <span className="text-gray-400">—</span>
+                      ) : (
+                        <span className="text-gray-600">{manual as string}</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      {altele === false ? (
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/10"><svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></span>
+                      ) : altele === "partial" ? (
+                        <span className="text-yellow-600 text-xs font-medium">Parțial</span>
+                      ) : (
+                        <span className="text-gray-600">{altele as string}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       {/* ── Pricing (warm section) ── */}
-      <section id="pricing" className="bg-landing-warm py-20 sm:py-28 px-6">
+      <section id="pricing" className="bg-landing-olive py-20 sm:py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
