@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FacebookAdapter, InstagramAdapter } from "@contentos/content-engine/platforms/meta";
 import { TikTokAdapter } from "@contentos/content-engine/platforms/tiktok";
 import { LinkedInAdapter } from "@contentos/content-engine/platforms/linkedin";
+import { addUTMToPostText, generateCampaignName } from "@/lib/utm";
 import {
   deriveCreativeSignals,
   type AIObjective,
@@ -146,8 +147,18 @@ export async function POST(
 
     for (const account of socialAccounts) {
       const versionText = resolveDraftTextForPlatform(draft, account.platform);
+      // Auto-inject UTM params into any URLs in the post text
+      const textWithUTM = addUTMToPostText(versionText, {
+        source: account.platform,
+        medium: "social",
+        campaign: generateCampaignName({
+          source: draft.source || "manual",
+          draftId: draft.id,
+        }),
+        content: draft.id,
+      });
       const content = {
-        text: versionText,
+        text: textWithUTM,
         mediaUrls: draft.media_urls || [],
       };
 

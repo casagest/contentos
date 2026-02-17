@@ -271,11 +271,41 @@ function SkeletonCard() {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
+const CHAT_HISTORY_KEY = "contentos:braindump:history";
+const MAX_HISTORY_MESSAGES = 50;
+
+function loadChatHistory(): ConversationMessage[] {
+  try {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem(CHAT_HISTORY_KEY);
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(-MAX_HISTORY_MESSAGES);
+  } catch {
+    return [];
+  }
+}
+
+function saveChatHistory(messages: ConversationMessage[]) {
+  try {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages.slice(-MAX_HISTORY_MESSAGES)));
+  } catch {
+    // silent — storage full or unavailable
+  }
+}
+
 export default function BrainDumpPage() {
-  // Chat state
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  // Chat state — persisted in localStorage
+  const [messages, setMessages] = useState<ConversationMessage[]>(() => loadChatHistory());
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Persist chat history on message changes
+  useEffect(() => {
+    if (messages.length > 0) saveChatHistory(messages);
+  }, [messages]);
 
   // Config state
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["facebook", "instagram"]);
@@ -482,6 +512,7 @@ export default function BrainDumpPage() {
     setClarifications([]);
     setError(null);
     setInputText("");
+    try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch { /* silent */ }
   };
 
   return (
