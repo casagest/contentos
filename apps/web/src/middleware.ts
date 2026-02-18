@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getSupabaseUrl } from "@/lib/supabase/url";
 
 // Paths that need NO auth check at all (public pages, completely skip Supabase)
 const PUBLIC_PATHS = ["/login", "/register", "/reset-password", "/privacy", "/terms", "/gdpr"];
@@ -54,7 +55,7 @@ export async function middleware(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    getSupabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

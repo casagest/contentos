@@ -14,6 +14,8 @@
     "gate:platinum": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build && pnpm e2e",
     "pre-merge": "pnpm gate:platinum",
     "e2e": "pnpm --filter @contentos/web e2e",
+    "e2e:prod": "pnpm --filter @contentos/web e2e:prod",
+    "e2e:prod:login": "pnpm --filter @contentos/web e2e:prod:login",
     "prepare": "husky"
   },
   "lint-staged": {

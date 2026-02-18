@@ -19,6 +19,44 @@ function isDeepCheckAuthorized(request: NextRequest): boolean {
   return resolveMonitoringToken(request) === expected;
 }
 
+async function runSupabaseAuthCheck(): Promise<{ ok: boolean; latencyMs: number; message: string; urlHost?: string }> {
+  const startedAt = Date.now();
+  try {
+    const { getSupabaseUrl } = await import("@/lib/supabase/url");
+    const url = getSupabaseUrl().trim().replace(/\/+$/, "");
+    const hasUrl = !!url;
+    const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!hasUrl || !hasKey) {
+      return {
+        ok: false,
+        latencyMs: Date.now() - startedAt,
+        message: !hasUrl ? "NEXT_PUBLIC_SUPABASE_URL lipsește" : "NEXT_PUBLIC_SUPABASE_ANON_KEY lipsește",
+      };
+    }
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { error } = await supabase.auth.getSession();
+    return {
+      ok: !error,
+      latencyMs: Date.now() - startedAt,
+      message: error ? error.message : "Supabase Auth OK",
+      urlHost: (() => {
+        try {
+          return url ? new URL(url).hostname : undefined;
+        } catch {
+          return undefined;
+        }
+      })(),
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      latencyMs: Date.now() - startedAt,
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 async function runDatabaseCheck(): Promise<{ ok: boolean; latencyMs: number; message: string }> {
   const startedAt = Date.now();
   try {
@@ -42,6 +80,7 @@ async function runDatabaseCheck(): Promise<{ ok: boolean; latencyMs: number; mes
 export async function GET(request: NextRequest) {
   const startedAt = Date.now();
   const isDeep = request.nextUrl.searchParams.get("deep") === "1";
+  const isSupabase = request.nextUrl.searchParams.get("supabase") === "1";
 
   const basePayload = {
     service: "contentos-web",
@@ -53,6 +92,18 @@ export async function GET(request: NextRequest) {
       process.env.VERCEL_URL ||
       "local",
   };
+
+  if (isSupabase) {
+    const supabaseCheck = await runSupabaseAuthCheck();
+    return NextResponse.json(
+      {
+        ...basePayload,
+        status: supabaseCheck.ok ? "ok" : "degraded",
+        checks: { supabase: supabaseCheck },
+      },
+      { status: supabaseCheck.ok ? 200 : 503, ...NO_STORE },
+    );
+  }
 
   if (!isDeep) {
     return NextResponse.json(

@@ -96,7 +96,33 @@ contentos/
 | `pnpm build` | Production build |
 | `pnpm lint` | Run ESLint |
 | `pnpm type-check` | Run TypeScript compiler check |
+| `pnpm e2e` | Run Playwright E2E tests |
+| `pnpm e2e:prod` | Run E2E tests against production |
+| `pnpm e2e:prod:login` | Run login test against production (needs `.env.local`) |
+| `pnpm e2e:ui` | Open Playwright UI mode for debugging |
 | `pnpm monitor:synthetic` | Run synthetic uptime + latency checks |
+
+## E2E Testing (Playwright)
+
+Testele E2E rulează împotriva aplicației configurate în `NEXT_PUBLIC_BASE_URL` (implicit: producție).
+
+**Test login real în producție:** creează `apps/web/.env.local` (sau `.env.local` la root) cu:
+
+```bash
+NEXT_PUBLIC_BASE_URL=https://contentos-project.vercel.app
+TEST_USER_EMAIL=email-ul-tau@exemplu.com
+TEST_USER_PASSWORD=parola-ta
+```
+
+Apoi rulează:
+
+```bash
+pnpm e2e:prod:login   # doar testul de login
+pnpm e2e:prod --headed # toate testele, browser vizibil
+pnpm e2e:prod --ui    # modul UI pentru debug
+```
+
+> `.env.local` este în `.gitignore` — nu se comitează credențialele.
 
 ## Monitoring
 
