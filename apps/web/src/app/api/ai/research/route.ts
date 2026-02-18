@@ -292,13 +292,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const url = body.url?.trim();
-    if (!url) {
+    const rawUrl = body.url?.trim();
+    if (!rawUrl) {
       return NextResponse.json(
         { error: "URL-ul competitorului este obligatoriu." },
         { status: 400 }
       );
     }
+    const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl.replace(/^\/+/, "")}`;
 
     const platform = normalizePlatform(body.platform);
     const username = toUsername(url);
