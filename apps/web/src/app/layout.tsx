@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans } from "next/font/google";
+import { DM_Sans, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/components/ui/toast";
@@ -10,6 +10,20 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans-loaded",
   display: "swap",
   weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-bricolage-loaded",
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono-loaded",
+  display: "swap",
+  weight: ["400", "500", "600"],
 });
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
@@ -70,7 +84,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" className={`dark ${dmSans.variable}`} suppressHydrationWarning>
+    <html lang="ro" className={`dark ${dmSans.variable} ${bricolage.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
         {/* Skip to content — accessibility */}
         <a

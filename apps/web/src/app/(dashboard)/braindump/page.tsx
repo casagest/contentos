@@ -576,7 +576,7 @@ export default function BrainDumpPage() {
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="flex-1 flex flex-col items-center justify-center px-4 pb-48"
         >
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-center bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent mb-4">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-center text-white mb-4">
             Ce vrei să creezi?
           </h1>
           <p className="text-muted-foreground text-sm mb-12 text-center max-w-md">
@@ -941,7 +941,7 @@ export default function BrainDumpPage() {
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 placeholder="Descrie ideea... sau lipește o imagine (Ctrl+V)"
-                aria-label="Mesaj Creier Idei"
+                aria-label="Mesaj Brain Dump"
                 rows={1}
                 className="flex-1 bg-transparent text-sm text-white placeholder:text-white/25 focus:outline-none resize-none py-2.5 px-3 min-h-[38px] max-h-[120px] rounded-lg focus:ring-2 focus:ring-orange-500/20"
                 onInput={(e) => {

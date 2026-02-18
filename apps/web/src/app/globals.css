@@ -5,6 +5,8 @@
 @layer base {
   :root {
     --font-dm-sans: var(--font-dm-sans-loaded, 'DM Sans'), system-ui, sans-serif;
+    --font-bricolage: var(--font-bricolage-loaded, 'Bricolage Grotesque'), system-ui, sans-serif;
+    --font-mono: var(--font-jetbrains-mono-loaded, 'JetBrains Mono'), ui-monospace, monospace;
 
     /* ══════════════════════════════════════════════
        CONTENTOS DESIGN SYSTEM — 2030 Standard

@@ -91,7 +91,7 @@ const features = [
   },
   {
     icon: Brain,
-    title: "Creier Idei",
+    title: "Brain Dump",
     desc: "Aruncă orice gând — AI-ul le transformă în postări virale pentru Facebook, Instagram, TikTok și YouTube.",
   },
   {
@@ -241,7 +241,7 @@ export default function HomePageClient() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-orange-500/25">
               C
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">
+            <span className="font-display text-xl font-bold text-white tracking-tight">
               Content<span className="text-orange-400">OS</span>
             </span>
           </Link>
@@ -292,26 +292,32 @@ export default function HomePageClient() {
         </div>
       </nav>
 
-      {/* ── Hero (dark section) — Stripe/Linear/Vercel level ── */}
+      {/* ── Hero (Command Center aesthetic) ── */}
       <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-28 px-6 overflow-hidden">
-        {/* 3 orbe animate + grid overlay */}
+        {/* Grid + subtle orbs */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.12)_0%,transparent_70%)] top-[-15%] left-[5%] blur-[120px] animate-[pulse_8s_ease-in-out_infinite]" />
-          <div className="absolute w-[350px] h-[350px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.08)_0%,transparent_70%)] bottom-[-15%] right-[10%] blur-[120px] animate-[pulse_10s_ease-in-out_infinite_2s]" />
-          <div className="absolute w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(34,197,94,0.06)_0%,transparent_70%)] top-[50%] left-[55%] blur-[120px] animate-[pulse_12s_ease-in-out_infinite_4s]" />
-          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+          <div className="absolute w-[450px] h-[450px] rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.08)_0%,transparent_65%)] top-[-10%] right-[0%] blur-[100px]" />
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+        <div className="relative max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
           {/* Left — Text */}
           <div className="flex-1 text-center lg:text-left">
+            <motion.span
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="inline-block text-[11px] font-mono tracking-[0.2em] uppercase text-orange-400/90 mb-4"
+            >
+              Pentru industria digitală
+            </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-6 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent"
+              className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.08] tracking-tight mb-6 text-white"
             >
-              Creează Conținut Care Convertește
+              Control Total asupra Conținutului
             </motion.h1>
 
             <motion.p
@@ -320,7 +326,7 @@ export default function HomePageClient() {
               transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed"
             >
-              Platforma AI care transformă orice idee în conținut optimizat per platformă. Creier Idei → postări virale în 2 minute.
+              AI nativ românesc. Brain Dump → postări virale în 2 minute. Scor de performanță înainte de publicare.
             </motion.p>
 
             <motion.div
@@ -385,27 +391,22 @@ export default function HomePageClient() {
             transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             className="relative w-full max-w-md lg:max-w-lg shrink-0"
           >
-            {/* Main glass card */}
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-5 shadow-2xl shadow-black/30">
-              {/* Header */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">B</div>
-                <span className="text-sm font-semibold text-white">Creier Idei</span>
+            {/* Main glass card — Command Center style */}
+            <div className="rounded-2xl border border-white/[0.1] bg-white/[0.04] backdrop-blur-xl p-5 shadow-2xl shadow-black/40">
+              <div className="flex items-center justify-between mb-4">
+                <span className="font-display text-sm font-bold text-white">Brain Dump</span>
+                <span className="font-mono text-[10px] text-orange-400/80">READY</span>
               </div>
-              {/* 3 blur lines */}
               <div className="space-y-2 mb-4">
-                <div className="h-2.5 bg-white/[0.06] rounded-full w-full" />
-                <div className="h-2.5 bg-white/[0.06] rounded-full w-4/5" />
-                <div className="h-2.5 bg-white/[0.06] rounded-full w-3/5" />
+                <div className="h-2 bg-white/[0.07] rounded w-full" />
+                <div className="h-2 bg-white/[0.07] rounded w-[85%]" />
+                <div className="h-2 bg-white/[0.07] rounded w-[60%]" />
               </div>
-              {/* Score + hashtags */}
-              <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                <div className="w-9 h-9 rounded-lg bg-green-500/15 border border-green-500/30 flex items-center justify-center">
-                  <span className="text-green-400 font-extrabold text-sm">92</span>
-                </div>
+              <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
+                <span className="font-mono text-sm font-semibold text-emerald-400">92</span>
                 <div className="flex gap-1.5">
-                  {["#viral", "#trending", "#ContentOS"].map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 rounded-md text-[9px] bg-white/[0.06] text-white/70 border border-white/[0.06]">{tag}</span>
+                  {["#viral", "#trending"].map((tag) => (
+                    <span key={tag} className="font-mono px-2 py-0.5 rounded text-[9px] bg-white/[0.05] text-white/60">{tag}</span>
                   ))}
                 </div>
               </div>
@@ -434,11 +435,11 @@ export default function HomePageClient() {
       <section id="features" className="bg-landing-warm py-20 sm:py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
-              Tot Ce Ai Nevoie Pentru Conținut de Impact
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
+              Șapte Instrumente. Un singur Command Center.
             </h2>
             <p className="text-base sm:text-lg text-gray-700 text-center mb-14 sm:mb-20 max-w-2xl mx-auto">
-              8 instrumente AI într-o singură platformă.
+              Creatori, SMM, agenții — tot ce ai nevoie într-o singură platformă.
             </p>
           </div>
 
@@ -531,7 +532,7 @@ export default function HomePageClient() {
       <section id="cum-functioneaza" className="bg-surface-ground py-20 sm:py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white text-center tracking-tight mb-4">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-white text-center tracking-tight mb-4">
               Cum Funcționează ContentOS
             </h2>
             <p className="text-base sm:text-lg text-gray-400 text-center mb-14 sm:mb-20 max-w-xl mx-auto">
@@ -630,7 +631,7 @@ export default function HomePageClient() {
                 <div className="bg-surface-overlay rounded-xl p-6 border border-white/10">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-2 h-2 rounded-full bg-blue-400" />
-                    <span className="text-xs text-blue-400 font-bold">Creier Idei</span>
+                    <span className="text-xs text-blue-400 font-bold">Brain Dump</span>
                   </div>
                   <div className="space-y-3">
                     <div className="bg-white/5 rounded-lg p-3 ml-8">
@@ -693,7 +694,7 @@ export default function HomePageClient() {
               {
                 name: "Mihai D.",
                 role: "Fondator Agenție Marketing",
-                text: "Folosesc ContentOS pentru 12 clienți simultan. Creier Idei transformă orice idee vagă în postări optimizate per platformă. Ne-a crescut productivitatea de 10 ori.",
+                text: "Folosesc ContentOS pentru 12 clienți simultan. Brain Dump transformă orice idee vagă în postări optimizate per platformă. Ne-a crescut productivitatea de 10 ori.",
                 rating: 5,
               },
               {
@@ -751,7 +752,7 @@ export default function HomePageClient() {
                 {[
                   ["Conținut în limba română", true, false, "partial"],
                   ["Scor algoritm per platformă", true, false, false],
-                  ["Creier Idei → postări virale", true, false, false],
+                  ["Brain Dump → postări virale", true, false, false],
                   ["Cercetare competitori", true, "manual", "partial"],
                   ["Optimizat per platformă", true, false, "partial"],
                   ["Script video cu timeline", true, false, false],
@@ -797,7 +798,7 @@ export default function HomePageClient() {
       <section id="pricing" className="bg-landing-olive py-20 sm:py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-black text-center tracking-tight mb-4">
               Prețuri Simple
             </h2>
             <p className="text-base sm:text-lg text-gray-700 text-center mb-8 max-w-xl mx-auto">

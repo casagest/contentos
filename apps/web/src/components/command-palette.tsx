@@ -41,7 +41,7 @@ export function CommandPalette() {
   }, [router]);
 
   const items: CommandItem[] = [
-    { id: "braindump", label: "Creier Idei", icon: <Brain className="w-4 h-4" />, href: "/braindump", keywords: ["idei", "generare", "brainstorm"], group: "Creează" },
+    { id: "braindump", label: "Brain Dump", icon: <Brain className="w-4 h-4" />, href: "/braindump", keywords: ["idei", "generare", "brainstorm"], group: "Creează" },
     { id: "compose", label: "Compune Conținut", icon: <PenTool className="w-4 h-4" />, href: "/compose", keywords: ["scrie", "postare", "text"], group: "Creează" },
     { id: "coach", label: "Antrenor AI", icon: <Sparkles className="w-4 h-4" />, href: "/coach", keywords: ["sfaturi", "recomandări", "îmbunătățire"], group: "Instrumente AI" },
     { id: "analyze", label: "Analiză", icon: <BarChart3 className="w-4 h-4" />, href: "/analyze", keywords: ["scor", "algoritm", "evaluare"], group: "Instrumente AI" },
