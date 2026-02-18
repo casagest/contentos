@@ -28,7 +28,9 @@ export function parseAIJson(rawText: string): Record<string, unknown> | null {
     // Step 3: Ensure starts with {
     text = text.trim();
     if (!text.startsWith("{")) {
-      text = "{" + text;
+      const firstBrace = text.indexOf("{");
+      if (firstBrace !== -1) text = text.slice(firstBrace);
+      else text = "{" + text;
     }
 
     // Step 4: Replace ALL literal newlines with spaces
