@@ -12,6 +12,9 @@ import { CommandPalette } from "@/components/command-palette";
 import { NotificationCenter } from "@/components/notification-center";
 
 const pageTitles: Record<string, string> = {
+  "/dashboard": "Command Center",
+  "/dashboard/command-center": "Command Center",
+  "/dashboard/business": "Dashboard Business",
   "/braindump": "Brain Dump",
   "/compose": "Compune",
   "/coach": "Antrenor AI",
@@ -27,6 +30,9 @@ const pageTitles: Record<string, string> = {
 };
 
 const pageBreadcrumbs: Record<string, { group: string; label: string }> = {
+  "/dashboard": { group: "Home", label: "Command Center" },
+  "/dashboard/command-center": { group: "Home", label: "Command Center" },
+  "/dashboard/business": { group: "Home", label: "Dashboard Business" },
   "/braindump": { group: "Creează", label: "Brain Dump" },
   "/compose": { group: "Creează", label: "Compune" },
   "/coach": { group: "Instrumente AI", label: "Antrenor AI" },

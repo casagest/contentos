@@ -18,6 +18,8 @@ import {
   Image,
   Sparkles,
   LogOut,
+  LayoutDashboard,
+  Building2,
 } from "lucide-react"
 import { useUser } from "@/components/providers/user-provider"
 
@@ -37,6 +39,13 @@ import {
 } from "@/components/ui/sidebar"
 
 const navGroups = [
+  {
+    label: "PRINCIPAL",
+    items: [
+      { title: "Command Center", url: "/dashboard/command-center", icon: LayoutDashboard },
+      { title: "Dashboard Business", url: "/dashboard/business", icon: Building2 },
+    ],
+  },
   {
     label: "CREEAZĂ",
     items: [
@@ -92,7 +101,7 @@ export function AppSidebar({ draftCount, scheduledCount, ...props }: AppSidebarP
   return (
     <Sidebar variant="sidebar" collapsible="icon" {...props}>
       <SidebarHeader className="border-b border-sidebar-border">
-        <Link href="/dashboard/business" className="flex items-center gap-2.5 px-2 py-1.5">
+        <Link href="/dashboard" className="flex items-center gap-2.5 px-2 py-1.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 text-white font-bold shadow-md shadow-orange-500/20">
             <Sparkles className="h-4 w-4" />
           </div>
