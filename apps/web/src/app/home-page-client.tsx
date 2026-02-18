@@ -81,7 +81,7 @@ const features = [
   },
   {
     icon: Target,
-    title: "Scorant",
+    title: "Analiză",
     desc: "Scor 0-100 pe 9 metrici per platformă. Știi cât de bine va performa postarea ÎNAINTE să o publici.",
   },
   {
@@ -687,7 +687,7 @@ export default function HomePageClient() {
               {
                 name: "Alexandra M.",
                 role: "Manager Social Media",
-                text: "Am redus timpul de creare conținut de la 6 ore pe zi la 45 de minute. Scorantul e un game-changer — știu exact ce va funcționa înainte de a posta.",
+                text: "Am redus timpul de creare conținut de la 6 ore pe zi la 45 de minute. Analiza conținutului e un game-changer — știu exact ce va funcționa înainte de a posta.",
                 rating: 5,
               },
               {

@@ -48,7 +48,7 @@ const navGroups = [
     label: "INSTRUMENTE AI",
     items: [
       { title: "Antrenor AI", url: "/coach", icon: MessageSquare },
-      { title: "Scorant", url: "/analyze", icon: Target },
+      { title: "Analiză", url: "/analyze", icon: Target },
       { title: "Cercetare", url: "/research", icon: Search },
       { title: "Inspirație", url: "/inspiration", icon: Lightbulb },
     ],
