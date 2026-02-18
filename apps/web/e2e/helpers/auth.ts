@@ -12,4 +12,5 @@ export async function login(page: Page, redirectTo = "/dashboard/command-center"
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/parolă|password/i).fill(password);
   await page.getByRole("button", { name: /conectare|login/i }).click();
+  await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 15_000 });
 }
