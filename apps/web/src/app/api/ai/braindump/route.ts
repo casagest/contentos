@@ -86,6 +86,32 @@ function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
+/** Lookup platform row with case-insensitive key match (facebook/Facebook/FACEBOOK). */
+function findPlatformRow(
+  obj: Record<string, unknown>,
+  platform: BrainDumpPlatform
+): Record<string, unknown> | null {
+  const direct = obj[platform];
+  if (typeof direct === "object" && direct !== null) return direct as Record<string, unknown>;
+  const lower = platform.toLowerCase();
+  for (const key of Object.keys(obj)) {
+    if (key.toLowerCase() === lower) {
+      const v = obj[key];
+      if (typeof v === "object" && v !== null) return v as Record<string, unknown>;
+    }
+  }
+  return null;
+}
+
+/** Extract first string from source, trying multiple aliases. */
+function firstString(source: Record<string, unknown>, ...keys: string[]): string {
+  for (const k of keys) {
+    const v = asString(source[k]);
+    if (v) return v;
+  }
+  return "";
+}
+
 function estimateMaxTokens(params: {
   platformCount: number;
   inputChars: number;
@@ -125,49 +151,51 @@ function sanitizePlatforms(
   const normalized: Record<string, unknown> = {};
 
   for (const platform of requestedPlatforms) {
-    const row = rawPlatforms[platform];
-    if (typeof row !== "object" || row === null) continue;
-    const source = row as Record<string, unknown>;
+    const source = findPlatformRow(rawPlatforms as Record<string, unknown>, platform);
+    if (!source) continue;
 
     if (platform === "facebook") {
       normalized.facebook = {
-        content: asString(source.content) || "",
-        hashtags: asStringArray(source.hashtags),
-        estimatedEngagement: asString(source.estimatedEngagement) || "Medium",
-        tips: asStringArray(source.tips),
+        content: firstString(source, "content", "text", "body", "post") || "",
+        hashtags: asStringArray(source.hashtags ?? source.tags),
+        estimatedEngagement: firstString(source, "estimatedEngagement", "engagement") || "Medium",
+        tips: asStringArray(source.tips ?? source.suggestions),
       };
       continue;
     }
 
     if (platform === "instagram") {
       normalized.instagram = {
-        caption: asString(source.caption) || asString(source.content) || "",
-        hashtags: asStringArray(source.hashtags),
-        altText: asString(source.altText) || "",
-        bestTimeToPost: asString(source.bestTimeToPost) || "",
-        tips: asStringArray(source.tips),
+        caption:
+          firstString(source, "caption", "content", "text", "body") || "",
+        hashtags: asStringArray(source.hashtags ?? source.tags),
+        altText: firstString(source, "altText", "alt_text", "alt") || "",
+        bestTimeToPost: firstString(source, "bestTimeToPost", "best_time_to_post") || "",
+        tips: asStringArray(source.tips ?? source.suggestions),
       };
       continue;
     }
 
     if (platform === "tiktok") {
       normalized.tiktok = {
-        hook: asString(source.hook) || "",
-        script: asString(source.script) || asString(source.content) || "",
-        hashtags: asStringArray(source.hashtags),
-        soundSuggestion: asString(source.soundSuggestion) || "",
-        tips: asStringArray(source.tips),
+        hook: firstString(source, "hook", "opening") || "",
+        script:
+          firstString(source, "script", "content", "text", "body") || "",
+        hashtags: asStringArray(source.hashtags ?? source.tags),
+        soundSuggestion: firstString(source, "soundSuggestion", "sound_suggestion", "sound") || "",
+        tips: asStringArray(source.tips ?? source.suggestions),
       };
       continue;
     }
 
     if (platform === "youtube") {
       normalized.youtube = {
-        title: asString(source.title) || "",
-        description: asString(source.description) || asString(source.content) || "",
-        tags: asStringArray(source.tags),
-        thumbnailIdea: asString(source.thumbnailIdea) || "",
-        tips: asStringArray(source.tips),
+        title: firstString(source, "title", "headline") || "",
+        description:
+          firstString(source, "description", "content", "text", "body") || "",
+        tags: asStringArray(source.tags ?? source.hashtags),
+        thumbnailIdea: firstString(source, "thumbnailIdea", "thumbnail_idea", "thumbnail") || "",
+        tips: asStringArray(source.tips ?? source.suggestions),
       };
     }
   }
@@ -252,21 +280,15 @@ function buildSystemPrompt(params: {
     "STRICT_RULES:",
     "1) Use only user-provided facts and URL context. Do not invent claims.",
     "2) Return strict JSON only, no markdown, no prose outside JSON.",
-    "3) Generate only requested platforms.",
+    "3) Generate ONLY requested platforms. Platform keys MUST be lowercase: facebook, instagram, tiktok, youtube.",
     "4) Keep hooks practical and clear. Include CTA and platform-specific hashtags/tags.",
     "5) If medical/dental context exists, avoid absolute claims and guaranteed outcomes.",
     "",
     JSON_FORMAT_RULES,
     "",
-    "JSON_SCHEMA:",
-    "{",
-    '  "platforms": {',
-    '    "facebook": { "content": "", "hashtags": [""], "estimatedEngagement": "Low|Medium|High|Viral Potential", "tips": [""] },',
-    '    "instagram": { "caption": "", "hashtags": [""], "altText": "", "bestTimeToPost": "", "tips": [""] },',
-    '    "tiktok": { "hook": "", "script": "", "hashtags": [""], "soundSuggestion": "", "tips": [""] },',
-    '    "youtube": { "title": "", "description": "", "tags": [""], "thumbnailIdea": "", "tips": [""] }',
-    "  }",
-    "}",
+    "JSON_SCHEMA (keys must be lowercase, wrap in \"platforms\" object):",
+    '{ "platforms": { "facebook": { "content": "", "hashtags": [], "estimatedEngagement": "Medium", "tips": [] }, "instagram": { "caption": "", "hashtags": [], "altText": "", "bestTimeToPost": "", "tips": [] }, "tiktok": { "hook": "", "script": "", "hashtags": [], "soundSuggestion": "", "tips": [] }, "youtube": { "title": "", "description": "", "tags": [], "thumbnailIdea": "", "tips": [] } } }',
+    "Return ONLY the requested platforms from the schema above. Example for facebook+instagram: {\"platforms\":{\"facebook\":{...},\"instagram\":{...}}}",
   ]
     .filter(Boolean)
     .join("\n");
@@ -910,114 +932,140 @@ export async function POST(request: NextRequest) {
     ? `${systemPrompt}\n\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}`
     : systemPrompt;
 
-  try {
-    const aiResult = await routeAICall({
-      task: "braindump",
-      messages: [
-        { role: "system", content: enrichedSystemPrompt },
-        { role: "user", content: userMessage },
-        { role: "assistant", content: "{" },
-      ],
-      maxTokens,
+  const logSchemaFailure = async (params: {
+    provider: string;
+    model: string;
+    errorCode: string;
+    latencyMs: number;
+  }) => {
+    await logAIUsageEvent({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: params.provider,
+      model: params.model,
+      mode: "ai",
+      inputTokens: estimatedInputTokens,
+      outputTokens: 0,
+      estimatedCostUsd: 0,
+      latencyMs: params.latencyMs,
+      success: false,
+      errorCode: params.errorCode,
+      metadata: {
+        objective,
+        objectiveValueConfig: valueConfig,
+        roiGate: roiDecision,
+      },
     });
+  };
 
-    // Prepend the opening brace used as assistant prefill
-    aiResult.text = "{" + (aiResult.text || "");
-    const modelText = aiResult.text;
-    const resolvedModel = aiResult.model;
+  const schemaRetryHint = `\n\nCRITICAL: Your previous response did not match the required schema. Return ONLY valid JSON: {"platforms":{"facebook":{...},"instagram":{...}}} with lowercase keys and requested platforms only.`;
 
-    if (!modelText.trim()) {
-      const payload = deterministicFallback("Model response had no text block. Deterministic fallback used.");
+  let aiResult: Awaited<ReturnType<typeof routeAICall>> | null = null;
+  let normalizedPlatforms: Record<string, unknown> = {};
+  let resolvedModel = "";
 
-      await setIntentCache({
-        supabase: session.supabase,
-        organizationId: session.organizationId,
-        userId: session.user.id,
-        routeKey: ROUTE_KEY,
-        intentHash,
-        provider: "template",
-        model: "template",
-        response: payload,
-        estimatedCostUsd: 0,
-        ttlMs: ERROR_CACHE_TTL_MS,
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      aiResult = await routeAICall({
+        task: "braindump",
+        messages: [
+          { role: "system", content: enrichedSystemPrompt },
+          { role: "user", content: userMessage + (attempt === 1 ? schemaRetryHint : "") },
+          { role: "assistant", content: "{" },
+        ],
+        maxTokens,
       });
 
-      await logAIUsageEvent({
-        supabase: session.supabase,
-        organizationId: session.organizationId,
-        userId: session.user.id,
-        routeKey: ROUTE_KEY,
-        intentHash,
+      aiResult.text = "{" + (aiResult.text || "");
+      resolvedModel = aiResult.model;
+
+      if (!aiResult.text.trim()) {
+        await logSchemaFailure({
+          provider: aiResult.provider,
+          model: resolvedModel,
+          errorCode: "missing_text_block",
+          latencyMs: aiResult.latencyMs,
+        });
+        return NextResponse.json(
+          { error: "AI returned no content. Te rugăm încerci din nou." },
+          { status: 503 }
+        );
+      }
+
+      const parsed = parseAIJson(aiResult.text);
+      normalizedPlatforms = parsed ? sanitizePlatforms(parsed, requestedPlatforms) : {};
+
+      if (Object.keys(normalizedPlatforms).length > 0) break;
+
+      if (attempt === 0) continue; // retry with schema hint
+      await logSchemaFailure({
         provider: aiResult.provider,
         model: resolvedModel,
-        mode: "ai",
-        inputTokens: estimatedInputTokens,
-        outputTokens: 0,
-        estimatedCostUsd: 0,
-        latencyMs: aiResult.latencyMs,
-        success: false,
-        errorCode: "missing_text_block",
-        metadata: {
-          fallback: "deterministic",
-          objective,
-          objectiveValueConfig: valueConfig,
-          roiGate: roiDecision,
-        },
-      });
-
-      return NextResponse.json(payload);
-    }
-
-    const parsed = parseAIJson(modelText);
-    const normalizedPlatforms = parsed ? sanitizePlatforms(parsed, requestedPlatforms) : {};
-
-    if (!Object.keys(normalizedPlatforms).length) {
-      const payload = deterministicFallback("Model response did not match schema. Deterministic fallback used.");
-
-      await setIntentCache({
-        supabase: session.supabase,
-        organizationId: session.organizationId,
-        userId: session.user.id,
-        routeKey: ROUTE_KEY,
-        intentHash,
-        provider: "template",
-        model: "template",
-        response: payload,
-        estimatedCostUsd: 0,
-        ttlMs: ERROR_CACHE_TTL_MS,
-      });
-
-      await logAIUsageEvent({
-        supabase: session.supabase,
-        organizationId: session.organizationId,
-        userId: session.user.id,
-        routeKey: ROUTE_KEY,
-        intentHash,
-        provider: aiResult.provider,
-        model: resolvedModel,
-        mode: "ai",
-        inputTokens: estimatedInputTokens,
-        outputTokens: 0,
-        estimatedCostUsd: 0,
-        latencyMs: aiResult.latencyMs,
-        success: false,
         errorCode: "invalid_schema",
-        metadata: {
-          fallback: "deterministic",
-          objective,
-          objectiveValueConfig: valueConfig,
-          roiGate: roiDecision,
-        },
+        latencyMs: aiResult.latencyMs,
       });
-
-      return NextResponse.json(payload);
+      return NextResponse.json(
+        { error: "Răspuns AI invalid (schema). Te rugăm încerci din nou." },
+        { status: 503 }
+      );
     }
+  } catch (error) {
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? (error as { status: number }).status
+        : null;
+    await logAIUsageEvent({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+      userId: session.user.id,
+      routeKey: ROUTE_KEY,
+      intentHash,
+      provider: "unknown",
+      model: "unknown",
+      mode: "ai",
+      inputTokens: 0,
+      outputTokens: 0,
+      estimatedCostUsd: 0,
+      latencyMs: 0,
+      success: false,
+      errorCode: "ai_unavailable",
+      metadata: {
+        objective,
+        objectiveValueConfig: valueConfig,
+        roiGate: roiDecision,
+        httpStatus: status,
+      },
+    });
+    return NextResponse.json(
+      {
+        error: status
+          ? `AI temporar indisponibil (${status}). Te rugăm încerci din nou.`
+          : "AI temporar indisponibil. Te rugăm încerci din nou.",
+      },
+      { status: 503 }
+    );
+  }
+
+  if (!aiResult || !Object.keys(normalizedPlatforms).length) {
+    return NextResponse.json(
+      { error: "Răspuns AI invalid. Te rugăm încerci din nou." },
+      { status: 503 }
+    );
+  }
+
+  try {
 
     const responsePayload = {
       platforms: normalizedPlatforms,
       meta: {
         mode: "ai",
-        provider: aiResult.provider,
+        provider: aiResult!.provider,
         model: resolvedModel,
         maxTokens,
         qualityMode: tunedQualityMode,
@@ -1041,7 +1089,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: aiResult.provider,
+      provider: aiResult!.provider,
       model: resolvedModel,
       response: responsePayload,
       estimatedCostUsd,
@@ -1054,13 +1102,13 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: aiResult.provider,
+      provider: aiResult!.provider,
       model: resolvedModel,
       mode: "ai",
-      inputTokens: aiResult.inputTokens || estimatedInputTokens,
-      outputTokens: aiResult.outputTokens || estimatedOutputTokens,
+      inputTokens: aiResult!.inputTokens || estimatedInputTokens,
+      outputTokens: aiResult!.outputTokens || estimatedOutputTokens,
       estimatedCostUsd,
-      latencyMs: aiResult.latencyMs,
+      latencyMs: aiResult!.latencyMs,
       success: true,
       metadata: {
         qualityMode: tunedQualityMode,
@@ -1110,25 +1158,6 @@ export async function POST(request: NextRequest) {
       typeof (error as { status?: unknown }).status === "number"
         ? (error as { status: number }).status
         : null;
-    const payload = deterministicFallback(
-      status
-        ? `AI temporarily unavailable (${status}). Deterministic fallback used.`
-        : "AI temporarily unavailable. Deterministic fallback used."
-    );
-
-    await setIntentCache({
-      supabase: session.supabase,
-      organizationId: session.organizationId,
-      userId: session.user.id,
-      routeKey: ROUTE_KEY,
-      intentHash,
-      provider: "template",
-      model: "template",
-      response: payload,
-      estimatedCostUsd: 0,
-      ttlMs: ERROR_CACHE_TTL_MS,
-    });
-
     await logAIUsageEvent({
       supabase: session.supabase,
       organizationId: session.organizationId,
@@ -1145,13 +1174,18 @@ export async function POST(request: NextRequest) {
       success: false,
       errorCode: status ? `http_${status}` : "unknown",
       metadata: {
-        fallback: "deterministic",
         objective,
         objectiveValueConfig: valueConfig,
         roiGate: roiDecision,
       },
     });
-
-    return NextResponse.json(payload);
+    return NextResponse.json(
+      {
+        error: status
+          ? `AI temporar indisponibil (${status}). Te rugăm încerci din nou.`
+          : "AI temporar indisponibil. Te rugăm încerci din nou.",
+      },
+      { status: 503 }
+    );
   }
 }
