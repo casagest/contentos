@@ -436,8 +436,12 @@ async function scrapeWithJinaReader(
   try {
     const jinaUrl = `https://r.jina.ai/${encodeURIComponent(url)}`;
     const response = await safeFetch(jinaUrl, {
-      timeoutMs,
-      headers: { "X-Return-Format": "markdown", "X-No-Cache": "true" },
+      timeoutMs: Math.max(timeoutMs, 15_000),
+      headers: {
+        "X-Return-Format": "markdown",
+        "X-No-Cache": "true",
+        "User-Agent": "ContentOS/1.0 (scraper; +https://contentos.ro)",
+      },
     });
     if (!response.ok) return null;
 
@@ -513,6 +517,10 @@ export async function scrapeUrlContent(
     if (fbResult) return fbResult;
   }
 
+  // Jina Reader first (gratuit, fără API key) — mai fiabil când Firecrawl nu e configurat/eșuează
+  const jinaResult = await scrapeWithJinaReader(url, maxChars, minChars, timeoutMs);
+  if (jinaResult) return jinaResult;
+
   const firecrawlResult = await scrapeWithFirecrawl(
     url,
     maxChars,
@@ -520,10 +528,6 @@ export async function scrapeUrlContent(
     options?.timeoutMs ?? FIRECRAWL_TIMEOUT_MS
   );
   if (firecrawlResult) return firecrawlResult;
-
-  // Jina Reader (gratuit) — funcționează pentru multe site-uri unde fetch direct eșuează
-  const jinaResult = await scrapeWithJinaReader(url, maxChars, minChars, timeoutMs);
-  if (jinaResult) return jinaResult;
 
   return scrapeWithFallback(url, maxChars, minChars, timeoutMs);
 }
