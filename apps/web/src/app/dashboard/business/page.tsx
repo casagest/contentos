@@ -57,6 +57,7 @@ import {
   ArrowRight,
   Settings,
   ChevronRight,
+  Calendar,
   Dumbbell,
   Loader2,
   Check,
@@ -1157,6 +1158,18 @@ export default function BusinessDashboardPage() {
         </Link>
       </div>
 
+      {/* KPI cards — per industrie, întotdeauna vizibile */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {config.kpis.map((kpi) => (
+          <KpiCard
+            key={kpi.key}
+            kpi={kpi}
+            value={kpiValues[kpi.key] ?? kpi.defaultValue}
+            onEdit={handleKpiEdit}
+          />
+        ))}
+      </div>
+
       {/* Stats — only show if we have real data */}
       {(socialAccounts.length > 0 || recentPosts.length > 0) && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -1189,6 +1202,7 @@ export default function BusinessDashboardPage() {
 
       {/* Empty state — show when no accounts connected */}
       {socialAccounts.length === 0 && (
+        <>
         <div className="rounded-xl bg-card border border-border p-8 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-primary" />
@@ -1215,10 +1229,88 @@ export default function BusinessDashboardPage() {
             </Link>
           </div>
         </div>
+
+          <div className="grid lg:grid-cols-3 gap-6 mt-6">
+            <div className="lg:col-span-2 space-y-6">
+              <AutopilotCard />
+              <div className="rounded-xl bg-card border border-border p-5">
+                <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-400" />
+                  Acțiuni rapide
+                </h2>
+                <QuickActions />
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="rounded-xl bg-card border border-border p-5">
+                <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-yellow-400" />
+                  Sfaturi pentru {config.label}
+                </h2>
+                <IndustryTips tips={config.contentTips} />
+              </div>
+              <div className="rounded-xl bg-card border border-border p-5">
+                <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-brand-400" />
+                  Funnel ideal
+                </h2>
+                <FunnelVisualization stages={config.funnelStages} />
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* Recent posts — only if we have some */}
-      {recentPosts.length > 0 && (
+      {/* Layout complet — când sunt conturi conectate */}
+      {socialAccounts.length > 0 && (
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <EngagementOverview data={analyticsData} />
+            <SocialPerformance accounts={socialAccounts} recentPosts={recentPosts} />
+          </div>
+          <div className="space-y-6">
+            <AutopilotCard />
+            <div className="rounded-xl bg-card border border-border p-5">
+              <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-brand-400" />
+                Săptămâna următoare
+              </h2>
+              <ContentCalendarPreview />
+            </div>
+            <div className="rounded-xl bg-card border border-border p-5">
+              <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                Idei de conținut
+              </h2>
+              <AiContentSuggestions config={config} />
+            </div>
+            <div className="rounded-xl bg-card border border-border p-5">
+              <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-yellow-400" />
+                Sfaturi {config.label}
+              </h2>
+              <IndustryTips tips={config.contentTips} />
+            </div>
+            <div className="rounded-xl bg-card border border-border p-5">
+              <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Target className="w-4 h-4 text-brand-400" />
+                Funnel
+              </h2>
+              <FunnelVisualization stages={config.funnelStages} />
+            </div>
+            <div className="rounded-xl bg-card border border-border p-5">
+              <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-400" />
+                Acțiuni rapide
+              </h2>
+              <QuickActions />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recent posts — când avem postări fără conturi active (edge case) */}
+      {recentPosts.length > 0 && socialAccounts.length === 0 && (
         <div className="rounded-xl bg-card border border-border p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-white flex items-center gap-2">
@@ -1249,39 +1341,6 @@ export default function BusinessDashboardPage() {
                 <span className="text-xs text-muted-foreground">
                   {post.likes_count + post.comments_count + post.shares_count} eng.
                 </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Connected accounts — only if we have some */}
-      {socialAccounts.length > 0 && (
-        <div className="rounded-xl bg-card border border-border p-5">
-          <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-blue-400" />
-            Conturi conectate
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {socialAccounts.map((acc) => (
-              <div key={acc.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                {acc.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={acc.avatar_url} alt="" className="w-8 h-8 rounded-full" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
-                    {acc.platform?.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {acc.platform_name || acc.platform_username || acc.platform}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {acc.followers_count?.toLocaleString() || 0} followers
-                  </p>
-                </div>
-                <span className={`w-2 h-2 rounded-full ${acc.sync_status === "active" ? "bg-emerald-400" : "bg-muted-foreground"}`} />
               </div>
             ))}
           </div>

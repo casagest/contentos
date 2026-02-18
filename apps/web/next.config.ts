@@ -15,25 +15,25 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.googleusercontent.com" },
       { protocol: "https", hostname: "*.supabase.co" },
     ],
-    // Use Vercel's image optimization
     formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 60 * 60 * 24, // 24h cache for optimized images
+    minimumCacheTTL: 60 * 60 * 24,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
   },
   experimental: {
-    // Tree-shake large icon/component libraries
-    optimizePackageImports: ["lucide-react", "@supabase/supabase-js", "framer-motion"],
+    optimizePackageImports: [
+      "lucide-react",
+      "@supabase/supabase-js",
+      "framer-motion",
+      "recharts",
+    ],
+    staleTimes: { dynamic: 30, static: 180 },
   },
-  // Gzip/Brotli compression
   compress: true,
-  // Remove X-Powered-By header
   poweredByHeader: false,
-  // Enable React strict mode for better development
   reactStrictMode: true,
-  // Logging for debugging
-  logging: {
-    fetches: {
-      fullUrl: false,
-    },
+  logging: { fetches: { fullUrl: false } },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
 };
 
