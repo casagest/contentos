@@ -17,6 +17,7 @@ import {
   Clock,
   Settings,
   LogOut,
+  LayoutDashboard,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -41,6 +42,7 @@ export function CommandPalette() {
   }, [router]);
 
   const items: CommandItem[] = [
+    { id: "command-center", label: "Command Center", icon: <LayoutDashboard className="w-4 h-4" />, href: "/dashboard/command-center", keywords: ["principal", "dashboard", "home"], group: "Principal" },
     { id: "braindump", label: "Brain Dump", icon: <Brain className="w-4 h-4" />, href: "/braindump", keywords: ["idei", "generare", "brainstorm"], group: "Creează" },
     { id: "compose", label: "Compune Conținut", icon: <PenTool className="w-4 h-4" />, href: "/compose", keywords: ["scrie", "postare", "text"], group: "Creează" },
     { id: "coach", label: "Antrenor AI", icon: <Sparkles className="w-4 h-4" />, href: "/coach", keywords: ["sfaturi", "recomandări", "îmbunătățire"], group: "Instrumente AI" },

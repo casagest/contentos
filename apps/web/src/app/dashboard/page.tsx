@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Dashboard — ContentOS",
+  title: "Command Center — ContentOS",
 };
 
 export default function DashboardPage() {
-  redirect("/dashboard/business");
+  redirect("/dashboard/command-center");
 }
