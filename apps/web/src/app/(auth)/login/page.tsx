@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { login } from "../actions";
 import { SubmitButton } from "./submit-button";
 import { sanitizeRedirectPath } from "@/lib/redirect";
 import { Mail, Lock, ArrowRight } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Conectare — ContentOS",
@@ -40,7 +41,7 @@ export default async function LoginPage({
         </div>
       )}
 
-      <form action={login} className="space-y-5">
+      <form id="login-form" action="/api/auth/login" method="POST" className="space-y-5">
         <input type="hidden" name="redirect" value={redirectTo} />
 
         {/* Email */}
