@@ -98,8 +98,13 @@ export default function RootLayout({
             {children}
           </div>
         </ToastProvider>
-        <SpeedInsights />
-        <Analytics />
+        {/* Setează NEXT_PUBLIC_VERCEL_ANALYTICS=1 în Vercel după ce activezi Web Analytics în Dashboard */}
+        {String(process.env.NEXT_PUBLIC_VERCEL_ANALYTICS || "").trim() === "1" && (
+          <>
+            <SpeedInsights />
+            <Analytics />
+          </>
+        )}
       </body>
     </html>
   );
