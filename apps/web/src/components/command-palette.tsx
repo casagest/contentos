@@ -44,7 +44,7 @@ export function CommandPalette() {
     { id: "braindump", label: "Creier Idei", icon: <Brain className="w-4 h-4" />, href: "/braindump", keywords: ["idei", "generare", "brainstorm"], group: "Creează" },
     { id: "compose", label: "Compune Conținut", icon: <PenTool className="w-4 h-4" />, href: "/compose", keywords: ["scrie", "postare", "text"], group: "Creează" },
     { id: "coach", label: "Antrenor AI", icon: <Sparkles className="w-4 h-4" />, href: "/coach", keywords: ["sfaturi", "recomandări", "îmbunătățire"], group: "Instrumente AI" },
-    { id: "analyze", label: "Scorant", icon: <BarChart3 className="w-4 h-4" />, href: "/analyze", keywords: ["scor", "algoritm", "evaluare"], group: "Instrumente AI" },
+    { id: "analyze", label: "Analiză", icon: <BarChart3 className="w-4 h-4" />, href: "/analyze", keywords: ["scor", "algoritm", "evaluare"], group: "Instrumente AI" },
     { id: "research", label: "Cercetare Conturi", icon: <Search className="w-4 h-4" />, href: "/research", keywords: ["analiză", "competitori", "conturi"], group: "Instrumente AI" },
     { id: "inspiration", label: "Inspirație", icon: <Lightbulb className="w-4 h-4" />, href: "/inspiration", keywords: ["idei", "trending", "viral"], group: "Instrumente AI" },
     { id: "video-script", label: "Script Video", icon: <Video className="w-4 h-4" />, href: "/video-script", keywords: ["tiktok", "reels", "video", "script"], group: "Media" },
