@@ -12,7 +12,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { NotificationCenter } from "@/components/notification-center";
 
 const pageTitles: Record<string, string> = {
-  "/braindump": "Creier Idei",
+  "/braindump": "Brain Dump",
   "/compose": "Compune",
   "/coach": "Antrenor AI",
   "/analyze": "Analiză",
@@ -27,7 +27,7 @@ const pageTitles: Record<string, string> = {
 };
 
 const pageBreadcrumbs: Record<string, { group: string; label: string }> = {
-  "/braindump": { group: "Creează", label: "Creier Idei" },
+  "/braindump": { group: "Creează", label: "Brain Dump" },
   "/compose": { group: "Creează", label: "Compune" },
   "/coach": { group: "Instrumente AI", label: "Antrenor AI" },
   "/analyze": { group: "Instrumente AI", label: "Analiză" },
@@ -74,7 +74,7 @@ export default function DashboardShellClient({
                 <span className="text-xs text-muted-foreground/40">/</span>
               </>
             )}
-            <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
+            <h1 className="font-display text-sm font-semibold tracking-tight">{title}</h1>
           </nav>
 
           {/* Right-side header actions */}

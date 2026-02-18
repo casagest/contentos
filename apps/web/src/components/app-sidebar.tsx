@@ -40,7 +40,7 @@ const navGroups = [
   {
     label: "CREEAZĂ",
     items: [
-      { title: "Creier Idei", url: "/braindump", icon: Brain },
+      { title: "Brain Dump", url: "/braindump", icon: Brain },
       { title: "Compune", url: "/compose", icon: PenTool },
     ],
   },
@@ -96,7 +96,7 @@ export function AppSidebar({ draftCount, scheduledCount, ...props }: AppSidebarP
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 text-white font-bold shadow-md shadow-orange-500/20">
             <Sparkles className="h-4 w-4" />
           </div>
-          <span className="text-base font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+          <span className="font-display text-base font-bold tracking-tight group-data-[collapsible=icon]:hidden">
             Content<span className="text-primary">OS</span>
           </span>
         </Link>

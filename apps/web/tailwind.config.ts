@@ -106,9 +106,14 @@ const config: Config = {
   				'sans-serif'
   			],
   			display: [
-  				'var(--font-cal-sans)',
+  				'var(--font-bricolage)',
   				'var(--font-dm-sans)',
   				'system-ui'
+  			],
+  			mono: [
+  				'var(--font-mono)',
+  				'ui-monospace',
+  				'monospace'
   			]
   		},
   		borderRadius: {
