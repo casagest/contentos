@@ -57,7 +57,7 @@ const navGroups = [
     label: "INSTRUMENTE AI",
     items: [
       { title: "Antrenor AI", url: "/coach", icon: MessageSquare },
-      { title: "Analiză", url: "/analyze", icon: Target },
+      { title: "Scor Conținut", url: "/analyze", icon: Target },
       { title: "Cercetare", url: "/research", icon: Search },
       { title: "Inspirație", url: "/inspiration", icon: Lightbulb },
     ],
@@ -72,7 +72,7 @@ const navGroups = [
   {
     label: "MONITORIZARE",
     items: [
-      { title: "Analiză", url: "/analytics", icon: BarChart3 },
+      { title: "Performanță", url: "/analytics", icon: BarChart3 },
       { title: "Calendar", url: "/calendar", icon: Calendar },
       { title: "Istoric", url: "/history", icon: History },
     ],

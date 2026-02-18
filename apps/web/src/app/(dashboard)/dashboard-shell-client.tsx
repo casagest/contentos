@@ -18,12 +18,12 @@ const pageTitles: Record<string, string> = {
   "/braindump": "Brain Dump",
   "/compose": "Compune",
   "/coach": "Antrenor AI",
-  "/analyze": "Analiză",
+  "/analyze": "Scor Conținut",
   "/research": "Cercetare Conturi",
   "/inspiration": "Inspirație",
   "/video-script": "Script Video",
   "/image-editor": "Editor Imagine",
-  "/analytics": "Analiză",
+  "/analytics": "Performanță",
   "/calendar": "Calendar Conținut",
   "/history": "Istoric Postări",
   "/settings": "Setări",
@@ -36,12 +36,12 @@ const pageBreadcrumbs: Record<string, { group: string; label: string }> = {
   "/braindump": { group: "Creează", label: "Brain Dump" },
   "/compose": { group: "Creează", label: "Compune" },
   "/coach": { group: "Instrumente AI", label: "Antrenor AI" },
-  "/analyze": { group: "Instrumente AI", label: "Analiză" },
+  "/analyze": { group: "Instrumente AI", label: "Scor Conținut" },
   "/research": { group: "Instrumente AI", label: "Cercetare" },
   "/inspiration": { group: "Instrumente AI", label: "Inspirație" },
   "/video-script": { group: "Media", label: "Script Video" },
   "/image-editor": { group: "Media", label: "Editor Imagine" },
-  "/analytics": { group: "Monitorizare", label: "Analiză" },
+  "/analytics": { group: "Monitorizare", label: "Performanță" },
   "/calendar": { group: "Monitorizare", label: "Calendar" },
   "/history": { group: "Monitorizare", label: "Istoric" },
   "/settings": { group: "Cont", label: "Setări" },
@@ -106,8 +106,15 @@ export default function DashboardShellClient({
         {/* Network status banner */}
         <NetworkStatus />
 
-        {/* Page content with route transition */}
-        <main id="main-content" className="flex-1 p-6">
+        {/* Page content with route transition — grid background per design plan */}
+        <main
+          id="main-content"
+          className="flex-1 p-6 relative"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        >
           <ErrorBoundary>
             <Suspense fallback={<PageFallback />}>
               <AnimatePresence mode="wait" initial={false}>

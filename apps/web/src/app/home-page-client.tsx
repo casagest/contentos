@@ -81,7 +81,7 @@ const features = [
   },
   {
     icon: Target,
-    title: "Analiză",
+    title: "Scor Conținut",
     desc: "Scor 0-100 pe 9 metrici per platformă. Știi cât de bine va performa postarea ÎNAINTE să o publici.",
   },
   {

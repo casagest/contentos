@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
     ".next/cache/**",
     "e2e/**",
     "playwright.config.ts",
+    "playwright-report/**",
     "test-results/**",
     "coverage/**",
   ]),

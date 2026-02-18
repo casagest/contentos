@@ -17,6 +17,7 @@ import {
   Clock,
   ChevronRight,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 interface CommandCenterStats {
@@ -40,7 +41,7 @@ const QUICK_ACTIONS = [
   { href: "/compose", label: "Compune", icon: PenTool, color: "from-violet-500 to-purple-600" },
   { href: "/research", label: "Cercetare", icon: Search, color: "from-cyan-500 to-blue-600" },
   { href: "/coach", label: "Antrenor AI", icon: MessageSquare, color: "from-emerald-500 to-teal-600" },
-  { href: "/analyze", label: "Analiză", icon: BarChart3, color: "from-rose-500 to-pink-600" },
+  { href: "/analyze", label: "Scor Conținut", icon: BarChart3, color: "from-rose-500 to-pink-600" },
 ];
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -60,20 +61,33 @@ function formatEngagement(n: number): string {
 export default function CommandCenterPage() {
   const [stats, setStats] = useState<CommandCenterStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = () => {
+    setError(null);
+    setLoading(true);
+    fetch("/api/command-center")
+      .then((r) => {
+        if (!r.ok) throw new Error("Eroare încărcare");
+        return r.json();
+      })
+      .then((data) => setStats(data))
+      .catch(() => {
+        setStats({
+          drafts: 0,
+          scheduled: 0,
+          postsThisWeek: 0,
+          totalEngagement: 0,
+          accountsCount: 0,
+          recentPosts: [],
+        });
+        setError("Nu am putut încărca datele");
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetch("/api/command-center")
-      .then((r) => r.json())
-      .then((data) => setStats(data))
-      .catch(() => setStats({
-        drafts: 0,
-        scheduled: 0,
-        postsThisWeek: 0,
-        totalEngagement: 0,
-        accountsCount: 0,
-        recentPosts: [],
-      }))
-      .finally(() => setLoading(false));
+    queueMicrotask(() => fetchStats());
   }, []);
 
   const s = stats || {
@@ -106,9 +120,22 @@ export default function CommandCenterPage() {
             Control central — metrici, acțiuni rapide, activitate
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-mono text-xs text-emerald-400">SISTEM OK</span>
+        <div className="flex items-center gap-2">
+          {error && (
+            <button
+              onClick={fetchStats}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs hover:bg-amber-500/20 transition"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Reîncearcă
+            </button>
+          )}
+          {!error && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-mono text-xs text-emerald-400">SISTEM OK</span>
+            </div>
+          )}
         </div>
       </div>
 

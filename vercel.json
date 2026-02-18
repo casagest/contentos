@@ -7,26 +7,11 @@
   "ignoreCommand": "npx turbo-ignore @contentos/web",
   "regions": ["fra1"],
   "crons": [
-    {
-      "path": "/api/cron/publish-scheduled",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/analytics-daily",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/metrics-sync",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/token-refresh",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/memory-consolidation",
-      "schedule": "0 4 * * *"
-    }
+    { "path": "/api/cron/publish-scheduled", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/analytics-daily", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/metrics-sync", "schedule": "*/30 * * * *" },
+    { "path": "/api/cron/token-refresh", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/memory-consolidation", "schedule": "0 4 * * *" }
   ],
   "headers": [
     {
@@ -36,20 +21,25 @@
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(self), geolocation=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.stripe.com https://*.facebook.net https://*.vercel-insights.com https://*.tiktok.com https://*.linkedin.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://*.stripe.com https://*.facebook.net https://*.tiktok.com https://*.linkedin.com https://*.google.com https://*.googleapis.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://openrouter.ai; frame-src 'self' https://*.stripe.com https://*.facebook.com https://*.facebook.net https://*.tiktok.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+        }
       ]
     },
     {
       "source": "/api/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store, max-age=0" }
-      ]
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
     {
       "source": "/_next/static/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/(.*)\\.(ico|png|jpg|jpeg|gif|webp|svg|avif|woff2)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     }
   ]
 }

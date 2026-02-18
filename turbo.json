@@ -3,13 +3,16 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["NODE_ENV"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {},
-    "type-check": {}
+    "type-check": {},
+    "test": { "outputs": ["coverage/**"] },
+    "test:coverage": { "outputs": ["coverage/**"] }
   }
 }
