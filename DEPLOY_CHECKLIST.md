@@ -87,7 +87,7 @@ Dacă primești eroarea: **"The pattern 'api/ai/**' defined in functions doesn't
 
 1. **Șterge configurația greșită** din Vercel Dashboard: Settings → Functions → elimină orice regulă cu `api/ai/**` sau `api/*`.
 2. **Pattern-ul corect** e deja în `vercel.json`: `apps/web/src/app/api/ai/**/route.ts` (pentru Next.js App Router, trebuie căile către fișiere, nu URL-urile API).
-3. Dacă ai **Root Directory** = `apps/web` în Settings: schimbă în `vercel.json` la `src/app/api/ai/**/route.ts`.
+3. ✅ Pattern confirmat pentru Root Directory = `apps/web`: `src/app/api/ai/**/route.ts`.
 4. Rutele AI au acum `maxDuration: 60s` și `memory: 1024MB` (Pro plan).
 
 ## 🚀 After Setting Env Vars
