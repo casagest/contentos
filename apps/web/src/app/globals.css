@@ -98,6 +98,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  /* ── Bricolage Grotesque on all headings (Design 2030) ── */
+  h1, h2, h3, h4 {
+    font-family: var(--font-bricolage);
+  }
 }
 
 html {
@@ -174,3 +178,11 @@ html {
 .animate-progress-shimmer { background-size: 200% 100%; animation: progress-shimmer 2s linear infinite; }
 .animate-border-glow { animation: border-glow 4s ease-in-out infinite; }
 .animate-float-subtle { animation: float-subtle 6s ease-in-out infinite; }
+
+/* ── Dashboard grid pattern background (Design 2030) ── */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}

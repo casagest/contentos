@@ -109,11 +109,7 @@ export default function DashboardShellClient({
         {/* Page content with route transition — grid background per design plan */}
         <main
           id="main-content"
-          className="flex-1 p-6 relative"
-          style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
+          className="flex-1 p-6 relative bg-grid-pattern"
         >
           <ErrorBoundary>
             <Suspense fallback={<PageFallback />}>
