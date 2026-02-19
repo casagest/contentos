@@ -81,6 +81,14 @@ Without these, the app is a non-functional demo. Set ALL of them in Vercel → S
 |----------|----------------|-------|
 | `FIRECRAWL_API_KEY` | [firecrawl.dev](https://firecrawl.dev) | Research scraping (better quality) |
 
+## 🔐 Supabase Auth (login + email verificare)
+
+Dacă login nu funcționează și emailurile de verificare nu se trimit:
+- **Site URL** și **Redirect URLs** în Supabase Auth
+- **Custom SMTP** – SMTP-ul implicit trimite doar la adrese autorizate (echipă)
+
+→ Vezi **[docs/SUPABASE_AUTH_FIX.md](docs/SUPABASE_AUTH_FIX.md)** pentru pași detaliați.
+
 ## ⚙️ Vercel Functions (API AI)
 
 Dacă primești eroarea: **"The pattern 'api/ai/**' defined in functions doesn't match any Serverless Functions"**:

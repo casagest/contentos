@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseUrl } from "@/lib/supabase/url";
 
 // Paths that need NO auth check at all (public pages, completely skip Supabase)
-const PUBLIC_PATHS = ["/login", "/register", "/reset-password", "/privacy", "/terms", "/gdpr"];
+const PUBLIC_PATHS = ["/login", "/register", "/reset-password", "/update-password", "/privacy", "/terms", "/gdpr"];
 
 // Protected paths that redirect to login if not authenticated
 const PROTECTED_PREFIXES = [
