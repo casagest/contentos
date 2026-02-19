@@ -81,6 +81,15 @@ Without these, the app is a non-functional demo. Set ALL of them in Vercel → S
 |----------|----------------|-------|
 | `FIRECRAWL_API_KEY` | [firecrawl.dev](https://firecrawl.dev) | Research scraping (better quality) |
 
+## ⚙️ Vercel Functions (API AI)
+
+Dacă primești eroarea: **"The pattern 'api/ai/**' defined in functions doesn't match any Serverless Functions"**:
+
+1. **Șterge configurația greșită** din Vercel Dashboard: Settings → Functions → elimină orice regulă cu `api/ai/**` sau `api/*`.
+2. **Pattern-ul corect** e deja în `vercel.json`: `apps/web/src/app/api/ai/**/route.ts` (pentru Next.js App Router, trebuie căile către fișiere, nu URL-urile API).
+3. Dacă ai **Root Directory** = `apps/web` în Settings: schimbă în `vercel.json` la `src/app/api/ai/**/route.ts`.
+4. Rutele AI au acum `maxDuration: 60s` și `memory: 1024MB` (Pro plan).
+
 ## 🚀 After Setting Env Vars
 
 1. Redeploy on Vercel (Settings → Deployments → Redeploy)
