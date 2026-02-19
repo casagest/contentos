@@ -7,7 +7,7 @@
   "ignoreCommand": "npx turbo-ignore @contentos/web",
   "regions": ["fra1"],
   "functions": {
-    "apps/web/src/app/api/ai/**/route.ts": {
+    "src/app/api/ai/**/route.ts": {
       "memory": 1024,
       "maxDuration": 60
     }
