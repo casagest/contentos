@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
+const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro").trim();
 
 export const metadata = {
   title: "Politica de Confidențialitate",

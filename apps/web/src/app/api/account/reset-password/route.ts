@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(user.email!, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://contentos-project.vercel.app"}/api/auth/callback?next=/update-password`,
+    redirectTo: `${(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://contentos-project.vercel.app").trim()}/api/auth/callback?next=/update-password`,
   });
 
   if (error) {

@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500", "600"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
+const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro").trim();
 
 export const viewport: Viewport = {
   width: "device-width",

@@ -21,15 +21,15 @@ describe("SEO artifacts", () => {
     expect(String(sitemapUrl || "")).toMatch(/\/sitemap\.xml$/);
   });
 
-  it("sitemap includes homepage and legal pages, excludes auth", () => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro";
+  it("sitemap includes homepage, auth, and legal pages", () => {
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro").trim();
     const result = sitemap();
     const urls = result.map((e) => e.url);
     expect(urls).toContain(baseUrl);
+    expect(urls).toContain(`${baseUrl}/login`);
+    expect(urls).toContain(`${baseUrl}/register`);
     expect(urls).toContain(`${baseUrl}/terms`);
     expect(urls).toContain(`${baseUrl}/privacy`);
     expect(urls).toContain(`${baseUrl}/gdpr`);
-    expect(urls).not.toContain(`${baseUrl}/login`);
-    expect(urls).not.toContain(`${baseUrl}/register`);
   });
 });

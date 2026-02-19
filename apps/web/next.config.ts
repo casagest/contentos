@@ -28,6 +28,14 @@ const nextConfig: NextConfig = {
     ],
     staleTimes: { dynamic: 30, static: 180 },
   },
+  async redirects() {
+    return [
+      { source: "/brain-dump", destination: "/braindump", permanent: true },
+      { source: "/score", destination: "/analyze", permanent: true },
+      { source: "/scoring", destination: "/analyze", permanent: true },
+      { source: "/content-score", destination: "/analyze", permanent: true },
+    ];
+  },
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
