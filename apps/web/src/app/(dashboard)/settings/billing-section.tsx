@@ -25,8 +25,11 @@ export default function BillingSection({
   const planConfig = PLANS[currentPlan];
   const isPaid = currentPlan !== "free";
 
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+
   async function handleUpgrade(planId: string) {
     setLoading(planId);
+    setUpgradeError(null);
     try {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
@@ -36,9 +39,11 @@ export default function BillingSection({
       const data = await res.json();
       if (data.url) {
         window.location.assign(data.url);
+      } else if (data.error) {
+        setUpgradeError(data.error);
       }
     } catch {
-      // Silently fail — user can retry
+      setUpgradeError("Eroare la procesare. Încearcă din nou.");
     }
     setLoading(null);
   }
@@ -103,6 +108,14 @@ export default function BillingSection({
           )}
           Gestioneaza abonamentul
         </button>
+      )}
+
+      {/* Upgrade error */}
+      {upgradeError && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+          <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+          {upgradeError}
+        </div>
       )}
 
       {/* Upgrade options */}
