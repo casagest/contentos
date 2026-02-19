@@ -33,8 +33,26 @@ export default defineConfig({
     headless,
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    // --- Auth setup (runs once, saves state) ---
+    { name: "setup", testMatch: /auth\.setup\.ts/, use: { ...devices["Desktop Chrome"] } },
+
+    // --- Public tests (no auth needed) ---
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: /dashboard-pages|braindump-flow|compose-flow|coach-flow|settings-flow|onboarding-flow/ },
+    { name: "firefox", use: { ...devices["Desktop Firefox"] }, testIgnore: /dashboard-pages|braindump-flow|compose-flow|coach-flow|settings-flow|onboarding-flow/ },
+
+    // --- Authenticated tests (depend on setup) ---
+    {
+      name: "chromium-auth",
+      use: { ...devices["Desktop Chrome"], storageState: "playwright/.auth/user.json" },
+      dependencies: ["setup"],
+      testMatch: /dashboard-pages|braindump-flow|compose-flow|coach-flow|settings-flow|onboarding-flow/,
+    },
+    {
+      name: "firefox-auth",
+      use: { ...devices["Desktop Firefox"], storageState: "playwright/.auth/user.json" },
+      dependencies: ["setup"],
+      testMatch: /dashboard-pages|braindump-flow|compose-flow|coach-flow|settings-flow|onboarding-flow/,
+    },
   ],
   webServer:
     BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1")
