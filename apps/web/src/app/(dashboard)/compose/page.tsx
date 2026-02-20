@@ -147,6 +147,80 @@ export default function ComposePage() {
   const [refinementInput, setRefinementInput] = useState("");
   const [isRefining, setIsRefining] = useState(false);
 
+  // Human Touch Points state
+  const [humanTouch, setHumanTouch] = useState({
+    personalDetail: "",
+    toneNuance: "" as "" | "warmer" | "direct" | "ironic" | "vulnerable" | "perfect",
+    humanSurprise: "",
+  });
+  const [isWeaving, setIsWeaving] = useState(false);
+
+  // Weave human touch points into generated content
+  const weaveHumanTouches = useCallback(async () => {
+    if (Object.keys(generatedContent).length === 0) return;
+    const hasInput = humanTouch.personalDetail.trim() || humanTouch.humanSurprise.trim() || (humanTouch.toneNuance && humanTouch.toneNuance !== "perfect");
+    if (!hasInput) return;
+
+    setIsWeaving(true);
+    setError(null);
+
+    try {
+      const currentTexts = Object.entries(generatedContent)
+        .map(([p, v]) => `[${p}]: ${v.text}`)
+        .join("\n\n");
+
+      const toneMap: Record<string, string> = {
+        warmer: "Mai cald și prietenos, ca și cum vorbești cu un prieten bun",
+        direct: "Mai direct și concis, fără ocolișuri",
+        ironic: "Cu o notă de ironie și umor subtil",
+        vulnerable: "Mai vulnerabil și autentic, arată imperfecțiunile",
+      };
+
+      const instructions = [
+        "IMPORTANT: Integrează natural (nu lipi!) aceste elemente umane în textul existent:",
+      ];
+      if (humanTouch.personalDetail.trim()) {
+        instructions.push(`DETALIU PERSONAL de integrat: "${humanTouch.personalDetail}"`);
+      }
+      if (humanTouch.toneNuance && humanTouch.toneNuance !== "perfect") {
+        instructions.push(`AJUSTARE TON: ${toneMap[humanTouch.toneNuance] || humanTouch.toneNuance}`);
+      }
+      if (humanTouch.humanSurprise.trim()) {
+        instructions.push(`GÂND SURPRIZĂ de țesut natural: "${humanTouch.humanSurprise}"`);
+      }
+      instructions.push("Păstrează structura, CTA și hashtag-urile. Variază lungimea propozițiilor. Evită formulări tipic AI.");
+
+      const response = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: `Conținutul actual:\n${currentTexts}\n\n${instructions.join("\n")}`,
+          platforms: selectedPlatforms,
+          objective,
+          tone,
+          includeHashtags,
+          includeEmoji,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Eroare la umanizare");
+      }
+
+      const data = await response.json();
+      if (data.platformVersions) {
+        setGeneratedContent(data.platformVersions);
+      }
+      // Reset touch points after successful weave
+      setHumanTouch({ personalDetail: "", toneNuance: "", humanSurprise: "" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Eroare la umanizare");
+    } finally {
+      setIsWeaving(false);
+    }
+  }, [humanTouch, generatedContent, selectedPlatforms, objective, tone, includeHashtags, includeEmoji]);
+
   const refineContent = useCallback(async () => {
     if (!refinementInput.trim() || Object.keys(generatedContent).length === 0) return;
     setIsRefining(true);
@@ -928,6 +1002,88 @@ export default function ComposePage() {
               {draftSaved}
             </div>
           )}
+
+          {/* ── Human Touch Points ── */}
+          <div className="rounded-2xl bg-gradient-to-br from-orange-500/5 to-purple-500/5 border border-orange-500/15 p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 rounded-lg bg-orange-500/15 flex items-center justify-center">
+                <Wand2 className="w-3.5 h-3.5 text-orange-400" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white">🧬 Atingeri Umane</p>
+                <p className="text-[10px] text-muted-foreground">3 micro-inputuri care fac textul imposibil de detectat ca AI</p>
+              </div>
+            </div>
+
+            {/* 1. Personal Detail */}
+            <div>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                1. Detaliu personal real
+              </label>
+              <input
+                type="text"
+                value={humanTouch.personalDetail}
+                onChange={(e) => setHumanTouch((prev) => ({ ...prev, personalDetail: e.target.value }))}
+                placeholder="Ex: Am scris asta din cafeneaua de lângă Unirii, cu al 3-lea espresso..."
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-orange-500/40"
+              />
+            </div>
+
+            {/* 2. Tone Nuance */}
+            <div>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                2. Nuanță de ton
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  ["warmer", "☀️ Mai cald"],
+                  ["direct", "🎯 Mai direct"],
+                  ["ironic", "😏 Mai ironic"],
+                  ["vulnerable", "💔 Mai vulnerabil"],
+                  ["perfect", "✅ Perfect așa"],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => setHumanTouch((prev) => ({ ...prev, toneNuance: prev.toneNuance === value ? "" : value }))}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition border ${
+                      humanTouch.toneNuance === value
+                        ? "bg-orange-500/15 text-orange-400 border-orange-500/30"
+                        : "bg-white/[0.03] text-muted-foreground border-white/[0.06] hover:text-white hover:border-white/[0.1]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Human Surprise */}
+            <div>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                3. Gând surpriză (ce n-ai spune public, dar gândești)
+              </label>
+              <input
+                type="text"
+                value={humanTouch.humanSurprise}
+                onChange={(e) => setHumanTouch((prev) => ({ ...prev, humanSurprise: e.target.value }))}
+                placeholder="Ex: Sincer, și eu am făcut greșeala asta luna trecută..."
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-orange-500/40"
+              />
+            </div>
+
+            {/* Weave button */}
+            <button
+              onClick={weaveHumanTouches}
+              disabled={isWeaving || (!humanTouch.personalDetail.trim() && !humanTouch.humanSurprise.trim() && (!humanTouch.toneNuance || humanTouch.toneNuance === "perfect"))}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-400 hover:to-purple-500 disabled:opacity-40 text-white font-medium text-sm transition flex items-center justify-center gap-2"
+            >
+              {isWeaving ? (
+                <><RotateCcw className="w-4 h-4 animate-spin" /> Se țese...</>
+              ) : (
+                <><Wand2 className="w-4 h-4" /> Regenerează cu atingerile tale</>
+              )}
+            </button>
+          </div>
 
           {/* Refinement chat */}
           <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-4">
