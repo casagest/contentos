@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +12,9 @@ import {
   Lightbulb,
   CalendarDays,
   Film,
+  Calculator,
+  Clock,
+  TrendingUp,
 } from "lucide-react";
 
 /* FadeIn removed — content visible instantly for better LCP and no invisible sections */
@@ -212,6 +215,202 @@ const faqs = [
     a: "100%. GDPR compliant, date stocate în Uniunea Europeană, criptare end-to-end. Poți solicita ștergerea completă oricând.",
   },
 ];
+
+/* ─── ROI Calculator Component ─── */
+function RoiCalculator() {
+  const [hoursPerWeek, setHoursPerWeek] = useState(6);
+  const [hourlyRate, setHourlyRate] = useState(50);
+
+  const monthlySavingsHours = hoursPerWeek * 4;
+  const monthlySavingsRon = monthlySavingsHours * hourlyRate;
+  const yearlySavingsRon = monthlySavingsRon * 12;
+  const proPrice = 199; // annual price
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center">
+          <Calculator className="w-5 h-5 text-orange-400" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-white">Calculator ROI</h3>
+          <p className="text-xs text-gray-400">Cât economisești cu ContentOS?</p>
+        </div>
+      </div>
+
+      {/* Slider: Ore pe săptămână */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="roi-hours" className="text-sm text-gray-300 font-medium flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-gray-400" />
+            Ore conținut / săptămână
+          </label>
+          <span className="text-sm font-bold text-orange-400">{hoursPerWeek}h</span>
+        </div>
+        <input
+          id="roi-hours"
+          type="range"
+          min={2}
+          max={20}
+          step={1}
+          value={hoursPerWeek}
+          onChange={(e) => setHoursPerWeek(Number(e.target.value))}
+          className="w-full h-2 rounded-full appearance-none cursor-pointer bg-white/10 accent-orange-500"
+          aria-label="Ore pe săptămână dedicate conținutului"
+        />
+        <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+          <span>2h</span>
+          <span>20h</span>
+        </div>
+      </div>
+
+      {/* Slider: Tarif orar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="roi-rate" className="text-sm text-gray-300 font-medium flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-gray-400" />
+            Tariful tău orar
+          </label>
+          <span className="text-sm font-bold text-orange-400">{hourlyRate} RON</span>
+        </div>
+        <input
+          id="roi-rate"
+          type="range"
+          min={20}
+          max={200}
+          step={10}
+          value={hourlyRate}
+          onChange={(e) => setHourlyRate(Number(e.target.value))}
+          className="w-full h-2 rounded-full appearance-none cursor-pointer bg-white/10 accent-orange-500"
+          aria-label="Tarif orar în RON"
+        />
+        <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+          <span>20 RON</span>
+          <span>200 RON</span>
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="rounded-xl bg-white/[0.06] border border-white/[0.08] p-5">
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-400">{monthlySavingsHours}h</div>
+            <div className="text-[11px] text-gray-400 mt-1">ore salvate / lună</div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-400">{monthlySavingsRon.toLocaleString("ro-RO")}</div>
+            <div className="text-[11px] text-gray-400 mt-1">RON salvați / lună</div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">{Math.round(monthlySavingsRon / proPrice)}x</div>
+            <div className="text-[11px] text-gray-400 mt-1">ROI vs plan Pro</div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-white/[0.08] text-center">
+          <p className="text-sm text-gray-300">
+            Economisești <span className="text-emerald-400 font-bold">{yearlySavingsRon.toLocaleString("ro-RO")} RON / an</span> —
+            ContentOS Pro costă <span className="text-white font-semibold">{proPrice * 12} RON / an</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Live Product Demo Showcase (replaces fake testimonials) ─── */
+function ProductShowcase() {
+  const [activeDemo, setActiveDemo] = useState(0);
+
+  const demos = [
+    {
+      title: "Brain Dump → 3 Postări",
+      input: "Am lansat o colecție nouă de cercei handmade, din argint cu pietre naturale...",
+      outputs: [
+        { platform: "Instagram", icon: "📸", text: "✨ NOUĂ COLECȚIE | Cercei handmade din argint cu pietre naturale 💎 Fiecare piesă e unică, creată manual cu atenție la detalii..." },
+        { platform: "Facebook", icon: "📘", text: "Dragii mei! Am muncit 3 luni la colecția asta și sunt atât de mândră să vi-o arăt! 🥰 Cercei din argint 925 cu pietre naturale..." },
+        { platform: "TikTok", icon: "🎵", text: "POV: tocmai ai lansat colecția la care ai lucrat 3 luni 🤩 Cercei handmade argint + pietre naturale | Link în bio" },
+      ],
+    },
+    {
+      title: "Scor Conținut AI",
+      input: "Verifică postarea ta înainte să o publici",
+      outputs: [
+        { platform: "Hook", icon: "🎯", text: "92/100 — Captează atenția în primele 3 secunde" },
+        { platform: "CTA", icon: "📢", text: "78/100 — Adaugă un call-to-action mai specific" },
+        { platform: "Engagement", icon: "💬", text: "95/100 — Provoacă comentarii și share-uri" },
+      ],
+    },
+    {
+      title: "Coach AI Personalizat",
+      input: "Ce să postez săptămâna asta?",
+      outputs: [
+        { platform: "Luni 10:00", icon: "📅", text: "Carousel educativ despre procesul de creație — engagement x3 pe contul tău" },
+        { platform: "Miercuri 14:00", icon: "📅", text: "Reel behind-the-scenes la atelier — TikTok trending sound recomandat" },
+        { platform: "Vineri 18:00", icon: "📅", text: "Testimonial client + produs — boost de conversii weekend" },
+      ],
+    },
+  ];
+
+  const current = demos[activeDemo];
+
+  return (
+    <div>
+      {/* Demo tabs */}
+      <div className="flex flex-wrap justify-center gap-2 mb-8">
+        {demos.map((demo, i) => (
+          <button
+            key={demo.title}
+            onClick={() => setActiveDemo(i)}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeDemo === i
+                ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+                : "bg-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.1]"
+            }`}
+          >
+            {demo.title}
+          </button>
+        ))}
+      </div>
+
+      {/* Demo card */}
+      <div className="max-w-2xl mx-auto">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl overflow-hidden shadow-2xl">
+          {/* Input */}
+          <div className="p-5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+              <span className="text-xs text-orange-400 font-bold uppercase tracking-wider">Input</span>
+            </div>
+            <p className="text-sm text-gray-300 italic">&ldquo;{current.input}&rdquo;</p>
+          </div>
+
+          {/* Output */}
+          <div className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Output AI</span>
+            </div>
+            <div className="space-y-3">
+              {current.outputs.map((output) => (
+                <div
+                  key={output.platform}
+                  className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-4 hover:bg-white/[0.06] transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">{output.icon}</span>
+                    <span className="text-xs font-bold text-white">{output.platform}</span>
+                  </div>
+                  <p className="text-sm text-gray-300 leading-relaxed">{output.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ─── Page Component ─── */
 export default function HomePageClient() {
@@ -673,58 +872,17 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      {/* ── Testimonials (dark section) ── */}
+      {/* ── Product Demo Showcase (replaces fake testimonials) ── */}
       <section className="bg-surface-ground py-20 sm:py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white text-center tracking-tight mb-4">
-            Ce Spun Utilizatorii
+            Vezi ContentOS în Acțiune
           </h2>
           <p className="text-base sm:text-lg text-gray-400 text-center mb-14 max-w-xl mx-auto">
-            Creatori și agenții din România care cresc cu ContentOS.
+            De la idee la postări virale — în câteva secunde.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                name: "Alexandra M.",
-                role: "Manager Social Media",
-                text: "Am redus timpul de creare conținut de la 6 ore pe zi la 45 de minute. Analiza conținutului e un game-changer — știu exact ce va funcționa înainte de a posta.",
-                rating: 5,
-              },
-              {
-                name: "Mihai D.",
-                role: "Fondator Agenție Marketing",
-                text: "Folosesc ContentOS pentru 12 clienți simultan. Brain Dump transformă orice idee vagă în postări optimizate per platformă. Ne-a crescut productivitatea de 10 ori.",
-                rating: 5,
-              },
-              {
-                name: "Elena R.",
-                role: "Creator de conținut",
-                text: "Cel mai bun tool AI care înțelege limba română cu adevărat. Cu diacritice, slang actual și referințe locale. Nu mai sună ca un robot.",
-                rating: 5,
-              },
-            ].map((testimonial) => (
-              <div key={testimonial.name} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 backdrop-blur-sm hover:bg-white/[0.05] transition-colors">
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <svg key={i} className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-sm text-gray-300 leading-relaxed mb-5">&ldquo;{testimonial.text}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold">
-                    {testimonial.name.split(" ").map((n) => n[0]).join("")}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{testimonial.name}</p>
-                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ProductShowcase />
         </div>
       </section>
 
@@ -873,6 +1031,11 @@ export default function HomePageClient() {
               </div>
               );
             })}
+          </div>
+
+          {/* ROI Calculator */}
+          <div className="mt-14 max-w-lg mx-auto" id="roi-calculator">
+            <RoiCalculator />
           </div>
 
           <div>
