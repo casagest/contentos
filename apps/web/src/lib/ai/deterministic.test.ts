@@ -17,7 +17,7 @@ describe("deterministic", () => {
       expect(result.overallScore).toBeGreaterThanOrEqual(0);
       expect(result.overallScore).toBeLessThanOrEqual(100);
       expect(["S", "A", "B", "C", "D", "F"]).toContain(result.grade);
-      expect(result.metrics.length).toBe(9);
+      expect(result.metrics.length).toBe(10);
       expect(result.summary).toBeTruthy();
       expect(result.improvements.length).toBeGreaterThan(0);
       expect(result.alternativeVersions!.length).toBeGreaterThan(0);

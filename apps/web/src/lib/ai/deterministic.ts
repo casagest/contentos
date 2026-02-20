@@ -8,6 +8,7 @@ import type {
   Post,
 } from "@contentos/content-engine";
 import { sanitizeTextForCMSR } from "./cmsr-sanitize";
+import { analyzeHumanness } from "./humanizer";
 
 type CorePlatform = "facebook" | "instagram" | "tiktok" | "youtube";
 
@@ -269,6 +270,9 @@ export function buildDeterministicScore(params: {
   const specificityScore = clamp(55 + numbers * 9, 45, 92);
   const frameworkScore = framework === "AIDA" || framework === "PAS" || framework === "BAB" ? 84 : 76;
 
+  // Humanness analysis — detect AI-isms, measure burstiness and vocabulary entropy
+  const humanness = analyzeHumanness(content);
+
   const metrics: AlgorithmScoreMetric[] = [
     buildMetric("Hook strength", hookScore, "Primele caractere trebuie sa opreasca scroll-ul.", "Deschide cu intrebare sau afirmatie puternica."),
     buildMetric("Readability", readabilityScore, "Fraze clare si usor de parcurs.", "Mentine 12-20 cuvinte per fraza."),
@@ -279,6 +283,12 @@ export function buildDeterministicScore(params: {
     buildMetric("Emotional pull", emotionalScore, "Emotia sustine distribuirea.", "Adauga beneficii clare pentru audienta."),
     buildMetric("Specificity", specificityScore, "Exemplele si cifrele cresc increderea.", "Adauga exemple concrete sau mini-caz."),
     buildMetric("Creative framework", frameworkScore, "Mesajul are structura de copywriting.", "Aplica explicit un framework (AIDA/PAS/BAB)."),
+    buildMetric(
+      "Naturalness",
+      humanness.overallScore,
+      humanness.suggestions[0] || "Textul suna natural si uman.",
+      humanness.suggestions[1] || "Evita formulari tipic AI: 'in concluzie', 'este important de mentionat', etc.",
+    ),
   ];
 
   const weighted = metrics.reduce((sum, metric) => sum + metric.score * metric.weight, 0);

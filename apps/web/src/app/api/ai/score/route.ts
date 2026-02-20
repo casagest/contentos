@@ -3,6 +3,7 @@ import type { Platform, ContentType, Language } from "@contentos/content-engine"
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicScore } from "@/lib/ai/deterministic";
+import { analyzeHumanness } from "@/lib/ai/humanizer";
 import {
   fetchCognitiveContextV4,
   trackMemoryAccess,
@@ -256,6 +257,8 @@ ${memoryFragment ? `\nCognitive memory (past performance, patterns, strategies):
 
 ${JSON_FORMAT_RULES}
 
+IMPORTANT: Also evaluate "Naturalness" — does the text sound authentically human or does it have AI-ism patterns? Check for: overused transitions ("în concluzie", "mai mult decât atât"), uniform sentence lengths, repetitive vocabulary, formulaic structure. Penalize AI-sounding text heavily.
+
 Return ONLY valid JSON with this exact structure:
 {
   "overallScore": number,
@@ -297,8 +300,18 @@ Return ONLY valid JSON with this exact structure:
       return NextResponse.json(payload);
     }
 
+    // Attach humanness analysis to AI response
+    const humanness = analyzeHumanness(content);
+
     const responsePayload = {
       ...parsed,
+      humanness: {
+        score: humanness.overallScore,
+        aiIsms: humanness.aiIsms.slice(0, 5),
+        burstiness: humanness.burstiness.score,
+        entropy: humanness.entropy.score,
+        suggestions: humanness.suggestions.slice(0, 5),
+      },
       meta: {
         mode: "ai",
         provider: aiResult.provider,
