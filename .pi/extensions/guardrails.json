@@ -1,0 +1,36 @@
+{
+  "protectEnvFiles": {
+    "enabled": true
+  },
+  "permissionGate": {
+    "enabled": true,
+    "requireConfirmationFor": [
+      "bash",
+      "write",
+      "edit"
+    ]
+  },
+  "dangerousPatterns": [
+    "rm -rf",
+    "rm -r",
+    "del /f",
+    "rmdir /s",
+    "git push",
+    "git reset --hard",
+    "git clean -fd",
+    "pnpm -r publish",
+    "npm publish"
+  ],
+  "autoDenyPatterns": [
+    "**/.env",
+    "**/.env.*",
+    "**/.git/**",
+    "**/C:/Windows/**",
+    "**/C:/Program Files/**",
+    "**/C:/Program Files (x86)/**"
+  ],
+  "allowedPatterns": [
+    "**/contentos-project/**"
+  ],
+  "version": "0.6.0-20260218"
+}

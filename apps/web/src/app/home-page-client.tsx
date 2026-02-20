@@ -216,6 +216,29 @@ const faqs = [
   },
 ];
 
+/* ─── A/B Test Hero Variants ─── */
+const HERO_VARIANTS = {
+  A: {
+    headline: "Control Total asupra Conținutului",
+    subheadline: "AI nativ românesc. Brain Dump → postări virale în 2 minute. Scor de performanță înainte de publicare.",
+  },
+  B: {
+    headline: "Creează 5 Postări Optimizate în 2 Minute",
+    subheadline: "AI-ul înțelege limba română, algoritmii platformelor și vocea ta. Tu dai ideea — el livrează conținut viral.",
+  },
+} as const;
+
+type HeroVariant = keyof typeof HERO_VARIANTS;
+
+function getHeroVariant(): HeroVariant {
+  if (typeof document === "undefined") return "A";
+  const match = document.cookie.match(/(?:^|; )cos_hero=([AB])/);
+  if (match) return match[1] as HeroVariant;
+  const variant: HeroVariant = Math.random() < 0.5 ? "A" : "B";
+  document.cookie = `cos_hero=${variant};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`;
+  return variant;
+}
+
 /* ─── ROI Calculator Component ─── */
 function RoiCalculator() {
   const [hoursPerWeek, setHoursPerWeek] = useState(6);
@@ -418,6 +441,7 @@ export default function HomePageClient() {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [annual, setAnnual] = useState(true);
+  const [heroVariant] = useState<HeroVariant>(getHeroVariant);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -515,8 +539,9 @@ export default function HomePageClient() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.08] tracking-tight mb-6 text-white"
+              data-ab-variant={heroVariant}
             >
-              Control Total asupra Conținutului
+              {HERO_VARIANTS[heroVariant].headline}
             </motion.h1>
 
             <motion.p
@@ -525,7 +550,7 @@ export default function HomePageClient() {
               transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed"
             >
-              AI nativ românesc. Brain Dump → postări virale în 2 minute. Scor de performanță înainte de publicare.
+              {HERO_VARIANTS[heroVariant].subheadline}
             </motion.p>
 
             <motion.div
