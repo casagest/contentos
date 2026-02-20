@@ -38,6 +38,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+  },
   title: {
     default: "ContentOS — AI Content Intelligence pentru România",
     template: "%s | ContentOS",

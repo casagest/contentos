@@ -29,6 +29,36 @@ export default function BlogPage() {
         </div>
       </div>
 
+      {/* Newsletter signup */}
+      <div className="px-6 pb-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-6 sm:p-8 text-center">
+            <h3 className="text-lg font-bold text-white mb-2">
+              📬 Newsletter Content Marketing RO
+            </h3>
+            <p className="text-sm text-gray-400 mb-4 max-w-md mx-auto">
+              Primești săptămânal strategii, trends și tips de social media adaptate pieței românești. Zero spam.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="adresa@email.ro"
+                className="flex-1 px-4 py-3 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/40"
+              />
+              <Link
+                href="/register"
+                className="px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-all shadow-lg shadow-orange-500/25 text-center whitespace-nowrap"
+              >
+                Abonează-te
+              </Link>
+            </div>
+            <p className="text-[10px] text-gray-600 mt-2">
+              Îți poți dezabona oricând. GDPR compliant.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Posts grid */}
       <div className="px-6 pb-20">
         <div className="max-w-4xl mx-auto grid gap-6">
