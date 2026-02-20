@@ -9,6 +9,7 @@
 
 import { scrapeUrlContent } from "@/lib/scrape";
 import type { BusinessProfile } from "@contentos/database";
+import { deepResearch } from "@/lib/ai/perplexity-research";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,12 +26,37 @@ export interface BusinessIntelligence {
   recentPosts: PostSummary[];
   /** Top performing posts */
   topPosts: PostSummary[];
+  /** Online reputation from Perplexity deep research */
+  reputation: BusinessReputation | null;
+  /** Industry intelligence from Perplexity deep research */
+  industryIntel: IndustryIntelligence | null;
   /** Data completeness score (0-100) */
   completeness: number;
   /** Missing critical data fields */
   missingData: string[];
   /** When this intel was last refreshed */
   refreshedAt: string;
+}
+
+export interface BusinessReputation {
+  reviews: string[];
+  sentiment: string;
+  mentions: string[];
+  competitors: string[];
+  awards: string[];
+}
+
+export interface IndustryIntelligence {
+  industry: string;
+  trends: string[];
+  contentStrategies: string[];
+  audienceInsights: string[];
+  topContentTypes: string[];
+  statistics: string[];
+  regulations: string[];
+  seasonalPatterns: string[];
+  localInsights: string[];
+  sources: string[];
 }
 
 export interface WebsiteData {
@@ -456,25 +482,51 @@ export async function fetchBusinessIntelligence(params: {
     }
   }
 
-  // 3. Crawl website (if URL is available)
-  let website: WebsiteData | null = null;
-  if (profile?.website) {
-    website = await crawlWebsite(profile.website);
-  }
+  // 3. Crawl website + load social + load posts + deep research — ALL IN PARALLEL
+  const websitePromise = profile?.website
+    ? crawlWebsite(profile.website)
+    : Promise.resolve(null);
 
-  // 4. Load social accounts
-  const socialAccounts = await loadSocialAccounts(supabase, organizationId);
+  const socialPromise = loadSocialAccounts(supabase, organizationId);
+  const recentPostsPromise = loadRecentPosts(supabase, organizationId, 15);
+  const topPostsPromise = loadTopPosts(supabase, organizationId, 8);
 
-  // 5. Load posts
-  const recentPosts = await loadRecentPosts(supabase, organizationId, 15);
-  const topPosts = await loadTopPosts(supabase, organizationId, 8);
+  // Deep research via Perplexity (runs in parallel with everything else)
+  const deepResearchPromise = profile?.name
+    ? deepResearch({
+        businessName: profile.name,
+        industry: profile.industry || "",
+        city: "", // extracted later from website
+        website: profile.website || "",
+      }).catch(() => ({ reputation: null, industryIntel: null, perplexityAvailable: false }))
+    : Promise.resolve({ reputation: null, industryIntel: null, perplexityAvailable: false });
 
-  // 6. Analyze completeness
-  const partial = { profile, website, socialAccounts, recentPosts, topPosts, refreshedAt: new Date().toISOString() };
+  const [website, socialAccounts, recentPosts, topPosts, deepResult] = await Promise.all([
+    websitePromise,
+    socialPromise,
+    recentPostsPromise,
+    topPostsPromise,
+    deepResearchPromise,
+  ]);
+
+  // 4. Analyze completeness
+  const partial = {
+    profile, website, socialAccounts, recentPosts, topPosts,
+    reputation: deepResult.reputation,
+    industryIntel: deepResult.industryIntel,
+    refreshedAt: new Date().toISOString(),
+  };
   const { completeness, missingData } = analyzeCompleteness(partial);
 
   const intel: BusinessIntelligence = {
-    ...partial,
+    profile: partial.profile,
+    website: partial.website,
+    socialAccounts: partial.socialAccounts,
+    recentPosts: partial.recentPosts,
+    topPosts: partial.topPosts,
+    reputation: partial.reputation,
+    industryIntel: partial.industryIntel,
+    refreshedAt: partial.refreshedAt,
     completeness,
     missingData,
   };
@@ -557,6 +609,73 @@ export function buildGroundingPrompt(intel: BusinessIntelligence): string {
       `[${p.publishedAt}] ${p.platform} | engagement: ${p.engagementRate.toFixed(2)}% | ❤️${p.likesCount} 💬${p.commentsCount} 🔄${p.sharesCount}\n  "${p.content}"`
     );
     sections.push("\n--- TOP PERFORMING POSTS (learn from these) ---\n" + topLines.join("\n\n"));
+  }
+
+  // Reputation (from Perplexity deep research)
+  if (intel.reputation) {
+    const rep = intel.reputation;
+    const repLines: string[] = [];
+    if (rep.sentiment) repLines.push(`Overall sentiment: ${rep.sentiment}`);
+    if (rep.reviews.length) {
+      repLines.push("Online reviews:");
+      rep.reviews.forEach(r => repLines.push(`  • ${r}`));
+    }
+    if (rep.mentions.length) {
+      repLines.push("Online mentions/press:");
+      rep.mentions.forEach(m => repLines.push(`  • ${m}`));
+    }
+    if (rep.competitors.length) {
+      repLines.push("Known competitors:");
+      rep.competitors.forEach(c => repLines.push(`  • ${c}`));
+    }
+    if (rep.awards.length) {
+      repLines.push("Awards/certifications:");
+      rep.awards.forEach(a => repLines.push(`  • ${a}`));
+    }
+    if (repLines.length > 0) {
+      sections.push("\n--- ONLINE REPUTATION (from web search — REAL DATA) ---\n" + repLines.join("\n"));
+    }
+  }
+
+  // Industry intelligence (from Perplexity deep research)
+  if (intel.industryIntel) {
+    const ind = intel.industryIntel;
+    const indLines: string[] = [];
+    if (ind.trends.length) {
+      indLines.push("Industry trends (2025-2026):");
+      ind.trends.forEach(t => indLines.push(`  📈 ${t}`));
+    }
+    if (ind.contentStrategies.length) {
+      indLines.push("Best content strategies for this industry:");
+      ind.contentStrategies.forEach(s => indLines.push(`  📝 ${s}`));
+    }
+    if (ind.topContentTypes.length) {
+      indLines.push("Top performing content types:");
+      ind.topContentTypes.forEach(t => indLines.push(`  🏆 ${t}`));
+    }
+    if (ind.audienceInsights.length) {
+      indLines.push("Audience insights:");
+      ind.audienceInsights.forEach(a => indLines.push(`  👥 ${a}`));
+    }
+    if (ind.statistics.length) {
+      indLines.push("Key statistics:");
+      ind.statistics.forEach(s => indLines.push(`  📊 ${s}`));
+    }
+    if (ind.seasonalPatterns.length) {
+      indLines.push("Seasonal patterns:");
+      ind.seasonalPatterns.forEach(s => indLines.push(`  📅 ${s}`));
+    }
+    if (ind.localInsights.length) {
+      indLines.push("Romanian market specifics:");
+      ind.localInsights.forEach(l => indLines.push(`  🇷🇴 ${l}`));
+    }
+    if (ind.regulations.length) {
+      indLines.push("Regulatory notes:");
+      ind.regulations.forEach(r => indLines.push(`  ⚖️ ${r}`));
+    }
+    if (indLines.length > 0) {
+      sections.push("\n--- INDUSTRY INTELLIGENCE (from deep research — USE for context) ---\n" + indLines.join("\n"));
+    }
   }
 
   // Data completeness warning

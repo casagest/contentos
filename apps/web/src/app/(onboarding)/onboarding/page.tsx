@@ -106,6 +106,27 @@ interface Discoveries {
   pagesScraped: { url: string; type: string; contentLength: number }[];
 }
 
+interface BusinessReputation {
+  reviews: string[];
+  sentiment: string;
+  mentions: string[];
+  competitors: string[];
+  awards: string[];
+}
+
+interface IndustryIntel {
+  industry: string;
+  trends: string[];
+  contentStrategies: string[];
+  audienceInsights: string[];
+  topContentTypes: string[];
+  statistics: string[];
+  regulations: string[];
+  seasonalPatterns: string[];
+  localInsights: string[];
+  sources: string[];
+}
+
 interface ResearchedProfile {
   name?: string;
   description?: string;
@@ -136,9 +157,12 @@ export default function OnboardingPage() {
   const [researching, setResearching] = useState(false);
   const [researchProgress, setResearchProgress] = useState(0);
 
-  // Step 2 — Discoveries
+  // Step 2 — Discoveries + Deep Research
   const [discoveries, setDiscoveries] = useState<Discoveries | null>(null);
+  const [reputation, setReputation] = useState<BusinessReputation | null>(null);
+  const [industryIntel, setIndustryIntel] = useState<IndustryIntel | null>(null);
   const [pagesScrapedCount, setPagesScrapedCount] = useState(0);
+  const [hasPerplexity, setHasPerplexity] = useState(false);
 
   // Step 3 — Profile
   const [profile, setProfile] = useState<ResearchedProfile>({});
@@ -204,7 +228,10 @@ export default function OnboardingPage() {
 
       const result = await res.json();
       setDiscoveries(result.discoveries);
+      setReputation(result.reputation || null);
+      setIndustryIntel(result.industryIntel || null);
       setPagesScrapedCount(result.intel?.pagesScraped || 0);
+      setHasPerplexity(result.intel?.hasPerplexity || false);
 
       // Pre-build profile from API
       if (result.profile) {
@@ -390,7 +417,7 @@ export default function OnboardingPage() {
                 </div>
                 <h2 className="text-lg font-bold text-white mb-1">Ce am descoperit despre afacerea ta</h2>
                 <p className="text-sm text-muted-foreground">
-                  Am scanat {pagesScrapedCount} pagini și am extras {totalDiscoveries} informații reale.
+                  Am scanat {pagesScrapedCount} pagini{hasPerplexity ? " + cercetare online aprofundată" : ""} și am extras {totalDiscoveries}+ informații reale.
                 </p>
               </div>
 
@@ -502,10 +529,147 @@ export default function OnboardingPage() {
                   </DiscoveryCard>
                 )}
 
+                {/* ─── DEEP RESEARCH (Perplexity) ─── */}
+
+                {/* Reputation — Reviews */}
+                {reputation && reputation.reviews.length > 0 && (
+                  <DiscoveryCard icon={Star} title={`Recenzii online (${reputation.reviews.length})`} color="yellow">
+                    <div className="space-y-1.5">
+                      {reputation.sentiment && <p className="text-xs text-yellow-300 font-medium mb-1">Sentiment: {reputation.sentiment}</p>}
+                      {reputation.reviews.slice(0, 4).map((r, i) => (
+                        <div key={i} className="text-xs text-yellow-200/80">• {r}</div>
+                      ))}
+                    </div>
+                  </DiscoveryCard>
+                )}
+
+                {/* Reputation — Competitors */}
+                {reputation && reputation.competitors.length > 0 && (
+                  <DiscoveryCard icon={Users} title="Competitori identificați" color="orange">
+                    <div className="flex flex-wrap gap-1.5">
+                      {reputation.competitors.slice(0, 5).map((c, i) => (
+                        <span key={i} className="inline-flex px-2 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300">{c}</span>
+                      ))}
+                    </div>
+                  </DiscoveryCard>
+                )}
+
+                {/* Reputation — Awards */}
+                {reputation && reputation.awards.length > 0 && (
+                  <DiscoveryCard icon={BadgeCheck} title="Premii & certificări" color="green">
+                    <div className="space-y-1">
+                      {reputation.awards.map((a, i) => (
+                        <div key={i} className="text-xs text-green-300 flex items-center gap-1.5">
+                          <BadgeCheck className="w-3 h-3 shrink-0" />{a}
+                        </div>
+                      ))}
+                    </div>
+                  </DiscoveryCard>
+                )}
+
+                {/* ─── INDUSTRY INTELLIGENCE ─── */}
+                {industryIntel && (
+                  <>
+                    {/* Industry header */}
+                    <div className="flex items-center gap-2 pt-2 pb-1">
+                      <div className="h-px flex-1 bg-white/[0.06]" />
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Inteligență de piață</span>
+                      <div className="h-px flex-1 bg-white/[0.06]" />
+                    </div>
+
+                    {/* Trends */}
+                    {industryIntel.trends.length > 0 && (
+                      <DiscoveryCard icon={Sparkles} title="Trenduri industrie 2025-2026" color="purple">
+                        <div className="space-y-1">
+                          {industryIntel.trends.slice(0, 5).map((t, i) => (
+                            <div key={i} className="text-xs text-purple-300">📈 {t}</div>
+                          ))}
+                        </div>
+                      </DiscoveryCard>
+                    )}
+
+                    {/* Content strategies */}
+                    {industryIntel.contentStrategies.length > 0 && (
+                      <DiscoveryCard icon={FileSearch} title="Strategii de conținut recomandate" color="blue">
+                        <div className="space-y-1">
+                          {industryIntel.contentStrategies.slice(0, 5).map((s, i) => (
+                            <div key={i} className="text-xs text-blue-300">📝 {s}</div>
+                          ))}
+                        </div>
+                      </DiscoveryCard>
+                    )}
+
+                    {/* Audience insights */}
+                    {industryIntel.audienceInsights.length > 0 && (
+                      <DiscoveryCard icon={Users} title="Audiența ta tipică" color="cyan">
+                        <div className="space-y-1">
+                          {industryIntel.audienceInsights.slice(0, 4).map((a, i) => (
+                            <div key={i} className="text-xs text-cyan-300">👥 {a}</div>
+                          ))}
+                        </div>
+                      </DiscoveryCard>
+                    )}
+
+                    {/* Statistics */}
+                    {industryIntel.statistics.length > 0 && (
+                      <DiscoveryCard icon={Tag} title="Statistici cheie" color="green">
+                        <div className="space-y-1">
+                          {industryIntel.statistics.slice(0, 5).map((s, i) => (
+                            <div key={i} className="text-xs text-green-300">📊 {s}</div>
+                          ))}
+                        </div>
+                      </DiscoveryCard>
+                    )}
+
+                    {/* Seasonal patterns */}
+                    {industryIntel.seasonalPatterns.length > 0 && (
+                      <DiscoveryCard icon={Clock} title="Pattern-uri sezoniere" color="orange">
+                        <div className="space-y-1">
+                          {industryIntel.seasonalPatterns.slice(0, 4).map((s, i) => (
+                            <div key={i} className="text-xs text-orange-300">📅 {s}</div>
+                          ))}
+                        </div>
+                      </DiscoveryCard>
+                    )}
+
+                    {/* Romanian market */}
+                    {industryIntel.localInsights.length > 0 && (
+                      <DiscoveryCard icon={MapPin} title="Specificul pieței din România" color="pink">
+                        <div className="space-y-1">
+                          {industryIntel.localInsights.slice(0, 4).map((l, i) => (
+                            <div key={i} className="text-xs text-pink-300">🇷🇴 {l}</div>
+                          ))}
+                        </div>
+                      </DiscoveryCard>
+                    )}
+
+                    {/* Regulations */}
+                    {industryIntel.regulations.length > 0 && (
+                      <DiscoveryCard icon={AlertCircle} title="Reglementări relevante" color="yellow">
+                        <div className="space-y-1">
+                          {industryIntel.regulations.slice(0, 4).map((r, i) => (
+                            <div key={i} className="text-xs text-yellow-300">⚖️ {r}</div>
+                          ))}
+                        </div>
+                      </DiscoveryCard>
+                    )}
+
+                    {/* Sources */}
+                    {industryIntel.sources.length > 0 && (
+                      <div className="text-[10px] text-muted-foreground/50 pt-1">
+                        Surse: {industryIntel.sources.slice(0, 5).map((s, i) => (
+                          <a key={i} href={s} target="_blank" rel="noopener noreferrer" className="underline hover:text-muted-foreground mr-2">{new URL(s).hostname}</a>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
                 {/* Pages scraped */}
                 {discoveries.pagesScraped.length > 0 && (
                   <div className="text-[10px] text-muted-foreground/60 pt-1">
                     Pagini scanate: {discoveries.pagesScraped.map((p) => p.type).join(", ")}
+                    {hasPerplexity && " + deep research Perplexity"}
                   </div>
                 )}
               </div>

@@ -3,6 +3,8 @@ import { getSessionUserWithOrg } from "@/lib/auth";
 import {
   fetchBusinessIntelligence,
   type BusinessIntelligence,
+  type BusinessReputation,
+  type IndustryIntelligence,
 } from "@/lib/ai/business-intel";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
@@ -149,6 +151,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       discoveries,
+      reputation: intel.reputation,
+      industryIntel: intel.industryIntel,
       profile: freshSettings.businessProfile,
       intel: {
         pagesScraped: intel.website?.pages.length || 0,
@@ -156,6 +160,7 @@ export async function POST(request: NextRequest) {
         missingData: intel.missingData,
         socialAccounts: intel.socialAccounts.length,
         totalContentLength: intel.website?.fullContent.length || 0,
+        hasPerplexity: intel.reputation !== null || intel.industryIntel !== null,
       },
     });
   } catch (err) {
