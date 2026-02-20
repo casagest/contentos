@@ -343,11 +343,10 @@ export default function ComposePage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Eroare la generare");
+        throw new Error(await safeErrorJson(response));
       }
 
-      const data = await response.json();
+      const data: any = await safeResponseJson(response);
       setGeneratedContent(data.platformVersions || {});
       setGenerationMeta(
         typeof data.meta === "object" && data.meta !== null

@@ -17,6 +17,7 @@
 
 import { type CognitiveError, type Result, Ok, Err } from "./types";
 import { estimateAnthropicCostUsd, logAIUsageEvent } from "./governor";
+import { routeAICall } from "./multi-model-router";
 
 // ---------------------------------------------------------------------------
 // Configuration (lazy — validated at call time to avoid build-time crashes)
@@ -111,7 +112,67 @@ export interface LLMTrackingContext {
 }
 
 /**
+ * Fallback: route LLM calls through multi-model-router when OPENAI_API_KEY
+ * is not configured. Uses whatever provider IS available (Anthropic, etc).
+ */
+async function callLLMViaRouter(
+  request: LLMRequest,
+  tracking?: LLMTrackingContext
+): Promise<Result<LLMResponse, CognitiveError>> {
+  try {
+    const result = await routeAICall({
+      task: "insights", // Use "insights" task — lightweight, maps to Haiku
+      messages: request.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+      maxTokens: request.maxTokens ?? 1000,
+    });
+
+    // Track usage if tracking context provided
+    if (tracking) {
+      const costUsd = estimateAnthropicCostUsd(
+        result.model,
+        result.inputTokens ?? 0,
+        result.outputTokens ?? 0
+      );
+      logAIUsageEvent({
+        supabase: tracking.supabase as Parameters<typeof logAIUsageEvent>[0]["supabase"],
+        organizationId: tracking.organizationId,
+        userId: tracking.userId,
+        routeKey: tracking.routeKey,
+        intentHash: `llm-${tracking.routeKey}-${Date.now()}`,
+        provider: result.provider,
+        model: result.model,
+        mode: "ai",
+        inputTokens: result.inputTokens ?? 0,
+        outputTokens: result.outputTokens ?? 0,
+        estimatedCostUsd: costUsd,
+        success: true,
+      }).catch(() => {}); // Non-fatal
+    }
+
+    return Ok({
+      content: result.text,
+      model: result.model,
+      usage: {
+        promptTokens: result.inputTokens ?? 0,
+        completionTokens: result.outputTokens ?? 0,
+        totalTokens: (result.inputTokens ?? 0) + (result.outputTokens ?? 0),
+      },
+    });
+  } catch (err: unknown) {
+    return Err({
+      code: "LLM_ERROR",
+      message: err instanceof Error ? err.message : "Router fallback failed",
+      status: 500,
+    });
+  }
+}
+
+/**
  * Call OpenAI with timeout, retry, and circuit breaker.
+ * Falls back to multi-model-router if OPENAI_API_KEY is not set.
  *
  * Retries ONLY on:
  *   - 429 (rate limit) — with backoff
@@ -132,11 +193,8 @@ export async function callLLM(
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return Err({
-      code: "LLM_ERROR",
-      message: "OPENAI_API_KEY not configured",
-      status: 500,
-    });
+    // Fallback: route through multi-model-router (uses Anthropic/OpenRouter/Google)
+    return callLLMViaRouter(request, tracking);
   }
 
   // 2) Retry loop with exponential backoff
