@@ -409,6 +409,7 @@ FORMAT RĂSPUNS (JSON):
             "Content-Type": "application/json",
             "HTTP-Referer":
               process.env.OPENROUTER_SITE_URL?.trim() ||
+              process.env.NEXT_PUBLIC_APP_URL?.trim() ||
               "https://contentos-project.vercel.app",
             "X-Title": process.env.OPENROUTER_APP_NAME?.trim() || "ContentOS",
           },

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import HomePageClient from "./home-page-client";
+import { PLANS } from "@contentos/shared";
 
 const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro").trim();
 
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     url: baseUrl,
     title: "ContentOS — AI Content Intelligence",
-    description: "Creează conținut viral cu AI optimizat pentru piața românească. Starter 99 RON/lună, Pro 249 RON/lună.",
+    description: `Creează conținut viral cu AI optimizat pentru piața românească. Starter ${PLANS.starter.priceRon} RON/lună, Pro ${PLANS.pro.priceRon} RON/lună.`,
     images: [
       {
         url: "/og.png",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ContentOS — AI Content Intelligence",
-    description: "Creează conținut viral cu AI optimizat pentru piața românească. Starter 99 RON/lună, Pro 249 RON/lună.",
+    description: `Creează conținut viral cu AI optimizat pentru piața românească. Starter ${PLANS.starter.priceRon} RON/lună, Pro ${PLANS.pro.priceRon} RON/lună.`,
   },
 };
 
@@ -58,24 +59,24 @@ const jsonLd = {
       offers: [
         {
           "@type": "Offer",
-          name: "Starter",
-          price: "99",
+          name: PLANS.starter.name,
+          price: String(PLANS.starter.priceRon),
           priceCurrency: "RON",
           description: "Pentru creatori la început de drum — 2 conturi sociale, 30 postări/lună, AI Coach basic",
           url: `${baseUrl}/register`,
         },
         {
           "@type": "Offer",
-          name: "Pro",
-          price: "249",
+          name: PLANS.pro.name,
+          price: String(PLANS.pro.priceRon),
           priceCurrency: "RON",
           description: "Tot ce ai nevoie pentru conținut viral — 5 conturi sociale, postări nelimitate, Algorithm Scorer complet",
           url: `${baseUrl}/register`,
         },
         {
           "@type": "Offer",
-          name: "Agency",
-          price: "499",
+          name: PLANS.agency.name,
+          price: String(PLANS.agency.priceRon),
           priceCurrency: "RON",
           description: "Pentru echipe și agenții de marketing — conturi nelimitate, API access, suport prioritar",
           url: `${baseUrl}/register`,
@@ -92,15 +93,15 @@ function SsrPricingFallback() {
       <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto", color: "#fff" }}>
         <h2>Prețuri ContentOS</h2>
         <div>
-          <h3>Starter — 99 RON / lună</h3>
+          <h3>{PLANS.starter.name} — {PLANS.starter.priceRon} RON / lună</h3>
           <p>2 conturi sociale, 30 postări/lună, Algorithm Scorer (5 metrici), AI Coach basic, Brain Dump nelimitat</p>
         </div>
         <div>
-          <h3>Pro — 249 RON / lună (Cel mai popular)</h3>
+          <h3>{PLANS.pro.name} — {PLANS.pro.priceRon} RON / lună (Cel mai popular)</h3>
           <p>5 conturi sociale, postări nelimitate, Algorithm Scorer complet (9 metrici), AI Coach personalizat, Account Research, Script Video Generator</p>
         </div>
         <div>
-          <h3>Agency — 499 RON / lună</h3>
+          <h3>{PLANS.agency.name} — {PLANS.agency.priceRon} RON / lună</h3>
           <p>Tot din Pro + conturi nelimitate, API access, membri nelimitați, suport prioritar</p>
         </div>
         <p><a href="/register">Începe cu 7 zile gratuit — fără card de credit</a></p>

@@ -20,6 +20,15 @@ import {
 // One-click export at 1080×1080 for social media.
 // ═══════════════════════════════════════════════════════════════
 
+const WATERMARK_HOST: string = (() => {
+  try {
+    const url = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    return url ? new URL(url).hostname : "contentos.ro";
+  } catch {
+    return "contentos.ro";
+  }
+})();
+
 interface QuoteTemplate {
   id: string;
   name: string;
@@ -277,7 +286,7 @@ export default function ImageEditor({
       ctx.globalAlpha = 0.15;
       ctx.font = `500 16px Inter, system-ui, sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillText("contentos.ro", CANVAS_SIZE / 2, CANVAS_SIZE - 30);
+      ctx.fillText(WATERMARK_HOST, CANVAS_SIZE / 2, CANVAS_SIZE - 30);
       ctx.globalAlpha = 1;
     }
   }, [quoteText, authorText, selectedTemplate, fontSize, fontWeight, textAlign, showWatermark]);
@@ -439,7 +448,7 @@ export default function ImageEditor({
               className="rounded border-white/20 bg-white/[0.04] text-orange-500 focus:ring-orange-500/30"
             />
             <span className="text-[10px] text-muted-foreground">
-              Watermark contentos.ro
+              Watermark {WATERMARK_HOST}
             </span>
           </label>
 

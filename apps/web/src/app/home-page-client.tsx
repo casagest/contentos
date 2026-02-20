@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { PLANS } from "@contentos/shared";
 import {
   BarChart3,
   Target,
@@ -141,8 +142,8 @@ const steps = [
 
 const plans = [
   {
-    name: "Starter",
-    price: "99",
+    name: PLANS.starter.name,
+    price: String(PLANS.starter.priceRon),
     period: "/ lună",
     desc: "Pentru creatori la început de drum",
     features: [
@@ -156,8 +157,8 @@ const plans = [
     highlighted: false,
   },
   {
-    name: "Pro",
-    price: "249",
+    name: PLANS.pro.name,
+    price: String(PLANS.pro.priceRon),
     period: "/ lună",
     desc: "Tot ce ai nevoie pentru conținut viral",
     features: [
@@ -174,8 +175,8 @@ const plans = [
     highlighted: true,
   },
   {
-    name: "Agency",
-    price: "499",
+    name: PLANS.agency.name,
+    price: String(PLANS.agency.priceRon),
     period: "/ lună",
     desc: "Pentru echipe și agenții de marketing",
     features: [
@@ -249,7 +250,9 @@ function RoiCalculator() {
   const monthlySavingsHours = hoursPerWeek * 4;
   const monthlySavingsRon = monthlySavingsHours * hourlyRate;
   const yearlySavingsRon = monthlySavingsRon * 12;
-  const proPrice = 199; // annual price
+  const proMonthly = PLANS.pro.priceRon;
+  const proMonthlyAnnual = Math.round(proMonthly * 0.8);
+  const proYearly = proMonthlyAnnual * 12;
 
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
@@ -327,7 +330,7 @@ function RoiCalculator() {
             <div className="text-[11px] text-gray-400 mt-1">RON salvați / lună</div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white">{Math.round(monthlySavingsRon / proPrice)}x</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">{proMonthlyAnnual > 0 ? Math.round(monthlySavingsRon / proMonthlyAnnual) : 0}x</div>
             <div className="text-[11px] text-gray-400 mt-1">ROI vs plan Pro</div>
           </div>
         </div>
@@ -335,7 +338,7 @@ function RoiCalculator() {
         <div className="mt-4 pt-4 border-t border-white/[0.08] text-center">
           <p className="text-sm text-gray-300">
             Economisești <span className="text-emerald-400 font-bold">{yearlySavingsRon.toLocaleString("ro-RO")} RON / an</span> —
-            ContentOS Pro costă <span className="text-white font-semibold">{proPrice * 12} RON / an</span>
+            ContentOS Pro costă <span className="text-white font-semibold">{proYearly.toLocaleString("ro-RO")} RON / an</span>
           </p>
         </div>
       </div>
@@ -707,7 +710,7 @@ export default function HomePageClient() {
                     </div>
                   ))}
                 </div>
-                <span className="text-sm text-gray-500"><span className="text-white font-semibold">2,400+</span> creatori</span>
+                <span className="text-sm text-gray-500"><span className="text-white font-semibold">{process.env.NEXT_PUBLIC_SOCIAL_CREATORS ?? "2,400+"}</span> creatori</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="flex gap-0.5">
@@ -717,9 +720,9 @@ export default function HomePageClient() {
                     </svg>
                   ))}
                 </div>
-                <span className="text-sm text-gray-500"><span className="text-white font-semibold">4.9</span>/5</span>
+                <span className="text-sm text-gray-500"><span className="text-white font-semibold">{process.env.NEXT_PUBLIC_SOCIAL_RATING ?? "4.9"}</span>/5</span>
               </div>
-              <span className="text-sm text-gray-500"><span className="text-white font-semibold">1M+</span> postări</span>
+              <span className="text-sm text-gray-500"><span className="text-white font-semibold">{process.env.NEXT_PUBLIC_SOCIAL_POSTS ?? "1M+"}</span> postări</span>
             </motion.div>
           </div>
 
