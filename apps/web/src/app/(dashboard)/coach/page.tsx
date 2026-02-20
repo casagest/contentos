@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, ArrowUp, TrendingUp, BarChart3, Lightbulb } from "lucide-react";
+import { safeErrorJson, safeResponseJson } from "@/lib/safe-json";
 import { ChatBubble } from "@/components/ui/chat-bubble";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
@@ -56,11 +57,10 @@ export default function CoachPage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Eroare la AI Coach");
+        throw new Error(await safeErrorJson(response));
       }
 
-      const data = await response.json();
+      const data: any = await safeResponseJson(response);
 
       let answerText = data.answer;
       if (data.actionItems?.length) {

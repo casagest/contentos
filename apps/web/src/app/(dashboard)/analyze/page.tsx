@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { safeErrorJson, safeResponseJson } from "@/lib/safe-json";
 import {
   BarChart3,
   ArrowRight,
@@ -48,11 +49,10 @@ export default function AnalyzePage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Eroare la analiză");
+        throw new Error(await safeErrorJson(response));
       }
 
-      const data = await response.json();
+      const data: any = await safeResponseJson(response);
 
       const metrics = Array.isArray(data.metrics) ? data.metrics : [];
       setResult({

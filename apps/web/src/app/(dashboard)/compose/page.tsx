@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { pushNotification } from "@/components/notification-center";
+import { safeErrorJson, safeResponseJson } from "@/lib/safe-json";
 import { useUser } from "@/components/providers/user-provider";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
@@ -204,11 +205,10 @@ export default function ComposePage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Eroare la umanizare");
+        throw new Error(await safeErrorJson(response));
       }
 
-      const data = await response.json();
+      const data: any = await safeResponseJson(response);
       if (data.platformVersions) {
         setGeneratedContent(data.platformVersions);
       }
@@ -246,11 +246,10 @@ export default function ComposePage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Eroare la rafinare");
+        throw new Error(await safeErrorJson(response));
       }
 
-      const data = await response.json();
+      const data: any = await safeResponseJson(response);
       if (data.platformVersions) {
         setGeneratedContent(data.platformVersions);
       }
@@ -293,11 +292,10 @@ export default function ComposePage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Eroare la explorare");
+        throw new Error(await safeErrorJson(response));
       }
 
-      const data = await response.json();
+      const data: any = await safeResponseJson(response);
 
       // Handle intent redirects
       if (data.meta?.mode === "intent_redirect") {

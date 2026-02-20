@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { safeResponseJson } from "@/lib/safe-json";
 import {
   Search,
   Plus,
@@ -102,13 +103,16 @@ export default function ResearchPage() {
     setLoadingHistory(true);
     try {
       const response = await fetch("/api/ai/research", { cache: "no-store" });
-      const payload = (await response.json()) as {
+      if (!response.ok) {
+        setError(`Eroare server (${response.status})`);
+        return;
+      }
+      const payload = await safeResponseJson<{
         analyses?: CompetitorAnalysis[];
         error?: string;
-      };
-
-      if (!response.ok) {
-        setError(payload.error || "Nu s-a putut incarca istoricul.");
+      }>(response);
+      if (payload.error) {
+        setError(payload.error);
         return;
       }
 

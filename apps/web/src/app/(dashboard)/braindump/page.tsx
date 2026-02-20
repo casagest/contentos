@@ -8,6 +8,7 @@ import ContentChecker, { VisualSuggestion } from "../components/content-checker"
 import VoiceInput from "../components/voice-input";
 import MediaPickerSheet from "../components/media-picker-sheet";
 import CreativeToolsPanel from "../components/creative-tools-panel";
+import { safeErrorJson, safeResponseJson } from "@/lib/safe-json";
 import { GlobalPatternsFeed } from "../components/global-patterns-feed";
 import { useUser } from "@/components/providers/user-provider";
 import {
@@ -462,11 +463,10 @@ export default function BrainDumpPage() {
       clearInterval(progressInterval);
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Eroare la procesare");
+        throw new Error(await safeErrorJson(response));
       }
 
-      const data = await response.json();
+      const data: any = await safeResponseJson(response);
 
       // Conversation response
       if (data.type === "conversation") {

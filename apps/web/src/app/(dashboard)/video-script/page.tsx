@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { safeErrorJson, safeResponseJson } from "@/lib/safe-json";
 import {
   Film,
   Play,
@@ -88,11 +89,10 @@ export default function VideoScriptPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Eroare la generare");
+        throw new Error(await safeErrorJson(res));
       }
 
-      const data = await res.json();
+      const data = await safeResponseJson<{ script?: VideoScript }>(res);
       if (data.script?.sections) {
         setScript(data.script);
       } else {
