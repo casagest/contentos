@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
   Target,
@@ -15,6 +15,8 @@ import {
   Calculator,
   Clock,
   TrendingUp,
+  X,
+  Sparkles,
 } from "lucide-react";
 
 /* FadeIn removed — content visible instantly for better LCP and no invisible sections */
@@ -432,6 +434,119 @@ function ProductShowcase() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Exit Intent Popup ─── */
+function ExitIntentPopup() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    // Don't show if already dismissed this session
+    if (sessionStorage.getItem("cos_exit_dismissed")) return;
+
+    let triggered = false;
+
+    // Desktop: mouse leaves viewport from top
+    function handleMouseLeave(e: MouseEvent) {
+      if (e.clientY <= 0 && !triggered) {
+        triggered = true;
+        setShow(true);
+      }
+    }
+
+    // Mobile: detect scroll up (back gesture intent) — only after scrolling down 500px
+    let lastScrollY = 0;
+    let maxScrollY = 0;
+    function handleScroll() {
+      const currentY = window.scrollY;
+      if (currentY > maxScrollY) maxScrollY = currentY;
+      if (maxScrollY > 500 && currentY < lastScrollY - 100 && currentY < maxScrollY * 0.5 && !triggered) {
+        triggered = true;
+        setShow(true);
+      }
+      lastScrollY = currentY;
+    }
+
+    // Delay activation by 5 seconds to avoid annoying instant popups
+    const timer = setTimeout(() => {
+      document.addEventListener("mouseleave", handleMouseLeave);
+      window.addEventListener("scroll", handleScroll, { passive: true });
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  function dismiss() {
+    setShow(false);
+    sessionStorage.setItem("cos_exit_dismissed", "1");
+  }
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={dismiss}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ofertă specială înainte de plecare"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="relative bg-surface-ground border border-white/[0.1] rounded-2xl p-8 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={dismiss}
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition"
+              aria-label="Închide"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Content */}
+            <div className="text-center">
+              <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-orange-500/15 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-orange-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                Stai — testează gratuit!
+              </h3>
+              <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+                Încearcă ContentOS 7 zile <strong className="text-white">fără card de credit</strong>. 
+                Generează primele postări în 2 minute și vezi scorul AI înainte de publicare.
+              </p>
+              <Link
+                href="/register"
+                onClick={dismiss}
+                className="inline-block w-full px-6 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-base transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-400/40 hover:-translate-y-[1px] active:translate-y-0 text-center"
+              >
+                Începe 7 Zile Gratuit
+              </Link>
+              <button
+                onClick={dismiss}
+                className="mt-3 text-sm text-gray-500 hover:text-gray-300 transition"
+              >
+                Nu, mulțumesc
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -1114,6 +1229,9 @@ export default function HomePageClient() {
           </Link>
         </div>
       </section>
+
+      {/* ── Exit Intent Popup ── */}
+      <ExitIntentPopup />
 
       {/* ── Footer (darkest) ── */}
       <footer className="bg-landing-darkest py-12 px-6">
