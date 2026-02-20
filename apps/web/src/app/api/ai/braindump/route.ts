@@ -23,6 +23,8 @@ import {
   classifyIntent,
   type IntentClassification,
 } from "@/lib/ai/intent-classifier";
+import { voiceDNAToPrompt, type VoiceDNA } from "@/lib/ai/voice-dna";
+import { fetchDiversityRules, diversityRulesToPrompt } from "@/lib/ai/cross-post-memory";
 import {
   fetchCognitiveContextV4,
   trackMemoryAccess,
@@ -283,6 +285,9 @@ function buildSystemPrompt(params: {
     "3) Generate ONLY requested platforms. Platform keys MUST be lowercase: facebook, instagram, tiktok, youtube.",
     "4) Keep hooks practical and clear. Include CTA and platform-specific hashtags/tags.",
     "5) If medical/dental context exists, avoid absolute claims and guaranteed outcomes.",
+    "6) HUMANIZATION: Vary sentence length dramatically (mix 3-word punches with 20-word flowing sentences).",
+    "7) NEVER use AI-ism phrases: 'în concluzie', 'este important de menționat', 'mai mult decât atât', 'haideți să explorăm', 'în era digitală', 'peisajul digital', 'un rol crucial', 'aspecte esențiale', 'let\\'s delve', 'furthermore', 'digital landscape'.",
+    "8) Use at least one unexpected word, colloquial expression, or conversational break per platform output.",
     "",
     JSON_FORMAT_RULES,
     "",
@@ -932,9 +937,35 @@ export async function POST(request: NextRequest) {
     // Silent: cognitive memory is non-critical
   }
 
-  const enrichedSystemPrompt = memoryFragment
-    ? `${systemPrompt}\n\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}`
-    : systemPrompt;
+  // ── Voice DNA + Diversity Rules (NON-FATAL) ──
+  let voiceDNAFragment = "";
+  let diversityFragment = "";
+  try {
+    const { data: orgVoice } = await session.supabase
+      .from("organizations")
+      .select("settings")
+      .eq("id", session.organizationId)
+      .single();
+    const voiceSettings = orgVoice?.settings as Record<string, unknown> | null;
+    if (voiceSettings?.voiceDNA) {
+      voiceDNAFragment = voiceDNAToPrompt(voiceSettings.voiceDNA as VoiceDNA);
+    }
+  } catch { /* silent */ }
+
+  try {
+    const rules = await fetchDiversityRules({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+    });
+    diversityFragment = diversityRulesToPrompt(rules);
+  } catch { /* silent */ }
+
+  const enrichedSystemPrompt = [
+    systemPrompt,
+    memoryFragment ? `\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}` : "",
+    voiceDNAFragment ? `\n${voiceDNAFragment}` : "",
+    diversityFragment ? `\n${diversityFragment}` : "",
+  ].filter(Boolean).join("\n");
 
   const logSchemaFailure = async (params: {
     provider: string;

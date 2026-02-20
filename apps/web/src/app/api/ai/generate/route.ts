@@ -34,6 +34,8 @@ import {
   type Platform as CreativePlatform,
   type CreativeAngle,
 } from "@/lib/ai/creative-intelligence";
+import { voiceDNAToPrompt, type VoiceDNA } from "@/lib/ai/voice-dna";
+import { fetchDiversityRules, diversityRulesToPrompt } from "@/lib/ai/cross-post-memory";
 
 const ROUTE_KEY = "generate:v4";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -570,6 +572,29 @@ export async function POST(request: NextRequest) {
     // Silent: cognitive memory is non-critical
   }
 
+  // ── Voice DNA + Diversity Rules (NON-FATAL) ──
+  let voiceDNAFragment = "";
+  let diversityFragment = "";
+  try {
+    const { data: orgVoice } = await session.supabase
+      .from("organizations")
+      .select("settings")
+      .eq("id", session.organizationId)
+      .single();
+    const voiceSettings = orgVoice?.settings as Record<string, unknown> | null;
+    if (voiceSettings?.voiceDNA) {
+      voiceDNAFragment = voiceDNAToPrompt(voiceSettings.voiceDNA as VoiceDNA);
+    }
+  } catch { /* silent */ }
+
+  try {
+    const rules = await fetchDiversityRules({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+    });
+    diversityFragment = diversityRulesToPrompt(rules);
+  } catch { /* silent */ }
+
   try {
     const platformsList = platforms.join(", ");
     const hashtagInstruction = includeHashtags ? "Include relevant hashtags." : "Do NOT include hashtags.";
@@ -587,6 +612,15 @@ Tone: ${tone}
 ${hashtagInstruction}
 ${emojiInstruction}
 
+HUMANIZATION RULES (CRITICAL — follow these to produce natural, human-sounding content):
+- Vary sentence length dramatically: mix 2-5 word punches with 15-25 word flowing sentences
+- NEVER use these AI-ism phrases: "în concluzie", "este important de menționat", "mai mult decât atât", "haideți să explorăm", "în era digitală", "peisajul digital", "fără îndoială", "un rol crucial", "aspecte esențiale", "abordare holistică", "let's delve", "it's worth noting", "digital landscape", "furthermore", "moreover", "paradigm shift", "seamless", "leverage", "game-changer"
+- Include at least one unexpected word choice or colloquial expression
+- Vary paragraph lengths (1 line, then 3 lines, then 1 line)
+- Use active voice, specific numbers, and concrete examples over abstractions
+
+${voiceDNAFragment ? `\n${voiceDNAFragment}\n` : ""}
+${diversityFragment ? `\n${diversityFragment}\n` : ""}
 ${enhancedVoiceDescription ? `Brand voice & creative brief:\n${enhancedVoiceDescription}\n` : ""}
 ${memoryFragment ? `Cognitive memory (past performance, patterns, strategies):\n${memoryFragment}\n` : ""}
 ${JSON_FORMAT_RULES}
