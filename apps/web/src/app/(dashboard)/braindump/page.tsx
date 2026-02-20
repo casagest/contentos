@@ -126,39 +126,39 @@ const OBJECTIVES: { id: Objective; label: string; icon: typeof TrendingUp }[] = 
 const QUICK_ACTIONS = [
   {
     icon: MessageSquare,
-    label: "Testimonial client",
-    sub: "Poveste reală, emoțională",
-    prompt: "Creează un testimonial al unui client mulțumit, cu emoție și rezultate concrete",
+    label: "Rezultate reale",
+    sub: "Ce spun clienții din recenzii",
+    prompt: "Scrie o postare bazată pe rezultatele reale ale clienților noștri — folosește DOAR informații de pe site-ul nostru și recenziile reale. NU inventa nume sau povești.",
   },
   {
     icon: Lightbulb,
     label: "Post educativ",
     sub: "Explică simplu un concept",
-    prompt: "Creează un post educativ care explică pe înțelesul tuturor un concept din industria mea",
+    prompt: "Scrie un post educativ care explică un concept din industria noastră — folosind informațiile reale de pe site-ul nostru și experiența echipei. Fără statistici inventate.",
   },
   {
     icon: TrendingUp,
     label: "Din culise",
     sub: "Arată procesul din spate",
-    prompt: "Arată procesul din spatele scenei al echipei mele, cum lucrăm și ce ne diferențiază",
+    prompt: "Scrie o postare care arată procesul real din spatele echipei noastre — bazat pe informațiile de pe site (echipă, laborator, tehnologie). Fără detalii inventate.",
   },
   {
     icon: Target,
     label: "Ofertă cu CTA",
     sub: "Promovare cu apel la acțiune",
-    prompt: "Promovează o ofertă specială cu apel la acțiune puternic și urgență",
+    prompt: "Scrie o postare promoțională cu CTA puternic — folosind DOAR prețurile și serviciile reale de pe site-ul nostru. NU inventa oferte sau reduceri.",
   },
   {
     icon: Sparkles,
-    label: "Dovadă socială",
-    sub: "Recenzii și rezultate",
-    prompt: "Post bazat pe recenzii și testimoniale reale ale clienților noștri",
+    label: "De ce noi",
+    sub: "USP-uri și diferențiatori",
+    prompt: "Scrie o postare care evidențiază de ce suntem diferiți față de competiție — bazat pe USP-urile și diferențiatorii reali din profilul nostru. Fără superlative inventate.",
   },
   {
     icon: Brain,
     label: "Întrebări frecvente",
     sub: "Răspunsuri pentru audiență",
-    prompt: "Răspunde la cele mai frecvente întrebări pe care le primim de la clienți",
+    prompt: "Scrie o postare FAQ care răspunde la cele mai frecvente întrebări ale clienților — bazat pe serviciile reale de pe site-ul nostru. Răspunsuri corecte, fără inventații.",
   },
 ];
 
@@ -746,6 +746,13 @@ export default function BrainDumpPage() {
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25">✨ AI</span>
               )}
             </div>
+
+            {typeof results.meta?.dataWarning === "string" && results.meta.dataWarning && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-400 flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>📊 {results.meta.dataWarning}</span>
+              </div>
+            )}
 
             {typeof results.meta?.warning === "string" && results.meta.warning && (
               <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3 text-xs text-yellow-400 flex items-start gap-2">
