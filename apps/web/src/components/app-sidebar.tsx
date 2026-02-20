@@ -68,7 +68,7 @@ const navGroups = [
     label: "MEDIA",
     items: [
       { title: "Script Video", url: "/video-script", icon: Video },
-      { title: "Editor Imagine", url: "/image-editor", icon: Image },
+      { title: "Quote Card", url: "/image-editor", icon: Image },
     ],
   },
   {

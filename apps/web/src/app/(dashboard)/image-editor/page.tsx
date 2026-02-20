@@ -2,12 +2,10 @@
 
 import ImageEditor from "../components/image-editor";
 
-export default function ImageEditorPage() {
+export default function QuoteCardPage() {
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="rounded-xl bg-card border border-border p-4">
-        <ImageEditor />
-      </div>
+    <div className="max-w-5xl mx-auto p-6">
+      <ImageEditor />
     </div>
   );
 }

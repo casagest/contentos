@@ -5,76 +5,134 @@ import {
   Type,
   Download,
   RotateCcw,
-  Undo2,
-  Redo2,
   Palette,
   Bold,
   AlignCenter,
   AlignLeft,
-  Layers,
-  X,
   Image as ImageIcon,
+  Sparkles,
+  Quote,
 } from "lucide-react";
 
-// ─── Undo/Redo History Hook ─────────────────────────────────
-const MAX_HISTORY = 50;
-
-function useHistory<T>(initial: T) {
-  const [past, setPast] = useState<T[]>([]);
-  const [present, setPresent] = useState<T>(initial);
-  const [future, setFuture] = useState<T[]>([]);
-
-  const canUndo = past.length > 0;
-  const canRedo = future.length > 0;
-
-  const push = useCallback((newState: T) => {
-    setPast((prev) => [...prev.slice(-MAX_HISTORY), present]);
-    setPresent(newState);
-    setFuture([]);
-  }, [present]);
-
-  const undo = useCallback(() => {
-    if (past.length === 0) return;
-    const previous = past[past.length - 1];
-    setPast((prev) => prev.slice(0, -1));
-    setFuture((prev) => [present, ...prev]);
-    setPresent(previous);
-  }, [past, present]);
-
-  const redo = useCallback(() => {
-    if (future.length === 0) return;
-    const next = future[0];
-    setFuture((prev) => prev.slice(1));
-    setPast((prev) => [...prev, present]);
-    setPresent(next);
-  }, [future, present]);
-
-  const reset = useCallback((value: T) => {
-    setPast([]);
-    setPresent(value);
-    setFuture([]);
-  }, []);
-
-  return { state: present, push, undo, redo, canUndo, canRedo, reset };
-}
-
 // ═══════════════════════════════════════════════════════════════
-// IMAGE TEXT OVERLAY EDITOR
-// Creates social media ready images with text overlay
+// QUOTE CARD MAKER
+// Creates Instagram-ready quote cards with pre-built templates.
+// One-click export at 1080×1080 for social media.
 // ═══════════════════════════════════════════════════════════════
 
-interface TextOverlay {
+interface QuoteTemplate {
   id: string;
-  text: string;
-  x: number;
-  y: number;
-  fontSize: number;
-  color: string;
-  fontWeight: "normal" | "bold";
-  textAlign: "left" | "center";
-  bgColor: string;
-  bgOpacity: number;
+  name: string;
+  bgType: "gradient" | "solid";
+  bgValue: string; // CSS gradient or color
+  textColor: string;
+  accentColor: string;
+  authorColor: string;
+  fontStyle: "serif" | "sans";
+  layout: "centered" | "left-aligned" | "bottom-heavy";
+  icon: string;
 }
+
+const TEMPLATES: QuoteTemplate[] = [
+  {
+    id: "dark-orange",
+    name: "Brand ContentOS",
+    bgType: "gradient",
+    bgValue: "linear-gradient(135deg, #0F1728 0%, #1a1f3a 50%, #0F1728 100%)",
+    textColor: "#ffffff",
+    accentColor: "#F97316",
+    authorColor: "#F97316",
+    fontStyle: "sans",
+    layout: "centered",
+    icon: "🔥",
+  },
+  {
+    id: "minimal-light",
+    name: "Minimal Alb",
+    bgType: "solid",
+    bgValue: "#fafafa",
+    textColor: "#1a1a1a",
+    accentColor: "#6366f1",
+    authorColor: "#6b7280",
+    fontStyle: "serif",
+    layout: "centered",
+    icon: "✨",
+  },
+  {
+    id: "deep-purple",
+    name: "Purple Gradient",
+    bgType: "gradient",
+    bgValue: "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #2e1065 100%)",
+    textColor: "#f5f3ff",
+    accentColor: "#a78bfa",
+    authorColor: "#c4b5fd",
+    fontStyle: "sans",
+    layout: "centered",
+    icon: "💜",
+  },
+  {
+    id: "ocean-blue",
+    name: "Ocean Blue",
+    bgType: "gradient",
+    bgValue: "linear-gradient(180deg, #0c4a6e 0%, #0369a1 50%, #075985 100%)",
+    textColor: "#ffffff",
+    accentColor: "#38bdf8",
+    authorColor: "#7dd3fc",
+    fontStyle: "sans",
+    layout: "left-aligned",
+    icon: "🌊",
+  },
+  {
+    id: "sunset-warm",
+    name: "Sunset Cald",
+    bgType: "gradient",
+    bgValue: "linear-gradient(135deg, #7c2d12 0%, #c2410c 40%, #ea580c 100%)",
+    textColor: "#fff7ed",
+    accentColor: "#fdba74",
+    authorColor: "#fed7aa",
+    fontStyle: "serif",
+    layout: "bottom-heavy",
+    icon: "🌅",
+  },
+  {
+    id: "forest-green",
+    name: "Forest Green",
+    bgType: "gradient",
+    bgValue: "linear-gradient(135deg, #052e16 0%, #166534 50%, #14532d 100%)",
+    textColor: "#f0fdf4",
+    accentColor: "#4ade80",
+    authorColor: "#86efac",
+    fontStyle: "sans",
+    layout: "centered",
+    icon: "🌿",
+  },
+  {
+    id: "noir",
+    name: "Noir Elegant",
+    bgType: "solid",
+    bgValue: "#0a0a0a",
+    textColor: "#e5e5e5",
+    accentColor: "#fbbf24",
+    authorColor: "#a3a3a3",
+    fontStyle: "serif",
+    layout: "centered",
+    icon: "🖤",
+  },
+  {
+    id: "rose-gold",
+    name: "Rose Gold",
+    bgType: "gradient",
+    bgValue: "linear-gradient(135deg, #1c1917 0%, #44403c 50%, #292524 100%)",
+    textColor: "#fecdd3",
+    accentColor: "#fb7185",
+    authorColor: "#fda4af",
+    fontStyle: "serif",
+    layout: "bottom-heavy",
+    icon: "🌹",
+  },
+];
+
+const CANVAS_SIZE = 1080;
 
 interface ImageEditorProps {
   imageUrl?: string;
@@ -84,377 +142,410 @@ interface ImageEditorProps {
   className?: string;
 }
 
-const PRESET_SIZES = [
-  { label: "Post pătrat (1:1)", width: 1080, height: 1080 },
-  { label: "Story/Reel (9:16)", width: 1080, height: 1920 },
-  { label: "Portrait (4:5)", width: 1080, height: 1350 },
-  { label: "Landscape (16:9)", width: 1920, height: 1080 },
-  { label: "Thumbnail YT", width: 1280, height: 720 },
-];
-
-const PRESET_COLORS = [
-  "#ffffff", "#000000", "#ef4444", "#f97316", "#eab308",
-  "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4",
-];
-
-const PRESET_BG_COLORS = [
-  "transparent", "#000000", "#ffffff", "#1e293b",
-  "#0f172a", "#7c3aed", "#dc2626", "#059669",
-];
-
 export default function ImageEditor({
-  imageUrl,
-  width: initialWidth = 1080,
-  height: initialHeight = 1080,
   onSave,
   className = "",
 }: ImageEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const {
-    state: overlays,
-    push: pushOverlays,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    reset: resetOverlays,
-  } = useHistory<TextOverlay[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [canvasWidth, setCanvasWidth] = useState(initialWidth);
-  const [canvasHeight, setCanvasHeight] = useState(initialHeight);
-  const [bgColor, setBgColor] = useState("#1e293b");
-  const [loadedImage, setLoadedImage] = useState<HTMLImageElement | null>(null);
+  const [quoteText, setQuoteText] = useState("Scrie citatul tău aici...");
+  const [authorText, setAuthorText] = useState("— Numele tău");
+  const [selectedTemplate, setSelectedTemplate] = useState<QuoteTemplate>(TEMPLATES[0]);
+  const [fontSize, setFontSize] = useState(52);
+  const [fontWeight, setFontWeight] = useState<"normal" | "bold">("bold");
+  const [textAlign, setTextAlign] = useState<"left" | "center">("center");
+  const [showWatermark, setShowWatermark] = useState(true);
 
-  // Load image if URL provided
-  useEffect(() => {
-    if (!imageUrl) return;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => setLoadedImage(img);
-    img.src = imageUrl;
-  }, [imageUrl]);
-
-  const addTextOverlay = useCallback(() => {
-    const newOverlay: TextOverlay = {
-      id: crypto.randomUUID(),
-      text: "Textul tău aici",
-      x: canvasWidth / 2,
-      y: canvasHeight / 2,
-      fontSize: 48,
-      color: "#ffffff",
-      fontWeight: "bold",
-      textAlign: "center",
-      bgColor: "#000000",
-      bgOpacity: 0.5,
-    };
-    pushOverlays([...overlays, newOverlay]);
-    setSelectedId(newOverlay.id);
-  }, [canvasWidth, canvasHeight, overlays, pushOverlays]);
-
-  const updateOverlay = useCallback((id: string, updates: Partial<TextOverlay>) => {
-    pushOverlays(overlays.map((o) => (o.id === id ? { ...o, ...updates } : o)));
-  }, [overlays, pushOverlays]);
-
-  const removeOverlay = useCallback((id: string) => {
-    pushOverlays(overlays.filter((o) => o.id !== id));
-    if (selectedId === id) setSelectedId(null);
-  }, [selectedId, overlays, pushOverlays]);
-
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === "y") {
-        e.preventDefault();
-        redo();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo]);
-
-  // Render canvas
+  // ── Render Canvas ──
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const displayScale = 0.35;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    canvas.style.width = `${canvasWidth * displayScale}px`;
-    canvas.style.height = `${canvasHeight * displayScale}px`;
+    const dpr = 1; // Always render at 1080px
+    canvas.width = CANVAS_SIZE * dpr;
+    canvas.height = CANVAS_SIZE * dpr;
+
+    const displayScale = 0.38;
+    canvas.style.width = `${CANVAS_SIZE * displayScale}px`;
+    canvas.style.height = `${CANVAS_SIZE * displayScale}px`;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Background
-    if (loadedImage) {
-      ctx.drawImage(loadedImage, 0, 0, canvasWidth, canvasHeight);
+    ctx.scale(dpr, dpr);
+
+    // ── Background ──
+    if (selectedTemplate.bgType === "gradient") {
+      drawCSSGradient(ctx, selectedTemplate.bgValue, CANVAS_SIZE, CANVAS_SIZE);
     } else {
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillStyle = selectedTemplate.bgValue;
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
 
-    // Draw overlays
-    for (const overlay of overlays) {
-      ctx.save();
-      ctx.font = `${overlay.fontWeight} ${overlay.fontSize}px Inter, system-ui, sans-serif`;
-      ctx.textAlign = overlay.textAlign;
-      ctx.textBaseline = "middle";
+    // ── Decorative accent lines ──
+    ctx.save();
+    ctx.strokeStyle = selectedTemplate.accentColor;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 3;
 
-      // Text background
-      if (overlay.bgColor !== "transparent" && overlay.bgOpacity > 0) {
-        const metrics = ctx.measureText(overlay.text);
-        const padding = overlay.fontSize * 0.3;
-        const bgWidth = metrics.width + padding * 2;
-        const bgHeight = overlay.fontSize * 1.4;
-
-        ctx.fillStyle = overlay.bgColor;
-        ctx.globalAlpha = overlay.bgOpacity;
-        const bgX = overlay.textAlign === "center" ? overlay.x - bgWidth / 2 : overlay.x - padding;
-        ctx.fillRect(bgX, overlay.y - bgHeight / 2, bgWidth, bgHeight);
-        ctx.globalAlpha = 1;
-      }
-
-      // Text with shadow
-      ctx.shadowColor = "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetY = 2;
-      ctx.fillStyle = overlay.color;
-      ctx.fillText(overlay.text, overlay.x, overlay.y);
-
-      // Selection indicator
-      if (overlay.id === selectedId) {
-        ctx.strokeStyle = "#8b5cf6";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        const metrics = ctx.measureText(overlay.text);
-        const w = metrics.width + 20;
-        const h = overlay.fontSize * 1.6;
-        const rx = overlay.textAlign === "center" ? overlay.x - w / 2 : overlay.x - 10;
-        ctx.strokeRect(rx, overlay.y - h / 2, w, h);
-      }
-
-      ctx.restore();
+    if (selectedTemplate.layout === "centered") {
+      // Top and bottom accent lines
+      const lineW = 120;
+      ctx.beginPath();
+      ctx.moveTo(CANVAS_SIZE / 2 - lineW / 2, 180);
+      ctx.lineTo(CANVAS_SIZE / 2 + lineW / 2, 180);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(CANVAS_SIZE / 2 - lineW / 2, CANVAS_SIZE - 180);
+      ctx.lineTo(CANVAS_SIZE / 2 + lineW / 2, CANVAS_SIZE - 180);
+      ctx.stroke();
+    } else if (selectedTemplate.layout === "left-aligned") {
+      // Left accent bar
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(80, 200);
+      ctx.lineTo(80, CANVAS_SIZE - 250);
+      ctx.stroke();
     }
-  }, [overlays, canvasWidth, canvasHeight, bgColor, loadedImage, selectedId]);
+    ctx.restore();
 
+    // ── Quote mark ──
+    ctx.save();
+    ctx.fillStyle = selectedTemplate.accentColor;
+    ctx.globalAlpha = 0.15;
+    const quoteFont = selectedTemplate.fontStyle === "serif"
+      ? "Georgia, 'Times New Roman', serif"
+      : "Inter, system-ui, sans-serif";
+    ctx.font = `bold 200px ${quoteFont}`;
+    ctx.textAlign = "center";
+
+    const openQuote = "\u201C"; // "
+    if (selectedTemplate.layout === "centered") {
+      ctx.fillText(openQuote, CANVAS_SIZE / 2, 280);
+    } else if (selectedTemplate.layout === "left-aligned") {
+      ctx.textAlign = "left";
+      ctx.fillText(openQuote, 60, 300);
+    } else {
+      ctx.fillText(openQuote, CANVAS_SIZE / 2, 240);
+    }
+    ctx.restore();
+
+    // ── Quote text ──
+    const font = selectedTemplate.fontStyle === "serif"
+      ? "Georgia, 'Times New Roman', serif"
+      : "Inter, system-ui, sans-serif";
+
+    ctx.fillStyle = selectedTemplate.textColor;
+    ctx.font = `${fontWeight} ${fontSize}px ${font}`;
+    ctx.textAlign = textAlign;
+
+    const padding = selectedTemplate.layout === "left-aligned" ? 120 : 100;
+    const maxWidth = CANVAS_SIZE - padding * 2;
+    const lines = wrapText(ctx, quoteText, maxWidth);
+    const lineHeight = fontSize * 1.45;
+
+    let startY: number;
+    if (selectedTemplate.layout === "bottom-heavy") {
+      startY = CANVAS_SIZE - 280 - lines.length * lineHeight;
+    } else {
+      startY = (CANVAS_SIZE - lines.length * lineHeight) / 2;
+    }
+
+    const textX = textAlign === "center"
+      ? CANVAS_SIZE / 2
+      : selectedTemplate.layout === "left-aligned"
+        ? padding + 10
+        : padding;
+
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], textX, startY + i * lineHeight);
+    }
+
+    // ── Author ──
+    if (authorText.trim()) {
+      ctx.fillStyle = selectedTemplate.authorColor;
+      ctx.font = `normal ${Math.round(fontSize * 0.45)}px ${font}`;
+      ctx.textAlign = textAlign;
+      const authorY = selectedTemplate.layout === "bottom-heavy"
+        ? CANVAS_SIZE - 160
+        : startY + lines.length * lineHeight + fontSize * 0.8;
+      ctx.fillText(authorText, textX, authorY);
+    }
+
+    // ── Watermark ──
+    if (showWatermark) {
+      ctx.fillStyle = selectedTemplate.textColor;
+      ctx.globalAlpha = 0.15;
+      ctx.font = `500 16px Inter, system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText("contentos.ro", CANVAS_SIZE / 2, CANVAS_SIZE - 30);
+      ctx.globalAlpha = 1;
+    }
+  }, [quoteText, authorText, selectedTemplate, fontSize, fontWeight, textAlign, showWatermark]);
+
+  // ── Export ──
   const exportImage = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    if (onSave) {
+      onSave(dataUrl);
+    } else {
+      const link = document.createElement("a");
+      link.download = `quote-card-${selectedTemplate.id}-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    }
+  }, [selectedTemplate, onSave]);
 
-    // Re-render at full resolution without selection indicators
-    const tempSelected = selectedId;
-    setSelectedId(null);
-
-    requestAnimationFrame(() => {
-      const dataUrl = canvas.toDataURL("image/png");
-      if (onSave) {
-        onSave(dataUrl);
-      } else {
-        const link = document.createElement("a");
-        link.download = `contentos-${canvasWidth}x${canvasHeight}.png`;
-        link.href = dataUrl;
-        link.click();
-      }
-      setSelectedId(tempSelected);
-    });
-  }, [selectedId, canvasWidth, canvasHeight, onSave]);
-
-  const selectedOverlay = overlays.find((o) => o.id === selectedId);
+  const reset = useCallback(() => {
+    setQuoteText("Scrie citatul tău aici...");
+    setAuthorText("— Numele tău");
+    setFontSize(52);
+    setFontWeight("bold");
+    setTextAlign("center");
+  }, []);
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={addTextOverlay}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600/20 text-brand-300 border border-brand-500/30 hover:bg-brand-600/30 text-xs transition"
-        >
-          <Type className="w-3.5 h-3.5" /> Adaugă Text
-        </button>
-
-        {/* Size presets */}
-        <select
-          value={`${canvasWidth}x${canvasHeight}`}
-          onChange={(e) => {
-            const [w, h] = e.target.value.split("x").map(Number);
-            setCanvasWidth(w);
-            setCanvasHeight(h);
-          }}
-          className="px-2 py-1.5 rounded-lg bg-muted border border-border text-xs text-foreground/80 focus:outline-none"
-        >
-          {PRESET_SIZES.map((s) => (
-            <option key={`${s.width}x${s.height}`} value={`${s.width}x${s.height}`}>
-              {s.label} ({s.width}×{s.height})
-            </option>
-          ))}
-        </select>
-
-        {!loadedImage && (
-          <div className="flex items-center gap-1">
-            <Palette className="w-3 h-3 text-muted-foreground" />
-            {PRESET_BG_COLORS.filter((c) => c !== "transparent").map((color) => (
-              <button
-                key={color}
-                onClick={() => setBgColor(color)}
-                className={`w-5 h-5 rounded border-2 transition ${bgColor === color ? "border-white" : "border-transparent"}`}
-                style={{ backgroundColor: color }}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="flex-1" />
-
-        <button
-          onClick={undo}
-          disabled={!canUndo}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
-          title="Undo (Ctrl+Z)"
-          aria-label="Undo"
-        >
-          <Undo2 className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={redo}
-          disabled={!canRedo}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
-          title="Redo (Ctrl+Shift+Z)"
-          aria-label="Redo"
-        >
-          <Redo2 className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => { resetOverlays([]); setSelectedId(null); }}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white transition"
-        >
-          <RotateCcw className="w-3 h-3" /> Reset
-        </button>
-        <button
-          onClick={exportImage}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 text-xs transition"
-        >
-          <Download className="w-3.5 h-3.5" /> Descarcă PNG
-        </button>
+    <div className={`space-y-4 ${className}`}>
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-1">
+        <Quote className="w-5 h-5 text-orange-400" />
+        <div>
+          <h2 className="text-sm font-semibold text-white">Quote Card Maker</h2>
+          <p className="text-[10px] text-muted-foreground">
+            Creează carduri vizuale pentru Instagram, Facebook, LinkedIn — export 1080×1080
+          </p>
+        </div>
       </div>
 
-      {/* Canvas */}
+      {/* Template selector */}
+      <div>
+        <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">
+          Template
+        </label>
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+          {TEMPLATES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setSelectedTemplate(t)}
+              className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border text-[10px] transition ${
+                selectedTemplate.id === t.id
+                  ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                  : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.05] hover:text-white"
+              }`}
+              title={t.name}
+            >
+              <span className="text-lg">{t.icon}</span>
+              <span className="truncate w-full text-center">{t.name.split(" ")[0]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex gap-4">
-        <div className="rounded-xl bg-card border border-border p-2 overflow-auto">
-          <canvas
-            ref={canvasRef}
-            onClick={(e) => {
-              if (!selectedId) return;
-              const canvas = canvasRef.current;
-              if (!canvas) return;
-              const rect = canvas.getBoundingClientRect();
-              const scaleX = canvasWidth / rect.width;
-              const scaleY = canvasHeight / rect.height;
-              const x = (e.clientX - rect.left) * scaleX;
-              const y = (e.clientY - rect.top) * scaleY;
-              updateOverlay(selectedId, { x, y });
-            }}
-            className="cursor-crosshair"
-          />
+        {/* Canvas preview */}
+        <div className="rounded-xl bg-black/20 border border-white/[0.06] p-3 flex-shrink-0">
+          <canvas ref={canvasRef} className="rounded-lg" />
         </div>
 
-        {/* Properties panel */}
-        {selectedOverlay && (
-          <div className="w-52 space-y-2 shrink-0">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-foreground/80 flex items-center gap-1">
-                <Layers className="w-3 h-3" /> Text Layer
-              </span>
-              <button onClick={() => removeOverlay(selectedOverlay.id)} className="text-muted-foreground hover:text-red-400">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
+        {/* Controls */}
+        <div className="flex-1 space-y-3 min-w-0">
+          {/* Quote input */}
+          <div>
+            <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">
+              Citat / Text
+            </label>
             <textarea
-              value={selectedOverlay.text}
-              onChange={(e) => updateOverlay(selectedOverlay.id, { text: e.target.value })}
-              rows={2}
-              className="w-full bg-muted border border-border rounded-lg p-2 text-xs text-white focus:outline-none resize-none"
+              value={quoteText}
+              onChange={(e) => setQuoteText(e.target.value)}
+              rows={4}
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg p-2.5 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-orange-500/30 resize-none"
+              placeholder="Scrie citatul sau mesajul tău..."
             />
+          </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-[10px] text-muted-foreground w-12">Mărime</label>
+          {/* Author */}
+          <div>
+            <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">
+              Autor / Brand
+            </label>
+            <input
+              type="text"
+              value={authorText}
+              onChange={(e) => setAuthorText(e.target.value)}
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-orange-500/30"
+              placeholder="— Numele tău sau brand-ul"
+            />
+          </div>
+
+          {/* Font controls */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <Type className="w-3 h-3 text-muted-foreground flex-shrink-0" />
               <input
                 type="range"
-                min={16}
-                max={120}
-                value={selectedOverlay.fontSize}
-                onChange={(e) => updateOverlay(selectedOverlay.id, { fontSize: Number(e.target.value) })}
+                min={28}
+                max={80}
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-6">{selectedOverlay.fontSize}</span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-muted-foreground w-12">Culoare</span>
-              {PRESET_COLORS.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => updateOverlay(selectedOverlay.id, { color })}
-                  className={`w-4 h-4 rounded-full border transition ${selectedOverlay.color === color ? "border-brand-400 scale-125" : "border-transparent"}`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
+              <span className="text-[10px] text-muted-foreground w-6">{fontSize}</span>
             </div>
 
             <div className="flex gap-1">
               <button
-                onClick={() => updateOverlay(selectedOverlay.id, { fontWeight: selectedOverlay.fontWeight === "bold" ? "normal" : "bold" })}
-                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.fontWeight === "bold" ? "bg-brand-600/20 text-brand-300" : "text-muted-foreground hover:text-white"}`}
+                onClick={() => setFontWeight(fontWeight === "bold" ? "normal" : "bold")}
+                className={`p-1.5 rounded-lg transition ${
+                  fontWeight === "bold"
+                    ? "bg-orange-500/15 text-orange-400"
+                    : "text-muted-foreground hover:text-white"
+                }`}
+                title="Bold"
               >
-                <Bold className="w-3 h-3" />
+                <Bold className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => updateOverlay(selectedOverlay.id, { textAlign: "left" })}
-                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.textAlign === "left" ? "bg-brand-600/20 text-brand-300" : "text-muted-foreground hover:text-white"}`}
+                onClick={() => setTextAlign("left")}
+                className={`p-1.5 rounded-lg transition ${
+                  textAlign === "left"
+                    ? "bg-orange-500/15 text-orange-400"
+                    : "text-muted-foreground hover:text-white"
+                }`}
+                title="Aliniere stânga"
               >
-                <AlignLeft className="w-3 h-3" />
+                <AlignLeft className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => updateOverlay(selectedOverlay.id, { textAlign: "center" })}
-                className={`p-1.5 rounded-lg text-xs transition ${selectedOverlay.textAlign === "center" ? "bg-brand-600/20 text-brand-300" : "text-muted-foreground hover:text-white"}`}
+                onClick={() => setTextAlign("center")}
+                className={`p-1.5 rounded-lg transition ${
+                  textAlign === "center"
+                    ? "bg-orange-500/15 text-orange-400"
+                    : "text-muted-foreground hover:text-white"
+                }`}
+                title="Centrat"
               >
-                <AlignCenter className="w-3 h-3" />
+                <AlignCenter className="w-3.5 h-3.5" />
               </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="text-[10px] text-muted-foreground w-12">Opacitate</label>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.1}
-                value={selectedOverlay.bgOpacity}
-                onChange={(e) => updateOverlay(selectedOverlay.id, { bgOpacity: Number(e.target.value) })}
-                className="flex-1"
-              />
             </div>
           </div>
-        )}
+
+          {/* Watermark toggle */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showWatermark}
+              onChange={(e) => setShowWatermark(e.target.checked)}
+              className="rounded border-white/20 bg-white/[0.04] text-orange-500 focus:ring-orange-500/30"
+            />
+            <span className="text-[10px] text-muted-foreground">
+              Watermark contentos.ro
+            </span>
+          </label>
+
+          {/* Actions */}
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={exportImage}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs font-medium hover:from-orange-500 hover:to-orange-400 transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Descarcă PNG (1080×1080)
+            </button>
+            <button
+              onClick={reset}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/[0.08] text-muted-foreground text-xs hover:text-white hover:bg-white/[0.04] transition"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset
+            </button>
+          </div>
+        </div>
       </div>
 
-      {overlays.length === 0 && (
-        <div className="text-center py-6">
-          <ImageIcon className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground">Click &quot;Adaugă Text&quot; pentru a suprapune text pe imagine</p>
-          <p className="text-[10px] text-muted-foreground">Click pe canvas pentru a poziționa textul</p>
+      {/* AI suggestion */}
+      <div className="rounded-lg bg-orange-500/5 border border-orange-500/10 p-3">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+          <span className="text-[10px] font-medium text-orange-300 uppercase tracking-wider">
+            Tip
+          </span>
         </div>
-      )}
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          Quote card-urile cu citatul tău personal + culori de brand performează cu <strong className="text-white">3.4x mai multe salvări</strong> decât
+          postările text simple pe Instagram. Ideal pentru carousel-uri educative, stories cu tips, sau LinkedIn posts.
+        </p>
+      </div>
     </div>
   );
+}
+
+// ─── Canvas Helpers ─────────────────────────────────────────
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  const paragraphs = text.split("\n");
+
+  for (const paragraph of paragraphs) {
+    if (paragraph.trim() === "") {
+      lines.push("");
+      continue;
+    }
+    const words = paragraph.split(/\s+/);
+    let currentLine = "";
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+  }
+
+  return lines;
+}
+
+function drawCSSGradient(
+  ctx: CanvasRenderingContext2D,
+  cssGradient: string,
+  width: number,
+  height: number
+) {
+  // Parse simple linear-gradient
+  const angleMatch = cssGradient.match(/(\d+)deg/);
+  const angle = angleMatch ? parseInt(angleMatch[1]) * (Math.PI / 180) : Math.PI / 4;
+
+  const colorStops = cssGradient.match(/#[0-9a-fA-F]{6}\s+\d+%/g) || [];
+  const parsed = colorStops.map((stop) => {
+    const [color, pct] = stop.split(/\s+/);
+    return { color, offset: parseInt(pct) / 100 };
+  });
+
+  if (parsed.length < 2) {
+    // Fallback
+    ctx.fillStyle = "#0F1728";
+    ctx.fillRect(0, 0, width, height);
+    return;
+  }
+
+  const cx = width / 2;
+  const cy = height / 2;
+  const len = Math.sqrt(width * width + height * height) / 2;
+  const x0 = cx - Math.cos(angle) * len;
+  const y0 = cy - Math.sin(angle) * len;
+  const x1 = cx + Math.cos(angle) * len;
+  const y1 = cy + Math.sin(angle) * len;
+
+  const gradient = ctx.createLinearGradient(x0, y0, x1, y1);
+  for (const { color, offset } of parsed) {
+    gradient.addColorStop(offset, color);
+  }
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
 }

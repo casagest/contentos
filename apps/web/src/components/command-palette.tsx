@@ -50,7 +50,7 @@ export function CommandPalette() {
     { id: "research", label: "Cercetare Conturi", icon: <Search className="w-4 h-4" />, href: "/research", keywords: ["analiză", "competitori", "conturi"], group: "Instrumente AI" },
     { id: "inspiration", label: "Inspirație", icon: <Lightbulb className="w-4 h-4" />, href: "/inspiration", keywords: ["idei", "trending", "viral"], group: "Instrumente AI" },
     { id: "video-script", label: "Script Video", icon: <Video className="w-4 h-4" />, href: "/video-script", keywords: ["tiktok", "reels", "video", "script"], group: "Media" },
-    { id: "image-editor", label: "Editor Imagine", icon: <ImageIcon className="w-4 h-4" />, href: "/image-editor", keywords: ["imagine", "text", "overlay"], group: "Media" },
+    { id: "image-editor", label: "Quote Card Maker", icon: <ImageIcon className="w-4 h-4" />, href: "/image-editor", keywords: ["imagine", "text", "quote", "card", "citat"], group: "Media" },
     { id: "analytics", label: "Performanță", icon: <TrendingUp className="w-4 h-4" />, href: "/analytics", keywords: ["statistici", "engagement", "metrici"], group: "Monitorizare" },
     { id: "calendar", label: "Calendar Conținut", icon: <CalendarDays className="w-4 h-4" />, href: "/calendar", keywords: ["programare", "planificare"], group: "Monitorizare" },
     { id: "history", label: "Istoric Postări", icon: <Clock className="w-4 h-4" />, href: "/history", keywords: ["postări", "publicate", "istoric"], group: "Monitorizare" },
