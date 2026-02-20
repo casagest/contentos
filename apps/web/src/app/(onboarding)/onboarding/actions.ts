@@ -96,3 +96,42 @@ export async function saveOnboardingProfile(data: {
 
   return { success: true };
 }
+
+export async function saveResearchedProfile(data: Record<string, unknown>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false };
+
+  const { data: userData } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!userData?.organization_id) return { success: false };
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("settings")
+    .eq("id", userData.organization_id)
+    .single();
+
+  const settings = (org?.settings as Record<string, unknown>) || {};
+  const existingProfile = (settings.businessProfile as Record<string, unknown>) || {};
+
+  // Merge: keep existing data, overlay with researched data
+  settings.businessProfile = {
+    ...existingProfile,
+    ...data,
+  };
+
+  await supabase
+    .from("organizations")
+    .update({ settings, onboarding_step: 3 })
+    .eq("id", userData.organization_id);
+
+  return { success: true };
+}
