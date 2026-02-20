@@ -482,7 +482,8 @@ export async function fetchBusinessIntelligence(params: {
     }
   }
 
-  // 3. Crawl website + load social + load posts + deep research — ALL IN PARALLEL
+  // 3. Crawl website + load social + load posts — ALL IN PARALLEL
+  //    Perplexity deep research ONLY on forceRefresh (onboarding) to avoid timeouts
   const websitePromise = profile?.website
     ? crawlWebsite(profile.website)
     : Promise.resolve(null);
@@ -491,23 +492,43 @@ export async function fetchBusinessIntelligence(params: {
   const recentPostsPromise = loadRecentPosts(supabase, organizationId, 15);
   const topPostsPromise = loadTopPosts(supabase, organizationId, 8);
 
-  // Deep research via Perplexity (runs in parallel with everything else)
-  const deepResearchPromise = profile?.name
+  // Deep research via Perplexity — ONLY on explicit forceRefresh (onboarding)
+  // Normal AI calls (generate/braindump/coach) use cached data only
+  const deepResearchPromise = (forceRefresh && profile?.name)
     ? deepResearch({
         businessName: profile.name,
         industry: profile.industry || "",
-        city: "", // extracted later from website
+        city: "",
         website: profile.website || "",
       }).catch(() => ({ reputation: null, industryIntel: null, perplexityAvailable: false }))
     : Promise.resolve({ reputation: null, industryIntel: null, perplexityAvailable: false });
 
-  const [website, socialAccounts, recentPosts, topPosts, deepResult] = await Promise.all([
-    websitePromise,
-    socialPromise,
-    recentPostsPromise,
-    topPostsPromise,
-    deepResearchPromise,
-  ]);
+  // Total timeout: 8s for normal requests (Vercel hobby = 10s limit)
+  const FETCH_TIMEOUT_MS = forceRefresh ? 55_000 : 8_000;
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("BusinessIntel timeout")), FETCH_TIMEOUT_MS),
+  );
+
+  let website: WebsiteData | null = null;
+  let socialAccounts: SocialAccountSummary[] = [];
+  let recentPosts: PostSummary[] = [];
+  let topPosts: PostSummary[] = [];
+  let deepResult = { reputation: null as BusinessReputation | null, industryIntel: null as IndustryIntelligence | null, perplexityAvailable: false };
+
+  try {
+    const results = await Promise.race([
+      Promise.all([websitePromise, socialPromise, recentPostsPromise, topPostsPromise, deepResearchPromise]),
+      timeoutPromise,
+    ]);
+    [website, socialAccounts, recentPosts, topPosts, deepResult] = results;
+  } catch {
+    // Timeout — use whatever resolved fast (DB queries are quick)
+    socialAccounts = await socialPromise.catch(() => []);
+    recentPosts = await recentPostsPromise.catch(() => []);
+    topPosts = await topPostsPromise.catch(() => []);
+    // website and Perplexity are slow — skip on timeout
+  }
 
   // 4. Analyze completeness
   const partial = {
