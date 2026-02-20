@@ -144,6 +144,21 @@ export default function BusinessProfileForm({
           />
         </div>
 
+        {/* Website URL */}
+        <div>
+          <label className={labelClass}>Website-ul afacerii</label>
+          <input
+            type="url"
+            value={profile.website || ""}
+            onChange={(e) => handleChange("website", e.target.value)}
+            placeholder="ex: https://medicalcor.ro"
+            className={inputClass}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            AI-ul va citi automat site-ul tău pentru a genera conținut bazat pe date reale.
+          </p>
+        </div>
+
         {/* Business Description */}
         <div>
           <label className={labelClass}>

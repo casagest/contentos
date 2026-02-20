@@ -280,11 +280,17 @@ function buildSystemPrompt(params: {
     `TARGET_PLATFORMS: ${params.platforms.join(", ")}`,
     "",
     "STRICT_RULES:",
-    "1) Use only user-provided facts and URL context. Do not invent claims.",
+    "1) ANTI-HALLUCINATION (MANDATORY — violation = content rejection):",
+    "   a) NEVER invent statistics, percentages, or numbers not in user input (e.g., '73% of people...')",
+    "   b) NEVER invent patient/customer names, stories, or testimonials (e.g., 'Maria, 52 ani din Cluj')",
+    "   c) NEVER fabricate Google review counts, star ratings, awards, or certifications not in user input",
+    "   d) ONLY use facts, numbers, prices, and claims that appear in RAW_INPUT, URL_CONTEXT, or BUSINESS_CONTEXT above",
+    "   e) If user input lacks specific data, write compelling content using general language and real USPs — do NOT fill gaps with invented specifics",
+    "   f) For patient/customer results, use general phrasing ('pacienții noștri', 'rezultate clinice') NOT invented individual stories",
     "2) Return strict JSON only, no markdown, no prose outside JSON.",
     "3) Generate ONLY requested platforms. Platform keys MUST be lowercase: facebook, instagram, tiktok, youtube.",
     "4) Keep hooks practical and clear. Include CTA and platform-specific hashtags/tags.",
-    "5) If medical/dental context exists, avoid absolute claims and guaranteed outcomes.",
+    "5) If medical/dental context exists, avoid absolute claims and guaranteed outcomes (CMSR 2025).",
     "6) HUMANIZATION: Vary sentence length dramatically (mix 3-word punches with 20-word flowing sentences).",
     "7) NEVER use AI-ism phrases: 'în concluzie', 'este important de menționat', 'mai mult decât atât', 'haideți să explorăm', 'în era digitală', 'peisajul digital', 'un rol crucial', 'aspecte esențiale', 'let\\'s delve', 'furthermore', 'digital landscape'.",
     "8) Use at least one unexpected word, colloquial expression, or conversational break per platform output.",
@@ -590,6 +596,51 @@ export async function POST(request: NextRequest) {
     brandVoice = settings.brandVoice as Record<string, unknown>;
   }
 
+  // --- Website Grounding: scrape real business data ---
+  let websiteGroundingContext = "";
+  if (businessProfile?.website) {
+    const websiteUrl = businessProfile.website;
+    const cachedContent = businessProfile.websiteContent;
+    const scrapedAt = businessProfile.websiteScrapedAt;
+    const staleMs = 24 * 60 * 60 * 1000; // 24h cache
+
+    const isFresh = scrapedAt && (Date.now() - new Date(scrapedAt).getTime()) < staleMs;
+
+    if (isFresh && cachedContent) {
+      websiteGroundingContext = cachedContent;
+    } else {
+      // Scrape website in background, don't block generation if it fails
+      try {
+        const scraped = await scrapeUrlContent(websiteUrl, {
+          maxChars: 8000,
+          minChars: 100,
+          timeoutMs: FETCH_TIMEOUT_MS,
+        });
+        if (scraped?.content) {
+          websiteGroundingContext = scraped.content.slice(0, 8000);
+          // Cache for next time (fire-and-forget)
+          void session.supabase
+            .from("organizations")
+            .update({
+              settings: {
+                ...settings,
+                businessProfile: {
+                  ...businessProfile,
+                  websiteContent: websiteGroundingContext,
+                  websiteScrapedAt: new Date().toISOString(),
+                },
+              },
+            })
+            .eq("id", session.organizationId)
+            .then(() => {});
+        }
+      } catch {
+        // Use cached if available even if stale
+        if (cachedContent) websiteGroundingContext = cachedContent;
+      }
+    }
+  }
+
   // --- Creative Intelligence Integration ---
   const primaryPlatform = requestedPlatforms[0] as CreativePlatform;
   const creativeInsights = await loadCreativeInsights({
@@ -787,8 +838,9 @@ export async function POST(request: NextRequest) {
   const userMessage = [
     `RAW_INPUT:\n"""${rawInput.slice(0, 5000)}"""`,
     urlContext ? `URL_CONTEXT:\n"""${urlContext.slice(0, 9000)}"""` : "",
+    websiteGroundingContext ? `WEBSITE_REAL_DATA (scraped from ${businessProfile?.website || "business website"} — USE these facts as grounding):\n"""${websiteGroundingContext.slice(0, 6000)}"""` : "",
     `TARGET_PLATFORMS: ${requestedPlatforms.join(", ")}`,
-    "Return strict JSON only.",
+    "Return strict JSON only. Use ONLY facts from RAW_INPUT, URL_CONTEXT, BUSINESS_CONTEXT, and WEBSITE_REAL_DATA. Do NOT invent any data.",
   ]
     .filter(Boolean)
     .join("\n\n");

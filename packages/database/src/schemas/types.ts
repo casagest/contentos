@@ -83,6 +83,12 @@ export interface BusinessProfile {
   preferredPhrases: string;
   language: BusinessLanguage;
   compliance: ComplianceRule[];
+  /** Business website URL — scraped at generation time for real data grounding */
+  website?: string;
+  /** Cached website content (auto-populated by scraper, refreshed periodically) */
+  websiteContent?: string;
+  /** Last time website was scraped (ISO string) */
+  websiteScrapedAt?: string;
 }
 
 // ============================================================

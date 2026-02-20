@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Platform, Language } from "@contentos/content-engine";
+import type { BusinessProfile } from "@contentos/database";
 import { getSessionUserWithOrg } from "@/lib/auth";
+import { scrapeUrlContent } from "@/lib/scrape";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import { buildDeterministicGeneration } from "@/lib/ai/deterministic";
@@ -299,6 +301,48 @@ export async function POST(request: NextRequest) {
   const compliance = Array.isArray((orgSettings?.businessProfile as Record<string, unknown>)?.compliance)
     ? ((orgSettings?.businessProfile as Record<string, unknown>).compliance as string[])
     : [];
+
+  // --- Website Grounding: scrape real business data ---
+  let websiteGroundingContext = "";
+  const bpFull = orgSettings?.businessProfile as BusinessProfile | undefined;
+  if (bpFull?.website) {
+    const cachedContent = bpFull.websiteContent;
+    const scrapedAt = bpFull.websiteScrapedAt;
+    const staleMs = 24 * 60 * 60 * 1000; // 24h cache
+    const isFresh = scrapedAt && (Date.now() - new Date(scrapedAt).getTime()) < staleMs;
+
+    if (isFresh && cachedContent) {
+      websiteGroundingContext = cachedContent;
+    } else {
+      try {
+        const scraped = await scrapeUrlContent(bpFull.website, {
+          maxChars: 8000,
+          minChars: 100,
+          timeoutMs: 10_000,
+        });
+        if (scraped?.content) {
+          websiteGroundingContext = scraped.content.slice(0, 8000);
+          // Cache for next time (fire-and-forget)
+          void session.supabase
+            .from("organizations")
+            .update({
+              settings: {
+                ...orgSettings,
+                businessProfile: {
+                  ...bpFull,
+                  websiteContent: websiteGroundingContext,
+                  websiteScrapedAt: new Date().toISOString(),
+                },
+              },
+            })
+            .eq("id", session.organizationId)
+            .then(() => {});
+        }
+      } catch {
+        if (cachedContent) websiteGroundingContext = cachedContent;
+      }
+    }
+  }
 
   const deterministic = buildDeterministicGeneration({
     input,
@@ -612,12 +656,21 @@ Tone: ${tone}
 ${hashtagInstruction}
 ${emojiInstruction}
 
+ANTI-HALLUCINATION RULES (MANDATORY — violation = content rejection):
+1. NEVER invent statistics, percentages, or numbers not provided by the user (e.g., "73% of people...")
+2. NEVER invent patient/customer names, stories, or testimonials (e.g., "Adriana, 58 ani din Iași")
+3. NEVER fabricate awards, certifications, or accolades not mentioned in the business profile
+4. NEVER invent Google review counts, star ratings, or quotes unless explicitly provided in user input
+5. ONLY use facts, numbers, prices, and claims that appear in the user's input or business profile below
+6. If the user's input lacks specific data, write compelling content WITHOUT making up specifics — use the brand's real USPs and tone instead
+7. When referencing results or transformations, use general language ("pacienții noștri", "rezultate dovedite") NOT invented individual stories
+
 HUMANIZATION RULES (CRITICAL — follow these to produce natural, human-sounding content):
 - Vary sentence length dramatically: mix 2-5 word punches with 15-25 word flowing sentences
 - NEVER use these AI-ism phrases: "în concluzie", "este important de menționat", "mai mult decât atât", "haideți să explorăm", "în era digitală", "peisajul digital", "fără îndoială", "un rol crucial", "aspecte esențiale", "abordare holistică", "let's delve", "it's worth noting", "digital landscape", "furthermore", "moreover", "paradigm shift", "seamless", "leverage", "game-changer"
 - Include at least one unexpected word choice or colloquial expression
 - Vary paragraph lengths (1 line, then 3 lines, then 1 line)
-- Use active voice, specific numbers, and concrete examples over abstractions
+- Use active voice, specific numbers FROM USER INPUT, and concrete examples over abstractions
 
 ${voiceDNAFragment ? `\n${voiceDNAFragment}\n` : ""}
 ${diversityFragment ? `\n${diversityFragment}\n` : ""}
@@ -639,7 +692,7 @@ JSON structure:
         },
         {
           role: "user",
-          content: `Create content about: ${input}`,
+          content: `Create content about: ${input}${websiteGroundingContext ? `\n\nWEBSITE_REAL_DATA (scraped from ${bpFull?.website || "business website"} — use these REAL facts as grounding, do NOT invent data):\n"""${websiteGroundingContext.slice(0, 6000)}"""` : ""}`,
         },
         {
           role: "assistant",

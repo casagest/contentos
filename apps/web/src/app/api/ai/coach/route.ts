@@ -145,6 +145,10 @@ export async function POST(request: NextRequest) {
       if (typeof bp.usps === "string" && bp.usps.trim()) lines.push(`- USPs: ${bp.usps}`);
       if (typeof bp.preferredPhrases === "string" && bp.preferredPhrases.trim()) lines.push(`- Preferred phrases: ${bp.preferredPhrases}`);
       if (typeof bp.avoidPhrases === "string" && bp.avoidPhrases.trim()) lines.push(`- Phrases to avoid: ${bp.avoidPhrases}`);
+      if (typeof bp.website === "string" && bp.website.trim()) lines.push(`- Website: ${bp.website}`);
+      if (typeof bp.websiteContent === "string" && bp.websiteContent.trim()) {
+        lines.push(`\nREAL DATA from business website (${bp.website}):\n${(bp.websiteContent as string).slice(0, 4000)}`);
+      }
       businessContext = "\n\n" + lines.join("\n");
     }
   }
