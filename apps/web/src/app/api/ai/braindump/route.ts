@@ -37,6 +37,11 @@ import {
   type ConversationMessage,
 } from "@/lib/ai/braindump-coach";
 import {
+  fetchBusinessIntelligence,
+  buildGroundingPrompt,
+  buildCompletenessWarning,
+} from "@/lib/ai/business-intel";
+import {
   loadCreativeInsights,
   generateCreativeAngles,
   buildCreativeBrief,
@@ -596,49 +601,18 @@ export async function POST(request: NextRequest) {
     brandVoice = settings.brandVoice as Record<string, unknown>;
   }
 
-  // --- Website Grounding: scrape real business data ---
-  let websiteGroundingContext = "";
-  if (businessProfile?.website) {
-    const websiteUrl = businessProfile.website;
-    const cachedContent = businessProfile.websiteContent;
-    const scrapedAt = businessProfile.websiteScrapedAt;
-    const staleMs = 24 * 60 * 60 * 1000; // 24h cache
-
-    const isFresh = scrapedAt && (Date.now() - new Date(scrapedAt).getTime()) < staleMs;
-
-    if (isFresh && cachedContent) {
-      websiteGroundingContext = cachedContent;
-    } else {
-      // Scrape website in background, don't block generation if it fails
-      try {
-        const scraped = await scrapeUrlContent(websiteUrl, {
-          maxChars: 8000,
-          minChars: 100,
-          timeoutMs: FETCH_TIMEOUT_MS,
-        });
-        if (scraped?.content) {
-          websiteGroundingContext = scraped.content.slice(0, 8000);
-          // Cache for next time (fire-and-forget)
-          void session.supabase
-            .from("organizations")
-            .update({
-              settings: {
-                ...settings,
-                businessProfile: {
-                  ...businessProfile,
-                  websiteContent: websiteGroundingContext,
-                  websiteScrapedAt: new Date().toISOString(),
-                },
-              },
-            })
-            .eq("id", session.organizationId)
-            .then(() => {});
-        }
-      } catch {
-        // Use cached if available even if stale
-        if (cachedContent) websiteGroundingContext = cachedContent;
-      }
-    }
+  // --- Deep Business Intelligence (website crawl + social + posts) ---
+  let businessIntelPrompt = "";
+  let completenessWarning: string | null = null;
+  try {
+    const intel = await fetchBusinessIntelligence({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+    });
+    businessIntelPrompt = buildGroundingPrompt(intel);
+    completenessWarning = buildCompletenessWarning(intel);
+  } catch {
+    // Non-fatal — AI will work without grounding, just less accurately
   }
 
   // --- Creative Intelligence Integration ---
@@ -838,9 +812,9 @@ export async function POST(request: NextRequest) {
   const userMessage = [
     `RAW_INPUT:\n"""${rawInput.slice(0, 5000)}"""`,
     urlContext ? `URL_CONTEXT:\n"""${urlContext.slice(0, 9000)}"""` : "",
-    websiteGroundingContext ? `WEBSITE_REAL_DATA (scraped from ${businessProfile?.website || "business website"} — USE these facts as grounding):\n"""${websiteGroundingContext.slice(0, 6000)}"""` : "",
+    businessIntelPrompt ? `\n${businessIntelPrompt}` : "",
     `TARGET_PLATFORMS: ${requestedPlatforms.join(", ")}`,
-    "Return strict JSON only. Use ONLY facts from RAW_INPUT, URL_CONTEXT, BUSINESS_CONTEXT, and WEBSITE_REAL_DATA. Do NOT invent any data.",
+    "Return strict JSON only. Use ONLY facts from RAW_INPUT, URL_CONTEXT, and REAL BUSINESS DATA above. Do NOT invent any data.",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -1162,6 +1136,7 @@ export async function POST(request: NextRequest) {
         objective,
         objectiveValueConfig: valueConfig,
         roiGate: roiDecision,
+        ...(completenessWarning ? { dataWarning: completenessWarning } : {}),
         creativeBrief: {
           topPerformers: creativeBrief.topPerformers.length,
           avoidPatterns: creativeBrief.avoidPatterns.length,

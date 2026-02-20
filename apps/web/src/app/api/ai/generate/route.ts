@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Platform, Language } from "@contentos/content-engine";
-import type { BusinessProfile } from "@contentos/database";
 import { getSessionUserWithOrg } from "@/lib/auth";
-import { scrapeUrlContent } from "@/lib/scrape";
 import { routeAICall } from "@/lib/ai/multi-model-router";
+import {
+  fetchBusinessIntelligence,
+  buildGroundingPrompt,
+} from "@/lib/ai/business-intel";
 import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import { buildDeterministicGeneration } from "@/lib/ai/deterministic";
 import {
@@ -302,46 +304,16 @@ export async function POST(request: NextRequest) {
     ? ((orgSettings?.businessProfile as Record<string, unknown>).compliance as string[])
     : [];
 
-  // --- Website Grounding: scrape real business data ---
-  let websiteGroundingContext = "";
-  const bpFull = orgSettings?.businessProfile as BusinessProfile | undefined;
-  if (bpFull?.website) {
-    const cachedContent = bpFull.websiteContent;
-    const scrapedAt = bpFull.websiteScrapedAt;
-    const staleMs = 24 * 60 * 60 * 1000; // 24h cache
-    const isFresh = scrapedAt && (Date.now() - new Date(scrapedAt).getTime()) < staleMs;
-
-    if (isFresh && cachedContent) {
-      websiteGroundingContext = cachedContent;
-    } else {
-      try {
-        const scraped = await scrapeUrlContent(bpFull.website, {
-          maxChars: 8000,
-          minChars: 100,
-          timeoutMs: 10_000,
-        });
-        if (scraped?.content) {
-          websiteGroundingContext = scraped.content.slice(0, 8000);
-          // Cache for next time (fire-and-forget)
-          void session.supabase
-            .from("organizations")
-            .update({
-              settings: {
-                ...orgSettings,
-                businessProfile: {
-                  ...bpFull,
-                  websiteContent: websiteGroundingContext,
-                  websiteScrapedAt: new Date().toISOString(),
-                },
-              },
-            })
-            .eq("id", session.organizationId)
-            .then(() => {});
-        }
-      } catch {
-        if (cachedContent) websiteGroundingContext = cachedContent;
-      }
-    }
+  // --- Deep Business Intelligence ---
+  let businessIntelPrompt = "";
+  try {
+    const intel = await fetchBusinessIntelligence({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+    });
+    businessIntelPrompt = buildGroundingPrompt(intel);
+  } catch {
+    // Non-fatal
   }
 
   const deterministic = buildDeterministicGeneration({
@@ -692,7 +664,7 @@ JSON structure:
         },
         {
           role: "user",
-          content: `Create content about: ${input}${websiteGroundingContext ? `\n\nWEBSITE_REAL_DATA (scraped from ${bpFull?.website || "business website"} — use these REAL facts as grounding, do NOT invent data):\n"""${websiteGroundingContext.slice(0, 6000)}"""` : ""}`,
+          content: `Create content about: ${input}${businessIntelPrompt ? `\n\n${businessIntelPrompt}` : ""}`,
         },
         {
           role: "assistant",

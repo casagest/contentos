@@ -4,6 +4,10 @@ import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicCoach } from "@/lib/ai/deterministic";
 import {
+  fetchBusinessIntelligence,
+  buildGroundingPrompt,
+} from "@/lib/ai/business-intel";
+import {
   fetchCognitiveContextV4,
   trackMemoryAccess,
 } from "@/lib/ai/cognitive-memory";
@@ -122,34 +126,28 @@ export async function POST(request: NextRequest) {
     topPerformingPosts = topRows.map(dbPostToEnginePost);
   }
 
-  // Load business profile for personalized coaching
+  // Load comprehensive business intelligence
   let businessContext = "";
-  const { data: orgData } = await session.supabase
-    .from("organizations")
-    .select("settings")
-    .eq("id", session.organizationId)
-    .single();
-
-  const orgSettings = orgData?.settings as Record<string, unknown> | null;
-  if (orgSettings?.businessProfile) {
-    const bp = orgSettings.businessProfile as Record<string, unknown>;
-    const bpName = typeof bp.name === "string" ? bp.name : "";
-    if (bpName) {
-      const lines = [`Context about the business you're coaching:`];
-      lines.push(`- Business: ${bpName}`);
-      if (typeof bp.industry === "string") lines.push(`- Industry: ${bp.industry}`);
-      if (typeof bp.description === "string" && bp.description) lines.push(`- Description: ${bp.description}`);
-      if (typeof bp.targetAudience === "string" && bp.targetAudience) lines.push(`- Target audience: ${bp.targetAudience}`);
-      const tones = Array.isArray(bp.tones) ? bp.tones.filter((t): t is string => typeof t === "string") : [];
-      if (tones.length) lines.push(`- Communication tones: ${tones.join(", ")}`);
-      if (typeof bp.usps === "string" && bp.usps.trim()) lines.push(`- USPs: ${bp.usps}`);
-      if (typeof bp.preferredPhrases === "string" && bp.preferredPhrases.trim()) lines.push(`- Preferred phrases: ${bp.preferredPhrases}`);
-      if (typeof bp.avoidPhrases === "string" && bp.avoidPhrases.trim()) lines.push(`- Phrases to avoid: ${bp.avoidPhrases}`);
-      if (typeof bp.website === "string" && bp.website.trim()) lines.push(`- Website: ${bp.website}`);
-      if (typeof bp.websiteContent === "string" && bp.websiteContent.trim()) {
-        lines.push(`\nREAL DATA from business website (${bp.website}):\n${(bp.websiteContent as string).slice(0, 4000)}`);
+  try {
+    const intel = await fetchBusinessIntelligence({
+      supabase: session.supabase,
+      organizationId: session.organizationId,
+    });
+    businessContext = "\n\n" + buildGroundingPrompt(intel);
+  } catch {
+    // Fallback: load basic profile
+    const { data: orgData } = await session.supabase
+      .from("organizations")
+      .select("settings")
+      .eq("id", session.organizationId)
+      .single();
+    const orgSettings = orgData?.settings as Record<string, unknown> | null;
+    if (orgSettings?.businessProfile) {
+      const bp = orgSettings.businessProfile as Record<string, unknown>;
+      const bpName = typeof bp.name === "string" ? bp.name : "";
+      if (bpName) {
+        businessContext = `\n\nBusiness: ${bpName}`;
       }
-      businessContext = "\n\n" + lines.join("\n");
     }
   }
 
