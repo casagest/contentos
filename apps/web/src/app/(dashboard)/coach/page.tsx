@@ -60,7 +60,7 @@ export default function CoachPage() {
         throw new Error(await safeErrorJson(response));
       }
 
-      const data: any = await safeResponseJson(response);
+      const data: Record<string, any> = await safeResponseJson(response);
 
       let answerText = data.answer;
       if (data.actionItems?.length) {

@@ -208,7 +208,7 @@ export default function ComposePage() {
         throw new Error(await safeErrorJson(response));
       }
 
-      const data: any = await safeResponseJson(response);
+      const data: Record<string, any> = await safeResponseJson(response);
       if (data.platformVersions) {
         setGeneratedContent(data.platformVersions);
       }
@@ -249,7 +249,7 @@ export default function ComposePage() {
         throw new Error(await safeErrorJson(response));
       }
 
-      const data: any = await safeResponseJson(response);
+      const data: Record<string, any> = await safeResponseJson(response);
       if (data.platformVersions) {
         setGeneratedContent(data.platformVersions);
       }
@@ -295,7 +295,7 @@ export default function ComposePage() {
         throw new Error(await safeErrorJson(response));
       }
 
-      const data: any = await safeResponseJson(response);
+      const data: Record<string, any> = await safeResponseJson(response);
 
       // Handle intent redirects
       if (data.meta?.mode === "intent_redirect") {
@@ -346,7 +346,7 @@ export default function ComposePage() {
         throw new Error(await safeErrorJson(response));
       }
 
-      const data: any = await safeResponseJson(response);
+      const data: Record<string, any> = await safeResponseJson(response);
       setGeneratedContent(data.platformVersions || {});
       setGenerationMeta(
         typeof data.meta === "object" && data.meta !== null

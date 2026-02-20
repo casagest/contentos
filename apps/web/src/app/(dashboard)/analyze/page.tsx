@@ -52,7 +52,7 @@ export default function AnalyzePage() {
         throw new Error(await safeErrorJson(response));
       }
 
-      const data: any = await safeResponseJson(response);
+      const data: Record<string, any> = await safeResponseJson(response);
 
       const metrics = Array.isArray(data.metrics) ? data.metrics : [];
       setResult({

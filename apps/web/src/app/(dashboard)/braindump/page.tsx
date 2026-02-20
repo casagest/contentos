@@ -476,7 +476,7 @@ export default function BrainDumpPage() {
         throw new Error(await safeErrorJson(response));
       }
 
-      const data: any = await safeResponseJson(response);
+      const data: Record<string, any> = await safeResponseJson(response);
 
       // Conversation response
       if (data.type === "conversation") {

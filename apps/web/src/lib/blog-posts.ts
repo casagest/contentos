@@ -16,7 +16,7 @@ export interface BlogPost {
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "cum-sa-postezi-pe-instagram-romania-2026",
-    title: "Cum Să Postezi pe Instagram în România — Ghid Complet 2026",
+    title: "Cum Să Postezi pe Instagram în România 2026",
     description:
       "Strategii dovedite pentru Instagram în România: ore optime de postare, tipuri de conținut care funcționează, hashtag-uri românești și algoritm.",
     date: "2026-02-20",
@@ -85,7 +85,7 @@ Brain Dump transformă orice idee în postări optimizate nativ pentru Instagram
   },
   {
     slug: "algoritm-tiktok-romania-2026",
-    title: "Algoritmul TikTok în România 2026 — Ce Funcționează Acum",
+    title: "Algoritmul TikTok în România 2026",
     description:
       "Cum funcționează algoritmul TikTok în 2026 pentru piața românească: FYP, hook-uri, durata optimă, trending sounds și strategii de creștere.",
     date: "2026-02-18",
@@ -150,7 +150,7 @@ Generatorul de Script Video din ContentOS creează scripturi TikTok cu:
   },
   {
     slug: "cele-mai-bune-ore-postare-facebook-romania",
-    title: "Cele Mai Bune Ore de Postare pe Facebook în România 2026",
+    title: "Ore Optime Postare Facebook România 2026",
     description:
       "Orele și zilele optime pentru postări pe Facebook în România, bazate pe date. Engagement maxim, reach organic și strategii de timing.",
     date: "2026-02-15",
@@ -212,7 +212,7 @@ ContentOS analizează istoricul postărilor tale pe Facebook și identifică pat
   // ── Wave 2: 5 more articles ──
   {
     slug: "linkedin-romania-ghid-complet-2026",
-    title: "LinkedIn în România 2026: Ghid Complet pentru Creștere Organică",
+    title: "LinkedIn România 2026: Ghid Creștere Organică",
     description: "Strategii testate pentru LinkedIn România — de la profil optimizat la conținut care generează lead-uri B2B. Format, frecvență, hashtag-uri și algoritmul 2026.",
     date: "2026-02-18",
     readTime: "9 min",
@@ -272,7 +272,7 @@ Folosește **3-5 hashtag-uri** per postare (nu 30 ca pe Instagram):
   },
   {
     slug: "content-marketing-clinici-dentare-romania",
-    title: "Content Marketing pentru Clinici Dentare în România — Ghid Practic 2026",
+    title: "Content Marketing Clinici Dentare România 2026",
     description: "Cum să atragi pacienți prin conținut: strategii social media pentru stomatologi, reguli CMSR, idei de postări și calendar editorial medical.",
     date: "2026-02-17",
     readTime: "11 min",
@@ -342,7 +342,7 @@ Folosește **3-5 hashtag-uri** per postare (nu 30 ca pe Instagram):
   },
   {
     slug: "calendar-editorial-social-media-romania-2026",
-    title: "Calendar Editorial Social Media România 2026 — Toate Datele Importante",
+    title: "Calendar Editorial Social Media România 2026",
     description: "Calendar complet cu sărbători românești, evenimente culturale, sezoane comerciale și date internaționale relevante pentru content marketing în România.",
     date: "2026-02-16",
     readTime: "7 min",
@@ -420,7 +420,7 @@ Creatorii care planifică conținutul în avans au **3x mai mult engagement** de
   },
   {
     slug: "copywriting-social-media-limba-romana",
-    title: "Copywriting pentru Social Media în Limba Română — Tehnici și Exemple",
+    title: "Copywriting Social Media în Română: Tehnici 2026",
     description: "Ghid de copywriting social media adaptat limbii române: hook-uri, CTA-uri, structuri de text și greșeli frecvente pe Facebook, Instagram și TikTok.",
     date: "2026-02-15",
     readTime: "10 min",
@@ -517,7 +517,7 @@ Vrei să încerci? Link în bio pentru [RESURSĂ GRATUITĂ]."
   },
   {
     slug: "reels-vs-tiktok-romania-2026",
-    title: "Reels vs TikTok în România 2026: Unde să Investești Efortul",
+    title: "Reels vs TikTok România 2026: Comparație",
     description: "Comparație detaliată Reels vs TikTok pentru piața românească: reach organic, audiență, monetizare, algoritm și strategie recomandată pe fiecare platformă.",
     date: "2026-02-14",
     readTime: "8 min",
