@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { uploadMediaFiles } from "../compose/media-upload";
 import ContentChecker, { VisualSuggestion } from "../components/content-checker";
 import VoiceInput from "../components/voice-input";
 import MediaPickerSheet from "../components/media-picker-sheet";
 import CreativeToolsPanel from "../components/creative-tools-panel";
+import { GlobalPatternsFeed } from "../components/global-patterns-feed";
 import { useUser } from "@/components/providers/user-provider";
 import {
   Sheet,
@@ -336,9 +338,13 @@ function saveHistory(msgs: ConversationMessage[]) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function BrainDumpPage() {
+  // ── Prefill from URL (Trend Radar / Global Patterns) ──
+  const searchParams = useSearchParams();
+  const prefillValue = useMemo(() => searchParams.get("prefill") || "", [searchParams]);
+
   // ── State ──
   const [messages, setMessages] = useState<ConversationMessage[]>(() => loadHistory());
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState(prefillValue);
   const [isProcessing, setIsProcessing] = useState(false);
   const [phase, setPhase] = useState<Phase>(() => (loadHistory().some((m) => m.metadata?.isGeneration) ? "done" : "idle"));
   const [progress, setProgress] = useState(0);
@@ -598,8 +604,13 @@ export default function BrainDumpPage() {
             ))}
           </div>
 
-          {/* Instrumente creative */}
+          {/* Global Patterns — What's working in Romania right now */}
           <div className="mt-10">
+            <GlobalPatternsFeed compact />
+          </div>
+
+          {/* Instrumente creative */}
+          <div className="mt-6">
             <button
               onClick={() => setToolsOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.12] transition text-sm font-medium"

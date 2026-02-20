@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Zap,
 } from "lucide-react";
+import { BenchmarkWidget } from "../components/benchmark-widget";
 import {
   AreaChart,
   Area,
@@ -178,6 +179,9 @@ export default function AnalyticsPage() {
         <KpiCard icon={ThumbsUp} label="Medie / postare" value={formatNum(data.avgEngagement)} color="#f59e0b" />
         <KpiCard icon={Eye} label="Total impressions" value={formatNum(data.totalImpressions)} color="#8b5cf6" trend={impressionsTrend} />
       </div>
+
+      {/* AI Intelligence Benchmark */}
+      <BenchmarkWidget compact />
 
       {/* Main chart — Engagement Trend */}
       {data.dailyEngagement.length > 0 && (

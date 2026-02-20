@@ -20,6 +20,7 @@ import {
   LogOut,
   LayoutDashboard,
   Building2,
+  TrendingUp,
 } from "lucide-react"
 import { useUser } from "@/components/providers/user-provider"
 
@@ -58,6 +59,7 @@ const navGroups = [
     items: [
       { title: "Antrenor AI", url: "/coach", icon: MessageSquare },
       { title: "Scor Conținut", url: "/analyze", icon: Target },
+      { title: "Trend Radar", url: "/trends", icon: TrendingUp },
       { title: "Cercetare", url: "/research", icon: Search },
       { title: "Inspirație", url: "/inspiration", icon: Lightbulb },
     ],
