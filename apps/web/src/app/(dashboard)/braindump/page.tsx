@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { uploadMediaFiles } from "../compose/media-upload";
@@ -341,11 +341,21 @@ function saveHistory(msgs: ConversationMessage[]) {
 export default function BrainDumpPage() {
   // ── Prefill from URL (Trend Radar / Global Patterns) ──
   const searchParams = useSearchParams();
-  const prefillValue = useMemo(() => searchParams.get("prefill") || "", [searchParams]);
 
   // ── State ──
   const [messages, setMessages] = useState<ConversationMessage[]>(() => loadHistory());
-  const [inputText, setInputText] = useState(prefillValue);
+  const [inputText, setInputText] = useState("");
+
+  // Sync prefill param → inputText (works even if searchParams resolves async)
+  const prefillHandled = useRef(false);
+  useEffect(() => {
+    if (prefillHandled.current) return;
+    const prefill = searchParams.get("prefill");
+    if (prefill) {
+      setInputText(prefill);
+      prefillHandled.current = true;
+    }
+  }, [searchParams]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [phase, setPhase] = useState<Phase>(() => (loadHistory().some((m) => m.metadata?.isGeneration) ? "done" : "idle"));
   const [progress, setProgress] = useState(0);
