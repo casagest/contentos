@@ -218,7 +218,7 @@ export default function HomePageClient() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [annual, setAnnual] = useState(false);
+  const [annual, setAnnual] = useState(true);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);

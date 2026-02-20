@@ -614,7 +614,11 @@ export async function POST(request: NextRequest) {
           industry: businessProfile.industry,
           tones: businessProfile.tones,
           targetAudience: businessProfile.targetAudience,
-          usps: Array.isArray(businessProfile.usps) ? businessProfile.usps : [],
+          usps: Array.isArray(businessProfile.usps)
+            ? businessProfile.usps.filter((u): u is string => typeof u === "string")
+            : typeof businessProfile.usps === "string" && businessProfile.usps.trim()
+              ? businessProfile.usps.split(/[,;\n]+/).map((s: string) => s.trim()).filter(Boolean)
+              : [],
         }
       : undefined,
   });
