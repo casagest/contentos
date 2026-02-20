@@ -31,7 +31,7 @@ export async function checkPlatformLimit(
   if (currentCount >= limit) {
     return {
       allowed: false,
-      reason: `Planul ${planConfig.name} permite maxim ${limit} ${limit === 1 ? "platforma" : "platforme"}. Upgradeaza pentru mai multe.`,
+      reason: `Planul ${planConfig.name} permite maxim ${limit} ${(limit as number) === 1 ? "platforma" : "platforme"}. Upgradeaza pentru mai multe.`,
       currentCount,
       limit,
     };

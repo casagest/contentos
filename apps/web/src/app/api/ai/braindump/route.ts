@@ -23,7 +23,7 @@ import {
   classifyIntent,
   type IntentClassification,
 } from "@/lib/ai/intent-classifier";
-import { voiceDNAToPrompt, type VoiceDNA } from "@/lib/ai/voice-dna";
+import { voiceDNAToPrompt, extractVoiceDNA, type VoiceDNA } from "@/lib/ai/voice-dna";
 import { fetchDiversityRules, diversityRulesToPrompt } from "@/lib/ai/cross-post-memory";
 import {
   fetchCognitiveContextV4,
@@ -1183,6 +1183,36 @@ export async function POST(request: NextRequest) {
           decay_rate: 0.05,
         })
     ).catch(() => {});
+
+    // ── Auto-update Voice DNA (fire-and-forget) ──
+    // Every braindump contributes to learning the user's style
+    void (async () => {
+      try {
+        const { data: drafts } = await session.supabase
+          .from("drafts")
+          .select("body")
+          .eq("organization_id", session.organizationId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        const posts = [
+          rawInput, // Include current braindump input
+          ...(drafts || []).map((d: { body: string }) => d.body).filter(Boolean),
+        ].filter((p) => typeof p === "string" && p.trim().length > 20);
+        if (posts.length >= 3) {
+          const dna = extractVoiceDNA(posts);
+          const { data: org } = await session.supabase
+            .from("organizations")
+            .select("settings")
+            .eq("id", session.organizationId)
+            .single();
+          const settings = (org?.settings as Record<string, unknown>) || {};
+          await session.supabase
+            .from("organizations")
+            .update({ settings: { ...settings, voiceDNA: dna } })
+            .eq("id", session.organizationId);
+        }
+      } catch { /* silent — voice DNA is non-critical */ }
+    })();
 
     return NextResponse.json(responsePayload);
   } catch (error) {

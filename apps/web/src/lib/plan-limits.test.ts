@@ -15,20 +15,20 @@ function createMockSupabase(countResult: number | null) {
 
 describe("plan-limits", () => {
   describe("checkPlatformLimit", () => {
-    it("allows when under limit (free plan, 0 accounts)", async () => {
+    it("allows when under limit (free trial, 0 accounts)", async () => {
       const supabase = createMockSupabase(0);
       const result = await checkPlatformLimit(supabase, "org-1", "free");
       expect(result.allowed).toBe(true);
-      expect(result.limit).toBe(1);
+      expect(result.limit).toBe(5);
       expect(result.currentCount).toBe(0);
     });
 
-    it("blocks when at limit (free plan, 1 account)", async () => {
-      const supabase = createMockSupabase(1);
+    it("blocks when at limit (free trial, 5 accounts)", async () => {
+      const supabase = createMockSupabase(5);
       const result = await checkPlatformLimit(supabase, "org-1", "free");
       expect(result.allowed).toBe(false);
-      expect(result.reason).toContain("Free");
-      expect(result.reason).toContain("1");
+      expect(result.reason).toContain("Free Trial");
+      expect(result.reason).toContain("5");
     });
 
     it("allows pro plan with 4 accounts (limit is 5)", async () => {
@@ -47,19 +47,11 @@ describe("plan-limits", () => {
   });
 
   describe("checkPostLimit", () => {
-    it("allows when under limit (free plan, 49 posts)", async () => {
-      const supabase = createMockSupabase(49);
+    it("allows unlimited posts on free trial", async () => {
+      const supabase = createMockSupabase(999);
       const result = await checkPostLimit(supabase, "org-1", "free");
       expect(result.allowed).toBe(true);
-      expect(result.limit).toBe(50);
-    });
-
-    it("blocks when at limit (free plan, 50 posts)", async () => {
-      const supabase = createMockSupabase(50);
-      const result = await checkPostLimit(supabase, "org-1", "free");
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toContain("50");
-      expect(result.reason).toContain("Free");
+      expect(result.limit).toBe(-1);
     });
 
     it("always allows unlimited plans (starter, postsPerMonth=-1)", async () => {

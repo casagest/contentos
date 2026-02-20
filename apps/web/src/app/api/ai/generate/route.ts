@@ -34,7 +34,7 @@ import {
   type Platform as CreativePlatform,
   type CreativeAngle,
 } from "@/lib/ai/creative-intelligence";
-import { voiceDNAToPrompt, type VoiceDNA } from "@/lib/ai/voice-dna";
+import { voiceDNAToPrompt, extractVoiceDNA, type VoiceDNA } from "@/lib/ai/voice-dna";
 import { fetchDiversityRules, diversityRulesToPrompt } from "@/lib/ai/cross-post-memory";
 
 const ROUTE_KEY = "generate:v4";
@@ -766,6 +766,35 @@ JSON structure:
           decay_rate: 0.05,
         })
     ).catch(() => {});
+
+    // ── Auto-update Voice DNA (fire-and-forget) ──
+    void (async () => {
+      try {
+        const { data: drafts } = await session.supabase
+          .from("drafts")
+          .select("body")
+          .eq("organization_id", session.organizationId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        const userPosts = [
+          input,
+          ...(drafts || []).map((d: { body: string }) => d.body).filter(Boolean),
+        ].filter((p) => typeof p === "string" && p.trim().length > 20);
+        if (userPosts.length >= 3) {
+          const dna = extractVoiceDNA(userPosts);
+          const { data: org } = await session.supabase
+            .from("organizations")
+            .select("settings")
+            .eq("id", session.organizationId)
+            .single();
+          const curSettings = (org?.settings as Record<string, unknown>) || {};
+          await session.supabase
+            .from("organizations")
+            .update({ settings: { ...curSettings, voiceDNA: dna } })
+            .eq("id", session.organizationId);
+        }
+      } catch { /* silent — voice DNA is non-critical */ }
+    })();
 
     return NextResponse.json(responsePayload);
   } catch (error) {

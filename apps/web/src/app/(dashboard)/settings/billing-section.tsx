@@ -77,7 +77,7 @@ export default function BillingSection({
         <div>
           <div className="text-sm font-medium text-white">{planConfig.name}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
-            {planConfig.platforms} {planConfig.platforms === 1 ? "platforma" : "platforme"}
+            {planConfig.platforms} {(planConfig.platforms as number) === 1 ? "platforma" : "platforme"}
             {" / "}
             {planConfig.postsPerMonth === -1 ? "postari nelimitate" : `${planConfig.postsPerMonth} postari/luna`}
           </div>
