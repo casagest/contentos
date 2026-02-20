@@ -19,6 +19,8 @@ import {
   Save,
 } from "lucide-react";
 
+import { getEventsForDate, type RomanianEvent } from "@/lib/romanian-events";
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface CalendarDraft {
@@ -698,6 +700,20 @@ export default function CalendarPage() {
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                {/* Romanian events */}
+                {getEventsForDate(day.dateStr).map((evt: RomanianEvent) => (
+                  <div
+                    key={evt.date + evt.name}
+                    className="mb-1.5 rounded-md bg-orange-500/10 border border-orange-500/20 px-2 py-1 cursor-help"
+                    title={evt.contentIdeas.join(" • ")}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs">{evt.icon}</span>
+                      <span className="text-[10px] font-semibold text-orange-400 truncate">{evt.name}</span>
+                    </div>
+                  </div>
+                ))}
 
                 {/* Draft cards */}
                 <div className="space-y-1.5 flex-1">
