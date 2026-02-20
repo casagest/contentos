@@ -45,7 +45,7 @@ export async function completeOnboarding() {
   await supabase
     .from("organizations")
     .update({
-      onboarding_step: 4,
+      onboarding_step: 5,
       onboarding_completed_at: new Date().toISOString(),
     })
     .eq("id", userData.organization_id);
