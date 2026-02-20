@@ -21,6 +21,7 @@ const PROTECTED_PREFIXES = [
   "/onboarding",
   "/video-script",
   "/image-editor",
+  "/trends",
 ];
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
