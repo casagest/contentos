@@ -64,7 +64,15 @@ export default function CoachPage() {
 
       let answerText = data.answer;
       if (data.actionItems?.length) {
-        answerText += "\n\nPași de acțiune:\n" + data.actionItems.map((item: string) => `- ${item}`).join("\n");
+        answerText += "\n\nPași de acțiune:\n" + data.actionItems.map((item: unknown) => {
+          if (typeof item === "string") return `- ${item}`;
+          if (item && typeof item === "object" && "task" in item) {
+            const obj = item as { task: string; priority?: string };
+            const priority = obj.priority ? ` [${obj.priority}]` : "";
+            return `- ${obj.task}${priority}`;
+          }
+          return `- ${String(item)}`;
+        }).join("\n");
       }
 
       const aiMessage: Message = {

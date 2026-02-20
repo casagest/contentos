@@ -334,25 +334,34 @@ export async function POST(request: NextRequest) {
   try {
     const platformContext = body.platform ? `Platform focus: ${body.platform}\n\n` : "";
     const postsContext = recentPostsContext
-      ? `Recent posts (platform|engagement|content):\n${recentPostsContext}\n\n`
-      : "";
+      ? `REAL recent posts from user's account (platform|engagement%|content excerpt):\n${recentPostsContext}\n\n`
+      : "NOTE: User has NO recent posts in the database. Do NOT invent fake post data.\n\n";
     const topContext = topPostsContext
-      ? `Top performing posts (platform|engagement|content):\n${topPostsContext}\n\n`
+      ? `REAL top performing posts (platform|engagement%|content excerpt):\n${topPostsContext}\n\n`
       : "";
 
     // Build messages: system → conversation history → current question → assistant prefill
     const aiMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
       {
         role: "system",
-        content: `You are a senior social media strategist and coach. Analyze the user's question in the context of their posting history and provide actionable, data-driven recommendations.${businessContext}
+        content: `You are a senior social media strategist and coach. Analyze the user's question in the context of their ACTUAL posting history provided below. Provide actionable, data-driven recommendations.${businessContext}
 ${memoryFragment ? `\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}\n` : ""}
+
+CRITICAL RULES:
+1. NEVER invent patient names, stories, or fake testimonials. Only reference data from the context provided.
+2. NEVER fabricate statistics (e.g., "73% of...") unless they come from the user's actual data.
+3. Base ALL recommendations on the user's real posts, engagement rates, and business profile above.
+4. If insufficient data is available, say so honestly — do NOT fill gaps with made-up examples.
+5. Speak in Romanian (the user's language). Be direct, practical, no fluff.
+6. actionItems must be plain strings — short, actionable tasks the user can do TODAY.
+
 ${JSON_FORMAT_RULES}
 
 Return ONLY valid JSON with this exact structure:
 {
-  "answer": string,
-  "recommendations": [string],
-  "actionItems": [{ "task": string, "priority": "high"|"medium"|"low" }],
+  "answer": string (detailed coaching response in Romanian),
+  "recommendations": [string] (3-5 specific recommendations),
+  "actionItems": [string] (3-5 concrete action steps as plain strings),
   "metrics": { "currentAvgEngagement": number, "projectedImprovement": string }
 }`,
       },
