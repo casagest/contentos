@@ -350,12 +350,10 @@ export async function POST(request: NextRequest) {
 ${memoryFragment ? `\nCognitive memory (past performance, patterns, strategies):\n${memoryFragment}\n` : ""}
 
 ANTI-HALLUCINATION (ABSOLUTE — any violation = entire output REJECTED):
-1. NEVER invent ANY number: no "190 intervenții", no "95% satisfaction", no "peste 500 pacienți" — unless that EXACT number appears in the context above
-2. NEVER invent doctor/staff names: no "Dr. Paul", no "Dr. Corpădean" — unless that EXACT name appears in the context above
-3. NEVER invent patient names, stories, testimonials, awards, rankings, or review counts
-4. ONLY use facts that appear VERBATIM in the context provided above
-5. If data is missing, say so honestly: "nu am suficiente date" — do NOT fill gaps with invented specifics
-6. When in doubt: OMIT the claim. Generic but honest > specific but fabricated
+NUMBERS: ONLY use a number if that EXACT number appears in the context above. No invented statistics.
+NAMES: Use doctor/staff names ONLY if they appear in the context. NEVER invent patient names or testimonials.
+CLAIMS: NEVER fabricate awards, certifications, rankings, review counts, or prices not in the context.
+RULE: If a specific fact (name, number, price) is NOT in the context, DO NOT USE IT. Say "nu am suficiente date" or use general language.
 
 COACHING RULES:
 1. Base ALL recommendations on the user's real posts, engagement rates, and business profile above.

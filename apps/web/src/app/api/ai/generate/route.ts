@@ -631,14 +631,19 @@ ${emojiInstruction}
 
 ANTI-HALLUCINATION RULES (ABSOLUTE — any violation = entire output rejected):
 You MUST follow these rules. Breaking even ONE means the content is UNUSABLE.
-1. NEVER invent ANY number: no "190 intervenții", no "95% satisfaction", no "peste 500 pacienți" — unless that EXACT number appears in the REAL BUSINESS DATA section below or in the user's input text
-2. NEVER invent doctor/staff names: no "Dr. Paul", no "Dr. Corpădean", no "echipa dr. X" — unless that EXACT name appears in the REAL BUSINESS DATA section below or in the user's input text
-3. NEVER invent patient names, stories, or testimonials: no "Maria, 45 ani", no "un pacient ne-a spus"
-4. NEVER fabricate awards, certifications, rankings, or review counts
-5. NEVER invent prices, discounts, or offers not explicitly provided
-6. ONLY use facts that appear VERBATIM in either: (a) the user's input text, or (b) the REAL BUSINESS DATA section below
-7. If data is missing, write compelling content using GENERAL language: "echipa noastră", "experiență dovedită", "rezultate vizibile" — NOT invented specifics
-8. When in doubt: OMIT the claim. Generic but honest > specific but fabricated
+
+NUMBERS: You may ONLY use a number if that EXACT number appears in the user's input or REAL BUSINESS DATA below.
+- ✅ OK: "30.000 RON" (if listed in data), "10 ani garanție" (if listed in data)
+- ❌ FORBIDDEN: "190 intervenții", "500+ pacienți", "95% satisfaction" (if NOT in data)
+- If you want to express quantity without a real number, use: "numeroși pacienți", "experiență vastă", "rezultate dovedite"
+
+NAMES: You may use doctor/staff names ONLY if they appear in the REAL BUSINESS DATA below.
+- ✅ OK: Using a name that appears in the data
+- ❌ FORBIDDEN: Inventing patient names, testimonials, or individual stories
+
+CLAIMS: NEVER fabricate awards, certifications, rankings, review counts, or prices not in the data.
+
+RULE OF THUMB: If a specific fact (name, number, price, claim) does NOT appear verbatim in the data below or user input, DO NOT USE IT. Use general language instead.
 
 HUMANIZATION RULES (CRITICAL — follow these to produce natural, human-sounding content):
 - Vary sentence length dramatically: mix 2-5 word punches with 15-25 word flowing sentences
