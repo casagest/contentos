@@ -616,51 +616,133 @@ export default function BrainDumpPage() {
         <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
       </div>
 
-      {/* ════ IDLE STATE — Quick Actions ════ */}
-      {phase === "idle" && messages.length === 0 && !results && (
+      {/* ════ IDLE STATE — Always consistent layout ════ */}
+      {phase === "idle" && !results && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex-1 flex flex-col items-center justify-center px-4 pb-48"
+          className="flex-1 flex flex-col px-4 pb-48"
         >
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-center text-white mb-4">
-            Ce vrei să creezi?
-          </h1>
-          <p className="text-muted-foreground text-sm mb-12 text-center max-w-md">
-            Scrie orice idee. AI-ul cunoaște industria ta, audiența și fiecare platformă.
-          </p>
+          {/* Header — always visible */}
+          <div className={`flex flex-col items-center ${messages.length === 0 ? "justify-center flex-1" : "pt-6 pb-4"}`}>
+            <h1 className={`font-display font-extrabold tracking-tight text-center text-white ${messages.length === 0 ? "text-4xl sm:text-5xl md:text-6xl mb-4" : "text-2xl sm:text-3xl mb-2"}`}>
+              Ce vrei să creezi?
+            </h1>
+            <p className="text-muted-foreground text-sm mb-6 text-center max-w-md">
+              Scrie orice idee. AI-ul cunoaște industria ta, audiența și fiecare platformă.
+            </p>
 
-          {/* Quick actions grid 2x3 */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-[640px] w-full">
-            {QUICK_ACTIONS.map((q) => (
-              <button
-                key={q.label}
-                onClick={() => { setInputText(q.prompt); setTimeout(() => inputRef.current?.focus(), 100); }}
-                className="group bg-white/[0.015] border border-white/[0.04] rounded-2xl p-4 text-left transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.08] hover:-translate-y-0.5"
-              >
-                <q.icon className="w-5 h-5 text-orange-400/60 group-hover:text-orange-400 transition mb-2.5" />
-                <div className="text-white font-semibold text-[13px]">{q.label}</div>
-                <div className="text-white/40 text-[11px] mt-0.5">{q.sub}</div>
-              </button>
-            ))}
+            {/* Quick actions grid — compact when chat exists */}
+            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-3 w-full ${messages.length === 0 ? "max-w-[640px]" : "max-w-[640px]"}`}>
+              {(messages.length === 0 ? QUICK_ACTIONS : QUICK_ACTIONS.slice(0, 3)).map((q) => (
+                <button
+                  key={q.label}
+                  onClick={() => { setInputText(q.prompt); setTimeout(() => inputRef.current?.focus(), 100); }}
+                  className="group bg-white/[0.015] border border-white/[0.04] rounded-2xl p-4 text-left transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.08] hover:-translate-y-0.5"
+                >
+                  <q.icon className="w-5 h-5 text-orange-400/60 group-hover:text-orange-400 transition mb-2.5" />
+                  <div className="text-white font-semibold text-[13px]">{q.label}</div>
+                  <div className="text-white/40 text-[11px] mt-0.5">{q.sub}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Global Patterns — What's working in Romania right now */}
-          <div className="mt-10">
-            <GlobalPatternsFeed compact />
-          </div>
+          {/* Chat history — shown below quick actions when messages exist */}
+          {messages.length > 0 && (
+            <div className="max-w-[700px] mx-auto w-full mt-4 space-y-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground font-medium">Conversație anterioară</span>
+                <button onClick={startOver} className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition flex items-center gap-1.5">
+                  <RotateCcw className="w-3 h-3" /> Începe din nou
+                </button>
+              </div>
+              <AnimatePresence mode="popLayout">
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    layout
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`group relative max-w-[85%] rounded-2xl px-4 py-3 ${
+                        msg.role === "user"
+                          ? "bg-gradient-to-br from-orange-500/15 to-orange-600/10 text-white border border-orange-500/25 rounded-br-md"
+                          : "bg-white/[0.04] text-foreground/90 border border-white/[0.06] rounded-bl-md"
+                      }`}
+                    >
+                      {msg.role === "assistant" && (
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                            <span className="text-[10px] text-orange-400 font-semibold">ContentOS AI</span>
+                          </span>
+                          <CopyButton
+                            text={msg.content}
+                            label="Copiază"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-2 py-0.5 rounded-md"
+                          />
+                        </div>
+                      )}
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
-          {/* Instrumente creative */}
-          <div className="mt-6">
-            <button
-              onClick={() => setToolsOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.12] transition text-sm font-medium"
-            >
-              <Wrench className="w-4 h-4 text-orange-400" />
-              Instrumente creative
-            </button>
-          </div>
+              {/* Clarifications */}
+              {clarifications.length > 0 && (
+                <div className="flex flex-wrap gap-2 pl-4">
+                  {clarifications.map((c) => (
+                    <div key={c.id} className="space-y-1.5">
+                      {c.options?.map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => { setInputText(opt); sendMessage(opt); }}
+                          className="block px-3 py-1.5 rounded-lg text-xs text-foreground/80 bg-white/[0.03] border border-white/[0.06] hover:border-orange-500/30 hover:text-white transition"
+                        >
+                          {opt}
+                        </button>
+                      )) ?? <p className="text-xs text-muted-foreground italic">{c.question}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Error */}
+              {error && (
+                <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> <span>{error}</span>
+                </div>
+              )}
+
+              <div ref={chatEndRef} />
+            </div>
+          )}
+
+          {/* Global Patterns + Instrumente — only on fresh start */}
+          {messages.length === 0 && (
+            <>
+              <div className="flex flex-col items-center">
+                <div className="mt-10">
+                  <GlobalPatternsFeed compact />
+                </div>
+                <div className="mt-6">
+                  <button
+                    onClick={() => setToolsOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.12] transition text-sm font-medium"
+                  >
+                    <Wrench className="w-4 h-4 text-orange-400" />
+                    Instrumente creative
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </motion.div>
       )}
 
@@ -829,82 +911,8 @@ export default function BrainDumpPage() {
         </motion.div>
       )}
 
-      {/* ════ Conversation messages (idle with history) ════ */}
-      {phase === "idle" && messages.length > 0 && !results && (
-        <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-48">
-          {messages.length > 0 && (
-            <div className="flex justify-end mb-2">
-              <button onClick={startOver} className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition flex items-center gap-1.5">
-                <RotateCcw className="w-3 h-3" /> Începe din nou
-              </button>
-            </div>
-          )}
-
-          <AnimatePresence mode="popLayout">
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                layout
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`group relative max-w-[85%] rounded-2xl px-4 py-3 ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-br from-orange-500/15 to-orange-600/10 text-white border border-orange-500/25 rounded-br-md"
-                      : "bg-white/[0.04] text-foreground/90 border border-white/[0.06] rounded-bl-md"
-                  }`}
-                >
-                  {msg.role === "assistant" && (
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-                        <span className="text-[10px] text-orange-400 font-semibold">ContentOS AI</span>
-                      </span>
-                      <CopyButton
-                        text={msg.content}
-                        label="Copiază"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-2 py-0.5 rounded-md"
-                      />
-                    </div>
-                  )}
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {/* Clarifications */}
-          {clarifications.length > 0 && (
-            <div className="flex flex-wrap gap-2 pl-4">
-              {clarifications.map((c) => (
-                <div key={c.id} className="space-y-1.5">
-                  {c.options?.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => { setInputText(opt); sendMessage(opt); }}
-                      className="block px-3 py-1.5 rounded-lg text-xs text-foreground/80 bg-white/[0.03] border border-white/[0.06] hover:border-orange-500/30 hover:text-white transition"
-                    >
-                      {opt}
-                    </button>
-                  )) ?? <p className="text-xs text-muted-foreground italic">{c.question}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> <span>{error}</span>
-            </div>
-          )}
-
-          <div ref={chatEndRef} />
-        </div>
-      )}
+      {/* chatEndRef for scroll when in done/generating states */}
+      {phase !== "idle" && <div ref={chatEndRef} />}
 
       {/* ═══════════════════════════════════════════════════════════════════
          CHAT COMPOSER 2030 — voce, media, paste, shortcuts
