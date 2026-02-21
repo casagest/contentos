@@ -313,6 +313,7 @@ function YouTubeCard({ data }: { data: YouTubeResult }) {
 // ─── Chat History ───────────────────────────────────────────────────────────
 
 const CHAT_HISTORY_KEY = "contentos:braindump:history";
+const RESULTS_CACHE_KEY = "contentos:braindump:results";
 const MAX_HISTORY = 50;
 
 function loadHistory(): ConversationMessage[] {
@@ -331,6 +332,28 @@ function saveHistory(msgs: ConversationMessage[]) {
   try {
     if (typeof window === "undefined") return;
     localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(msgs.slice(-MAX_HISTORY)));
+  } catch { /* silent */ }
+}
+
+function loadResults(): AIResponse | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const saved = localStorage.getItem(RESULTS_CACHE_KEY);
+    if (!saved) return null;
+    return JSON.parse(saved) as AIResponse;
+  } catch {
+    return null;
+  }
+}
+
+function saveResults(results: AIResponse | null) {
+  try {
+    if (typeof window === "undefined") return;
+    if (results) {
+      localStorage.setItem(RESULTS_CACHE_KEY, JSON.stringify(results));
+    } else {
+      localStorage.removeItem(RESULTS_CACHE_KEY);
+    }
   } catch { /* silent */ }
 }
 
@@ -357,7 +380,14 @@ export default function BrainDumpPage() {
     }
   }, [searchParams]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [phase, setPhase] = useState<Phase>(() => (loadHistory().some((m) => m.metadata?.isGeneration) ? "done" : "idle"));
+  const [phase, setPhase] = useState<Phase>(() => {
+    const history = loadHistory();
+    const hasGeneration = history.some((m) => m.metadata?.isGeneration);
+    const cachedResults = loadResults();
+    // Only show "done" if we actually have cached results to display
+    if (hasGeneration && cachedResults) return "done";
+    return "idle";
+  });
   const [progress, setProgress] = useState(0);
   const [visiblePlatforms, setVisiblePlatforms] = useState<string[]>([]);
 
@@ -365,7 +395,7 @@ export default function BrainDumpPage() {
   const [objective, setObjective] = useState<Objective>("engagement");
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
 
-  const [results, setResults] = useState<AIResponse | null>(null);
+  const [results, setResults] = useState<AIResponse | null>(() => loadResults());
   const [clarifications, setClarifications] = useState<ClarificationQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -500,6 +530,7 @@ export default function BrainDumpPage() {
       setProgress(100);
       const aiResponse: AIResponse = { platforms: data.platforms || {}, meta: data.meta };
       setResults(aiResponse);
+      saveResults(aiResponse);
       setVisiblePlatforms(selectedPlatforms);
 
       const assistantMsg: ConversationMessage = {
@@ -561,6 +592,7 @@ export default function BrainDumpPage() {
   const startOver = () => {
     setMessages([]);
     setResults(null);
+    saveResults(null);
     setClarifications([]);
     setError(null);
     setInputText("");
