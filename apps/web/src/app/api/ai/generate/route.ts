@@ -7,6 +7,7 @@ import {
   buildCompactGroundingPrompt,
 } from "@/lib/ai/business-intel";
 import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
+import { validatePlatformVersions, type ValidationResult } from "@/lib/ai/hallucination-guard";
 import { buildDeterministicGeneration } from "@/lib/ai/deterministic";
 import {
   type AIObjective,
@@ -712,6 +713,26 @@ JSON structure:
       platformVersions: parsed.platformVersions as Record<string, any>,
     });
 
+    // ── Post-Generation Hallucination Guard (NON-FATAL) ──
+    let hallucinationGuard: {
+      results: Record<string, ValidationResult>;
+      overallPassed: boolean;
+      totalViolations: number;
+      worstScore: number;
+    } | null = null;
+    try {
+      hallucinationGuard = validatePlatformVersions(
+        aiSelected.platformVersions as Record<string, { text?: string; alternativeVersions?: string[] }>,
+        {
+          userInput: input,
+          groundingPrompt: businessIntelPrompt,
+          additionalSources: memoryFragment ? [memoryFragment] : undefined,
+        },
+      );
+    } catch {
+      // Silent — hallucination guard is non-critical
+    }
+
     const responsePayload = {
       ...parsed,
       platformVersions: aiSelected.platformVersions,
@@ -732,6 +753,37 @@ JSON structure:
           avoidPatterns: creativeBrief.avoidPatterns.length,
           anglesGenerated: creativeAngles.length,
         },
+        hallucinationGuard: hallucinationGuard
+          ? {
+              passed: hallucinationGuard.overallPassed,
+              totalViolations: hallucinationGuard.totalViolations,
+              worstScore: hallucinationGuard.worstScore,
+              avgConfidence: Math.max(
+                ...Object.values(hallucinationGuard.results).map((r) => r.avgConfidence),
+                0,
+              ),
+              maxConfidence: Math.max(
+                ...Object.values(hallucinationGuard.results).map((r) => r.maxConfidence),
+                0,
+              ),
+              violations: Object.fromEntries(
+                Object.entries(hallucinationGuard.results)
+                  .filter(([, r]) => r.violations.length > 0)
+                  .map(([platform, r]) => [
+                    platform,
+                    r.violations.map((v) => ({
+                      type: v.claim.type,
+                      raw: v.claim.raw,
+                      severity: v.severity,
+                      confidence: v.confidence.score,
+                      confidenceLabel: v.confidence.label,
+                      reason: v.reason,
+                      suggestion: v.suggestion,
+                    })),
+                  ]),
+              ),
+            }
+          : null,
       },
     };
 
