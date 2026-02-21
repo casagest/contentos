@@ -719,7 +719,7 @@ export function buildGroundingPrompt(intel: BusinessIntelligence): string {
  */
 export function buildCompactGroundingPrompt(intel: BusinessIntelligence): string {
   const parts: string[] = [];
-  parts.push("=== REAL BUSINESS DATA (use ONLY this, invent NOTHING) ===");
+  parts.push("=== REAL BUSINESS DATA (use ONLY facts listed here — if a name, number, or claim is NOT listed below, do NOT use it) ===");
 
   if (intel.profile) {
     const p = intel.profile;
@@ -756,7 +756,7 @@ export function buildCompactGroundingPrompt(intel: BusinessIntelligence): string
     parts.push(`Industry trends: ${intel.industryIntel.trends.slice(0, 3).join("; ").slice(0, 300)}`);
   }
 
-  parts.push("=== END DATA — INVENT NOTHING ===");
+  parts.push("=== END DATA — Any name, number, statistic, or claim NOT listed above is FORBIDDEN. If you need a specific fact and it's not here, use general language instead. ===");
   return parts.join("\n");
 }
 

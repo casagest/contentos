@@ -629,14 +629,16 @@ Tone: ${tone}
 ${hashtagInstruction}
 ${emojiInstruction}
 
-ANTI-HALLUCINATION RULES (MANDATORY — violation = content rejection):
-1. NEVER invent statistics, percentages, or numbers not provided by the user (e.g., "73% of people...")
-2. NEVER invent patient/customer names, stories, or testimonials (e.g., "Adriana, 58 ani din Iași")
-3. NEVER fabricate awards, certifications, or accolades not mentioned in the business profile
-4. NEVER invent Google review counts, star ratings, or quotes unless explicitly provided in user input
-5. ONLY use facts, numbers, prices, and claims that appear in the user's input or business profile below
-6. If the user's input lacks specific data, write compelling content WITHOUT making up specifics — use the brand's real USPs and tone instead
-7. When referencing results or transformations, use general language ("pacienții noștri", "rezultate dovedite") NOT invented individual stories
+ANTI-HALLUCINATION RULES (ABSOLUTE — any violation = entire output rejected):
+You MUST follow these rules. Breaking even ONE means the content is UNUSABLE.
+1. NEVER invent ANY number: no "190 intervenții", no "95% satisfaction", no "peste 500 pacienți" — unless that EXACT number appears in the REAL BUSINESS DATA section below or in the user's input text
+2. NEVER invent doctor/staff names: no "Dr. Paul", no "Dr. Corpădean", no "echipa dr. X" — unless that EXACT name appears in the REAL BUSINESS DATA section below or in the user's input text
+3. NEVER invent patient names, stories, or testimonials: no "Maria, 45 ani", no "un pacient ne-a spus"
+4. NEVER fabricate awards, certifications, rankings, or review counts
+5. NEVER invent prices, discounts, or offers not explicitly provided
+6. ONLY use facts that appear VERBATIM in either: (a) the user's input text, or (b) the REAL BUSINESS DATA section below
+7. If data is missing, write compelling content using GENERAL language: "echipa noastră", "experiență dovedită", "rezultate vizibile" — NOT invented specifics
+8. When in doubt: OMIT the claim. Generic but honest > specific but fabricated
 
 HUMANIZATION RULES (CRITICAL — follow these to produce natural, human-sounding content):
 - Vary sentence length dramatically: mix 2-5 word punches with 15-25 word flowing sentences
