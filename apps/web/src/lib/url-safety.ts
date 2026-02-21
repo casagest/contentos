@@ -260,7 +260,7 @@ export async function safeFetch(
       redirect: "manual",
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; ContentosBot/1.0; +https://contentos.app)",
+          "Mozilla/5.0 (compatible; ContentosBot/1.0; +https://contentos.ro)",
         Accept: "text/html, application/xhtml+xml, text/plain",
         ...headers,
       },

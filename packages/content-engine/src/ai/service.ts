@@ -410,7 +410,7 @@ FORMAT RĂSPUNS (JSON):
             "HTTP-Referer":
               process.env.OPENROUTER_SITE_URL?.trim() ||
               process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-              "https://contentos-project.vercel.app",
+              "https://contentos.ro",
             "X-Title": process.env.OPENROUTER_APP_NAME?.trim() || "ContentOS",
           },
           body: JSON.stringify({
