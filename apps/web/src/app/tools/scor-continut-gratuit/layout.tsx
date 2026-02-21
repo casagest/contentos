@@ -5,7 +5,7 @@ const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://contentos.ro").trim
 const canonicalPath = "/tools/scor-continut-gratuit";
 
 export const metadata: Metadata = {
-  title: "Scor Continut Gratuit | ContentOS",
+  title: "Scor Continut Gratuit",
   description:
     "Testeaza gratuit performanta unei postari pentru Instagram, Facebook, TikTok si YouTube. Fara cont, fara email.",
   alternates: {
