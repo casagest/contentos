@@ -7,10 +7,10 @@
   "ignoreCommand": "npx turbo-ignore @contentos/web",
   "regions": ["fra1"],
   "functions": {
-    "src/app/api/ai/**/route.ts": {
+    "apps/web/src/app/api/ai/**/route.ts": {
       "maxDuration": 60
     },
-    "src/app/api/cron/**/route.ts": {
+    "apps/web/src/app/api/cron/**/route.ts": {
       "maxDuration": 300
     }
   },
