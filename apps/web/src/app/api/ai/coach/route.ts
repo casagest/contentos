@@ -5,7 +5,7 @@ import { routeAICall } from "@/lib/ai/multi-model-router";
 import { buildDeterministicCoach } from "@/lib/ai/deterministic";
 import {
   fetchBusinessIntelligence,
-  buildGroundingPrompt,
+  buildCompactGroundingPrompt,
 } from "@/lib/ai/business-intel";
 import {
   fetchCognitiveContextV4,
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       supabase: session.supabase,
       organizationId: session.organizationId,
     });
-    businessContext = "\n\n" + buildGroundingPrompt(intel);
+    businessContext = "\n\n" + buildCompactGroundingPrompt(intel);
   } catch {
     // Fallback: load basic profile
     const { data: orgData } = await session.supabase

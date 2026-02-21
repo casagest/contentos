@@ -38,7 +38,7 @@ import {
 } from "@/lib/ai/braindump-coach";
 import {
   fetchBusinessIntelligence,
-  buildGroundingPrompt,
+  buildCompactGroundingPrompt,
   buildCompletenessWarning,
 } from "@/lib/ai/business-intel";
 import {
@@ -609,7 +609,7 @@ export async function POST(request: NextRequest) {
       supabase: session.supabase,
       organizationId: session.organizationId,
     });
-    businessIntelPrompt = buildGroundingPrompt(intel);
+    businessIntelPrompt = buildCompactGroundingPrompt(intel);
     completenessWarning = buildCompletenessWarning(intel);
   } catch {
     // Non-fatal — AI will work without grounding, just less accurately

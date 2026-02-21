@@ -714,6 +714,53 @@ export function buildGroundingPrompt(intel: BusinessIntelligence): string {
 }
 
 /**
+ * Build a COMPACT grounding context (max ~2KB) for AI generation calls.
+ * Full grounding prompt can be 10-15KB which causes parse failures.
+ */
+export function buildCompactGroundingPrompt(intel: BusinessIntelligence): string {
+  const parts: string[] = [];
+  parts.push("=== REAL BUSINESS DATA (use ONLY this, invent NOTHING) ===");
+
+  if (intel.profile) {
+    const p = intel.profile;
+    if (p.name) parts.push(`Business: ${p.name}`);
+    if (p.industry) parts.push(`Industry: ${p.industry}`);
+    if (p.description) parts.push(`About: ${p.description.slice(0, 300)}`);
+    if (p.usps) parts.push(`USPs: ${p.usps.slice(0, 300)}`);
+    if (p.targetAudience) parts.push(`Audience: ${p.targetAudience.slice(0, 200)}`);
+    if (p.preferredPhrases) parts.push(`Use these phrases: ${p.preferredPhrases}`);
+    if (p.avoidPhrases) parts.push(`AVOID: ${p.avoidPhrases}`);
+    if (p.tones?.length) parts.push(`Tone: ${p.tones.join(", ")}`);
+    if (p.website) parts.push(`Website: ${p.website}`);
+  }
+
+  // Key services from website (top 5)
+  if (intel.website?.pages.some(p => p.type === "services")) {
+    const servicesPage = intel.website.pages.find(p => p.type === "services");
+    if (servicesPage) parts.push(`Services (from website): ${servicesPage.content.slice(0, 400)}`);
+  }
+
+  // Contact info
+  if (intel.website?.pages.some(p => p.type === "contact")) {
+    const contactPage = intel.website.pages.find(p => p.type === "contact");
+    if (contactPage) parts.push(`Contact: ${contactPage.content.slice(0, 200)}`);
+  }
+
+  // Reputation summary (1 line)
+  if (intel.reputation?.sentiment) {
+    parts.push(`Reputation: ${intel.reputation.sentiment.slice(0, 150)}`);
+  }
+
+  // Industry trends (top 3)
+  if (intel.industryIntel?.trends.length) {
+    parts.push(`Industry trends: ${intel.industryIntel.trends.slice(0, 3).join("; ").slice(0, 300)}`);
+  }
+
+  parts.push("=== END DATA — INVENT NOTHING ===");
+  return parts.join("\n");
+}
+
+/**
  * Build a short completeness warning for the UI.
  */
 export function buildCompletenessWarning(intel: BusinessIntelligence): string | null {

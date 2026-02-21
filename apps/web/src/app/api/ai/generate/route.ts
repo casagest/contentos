@@ -4,7 +4,7 @@ import { getSessionUserWithOrg } from "@/lib/auth";
 import { routeAICall } from "@/lib/ai/multi-model-router";
 import {
   fetchBusinessIntelligence,
-  buildGroundingPrompt,
+  buildCompactGroundingPrompt,
 } from "@/lib/ai/business-intel";
 import { parseAIJson, JSON_FORMAT_RULES } from "@/lib/ai/parse-ai-json";
 import { buildDeterministicGeneration } from "@/lib/ai/deterministic";
@@ -304,14 +304,15 @@ export async function POST(request: NextRequest) {
     ? ((orgSettings?.businessProfile as Record<string, unknown>).compliance as string[])
     : [];
 
-  // --- Deep Business Intelligence ---
+  // --- Deep Business Intelligence (compact for generate — full prompt is too large) ---
   let businessIntelPrompt = "";
   try {
     const intel = await fetchBusinessIntelligence({
       supabase: session.supabase,
       organizationId: session.organizationId,
     });
-    businessIntelPrompt = buildGroundingPrompt(intel);
+    // Use compact version for generate (full grounding prompt is 5-15KB, too much)
+    businessIntelPrompt = buildCompactGroundingPrompt(intel);
   } catch {
     // Non-fatal
   }
