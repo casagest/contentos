@@ -7,12 +7,12 @@
   "ignoreCommand": "npx turbo-ignore @contentos/web",
   "regions": ["fra1"],
   "functions": {
-  "apps/web/src/app/api/ai/**/route.ts": {
-    "maxDuration": 60
-  },
-  "apps/web/src/app/api/cron/**/route.ts": {
-    "maxDuration": 300
-  }
+    "src/app/api/ai/**/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/**/route.ts": {
+      "maxDuration": 300
+    }
   },
   "crons": [
     {"path": "/api/cron/publish-scheduled", "schedule": "*/5 * * * *"},

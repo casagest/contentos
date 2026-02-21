@@ -44,7 +44,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           ? fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
           : email ? email[0].toUpperCase() : "U";
 
-        // Fetch org + business profile
+        // Fetch org + industry from organizations.settings JSONB
         let organizationId = "";
         let industry = "";
 
@@ -57,14 +57,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (userData?.organization_id) {
           organizationId = userData.organization_id;
 
-          const { data: bp } = await supabase
-            .from("business_profiles")
-            .select("industry")
-            .eq("organization_id", organizationId)
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("settings")
+            .eq("id", organizationId)
             .single();
 
-          if (bp?.industry) {
-            industry = bp.industry;
+          const settings = org?.settings as Record<string, unknown> | null;
+          const businessProfile = settings?.businessProfile as Record<string, unknown> | null;
+          if (businessProfile?.industry && typeof businessProfile.industry === "string") {
+            industry = businessProfile.industry;
           }
         }
 
