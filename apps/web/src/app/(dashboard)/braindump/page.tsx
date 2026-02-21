@@ -497,6 +497,7 @@ export default function BrainDumpPage() {
           objective,
           conversationMode: true,
           conversationHistory: messages,
+          skipCache: true,
         }),
       });
 

@@ -70,6 +70,8 @@ interface BrainDumpRequest {
   conversationHistory?: ConversationMessage[];
   /** Whether to use conversational mode with intent detection */
   conversationMode?: boolean;
+  /** Skip intent cache — force fresh AI generation */
+  skipCache?: boolean;
 }
 
 interface SessionContext {
@@ -703,29 +705,31 @@ export async function POST(request: NextRequest) {
     version: 4,
   });
 
-  const cached = await getIntentCache({
-    supabase: session.supabase,
-    organizationId: session.organizationId,
-    routeKey: ROUTE_KEY,
-    intentHash,
-  });
-
-  if (cached) {
-    await logAIUsageEvent({
+  if (!body.skipCache) {
+    const cached = await getIntentCache({
       supabase: session.supabase,
       organizationId: session.organizationId,
-      userId: session.user.id,
       routeKey: ROUTE_KEY,
       intentHash,
-      provider: "cache",
-      model: "intent-cache",
-      mode: "deterministic",
-      cacheHit: true,
-      success: true,
-      metadata: { source: "ai_request_cache", objective },
     });
 
-    return NextResponse.json(withCacheMeta(cached.response, { createdAt: cached.createdAt }));
+    if (cached) {
+      await logAIUsageEvent({
+        supabase: session.supabase,
+        organizationId: session.organizationId,
+        userId: session.user.id,
+        routeKey: ROUTE_KEY,
+        intentHash,
+        provider: "cache",
+        model: "intent-cache",
+        mode: "deterministic",
+        cacheHit: true,
+        success: true,
+        metadata: { source: "ai_request_cache", objective },
+      });
+
+      return NextResponse.json(withCacheMeta(cached.response, { createdAt: cached.createdAt }));
+    }
   }
 
   const deterministicPayload = deterministicFallback(
