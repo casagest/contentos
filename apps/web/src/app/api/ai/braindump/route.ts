@@ -48,9 +48,13 @@ import {
   type Platform as CreativePlatform,
 } from "@/lib/ai/creative-intelligence";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
 const MAX_URLS = 3;
 const FETCH_TIMEOUT_MS = 10_000;
+const AI_TIMEOUT_MS = Number(process.env.BRAINDUMP_AI_TIMEOUT_MS || 45_000);
 const VALID_PLATFORMS = ["facebook", "instagram", "tiktok", "youtube"] as const;
 const ROUTE_KEY = "braindump:v4";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -78,6 +82,25 @@ interface SessionContext {
   supabase: any;
   organizationId: string;
   userId: string;
+}
+
+class AITimeoutError extends Error {
+  constructor() {
+    super("BRAINDUMP_AI_TIMEOUT");
+    this.name = "AITimeoutError";
+  }
+}
+
+async function withAICallTimeout<T>(promise: Promise<T>, timeoutMs = AI_TIMEOUT_MS): Promise<T> {
+  let timeoutRef: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutRef = setTimeout(() => reject(new AITimeoutError()), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutRef) clearTimeout(timeoutRef);
+  }
 }
 
 function extractUrls(text: string): string[] {
@@ -527,14 +550,16 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        const aiResult = await routeAICall({
-          task: "braindump",
-          messages: [
-            { role: "system", content: buildBrainDumpAnswerSystemPrompt() },
-            { role: "user", content: rawInput },
-          ],
-          maxTokens: 1200,
-        });
+        const aiResult = await withAICallTimeout(
+          routeAICall({
+            task: "braindump",
+            messages: [
+              { role: "system", content: buildBrainDumpAnswerSystemPrompt() },
+              { role: "user", content: rawInput },
+            ],
+            maxTokens: 1200,
+          })
+        );
 
         return NextResponse.json({
           type: "conversation",
@@ -1034,15 +1059,17 @@ export async function POST(request: NextRequest) {
 
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
-      aiResult = await routeAICall({
-        task: "braindump",
-        messages: [
-          { role: "system", content: enrichedSystemPrompt },
-          { role: "user", content: userMessage + (attempt === 1 ? schemaRetryHint : "") },
-          { role: "assistant", content: "{" },
-        ],
-        maxTokens,
-      });
+      aiResult = await withAICallTimeout(
+        routeAICall({
+          task: "braindump",
+          messages: [
+            { role: "system", content: enrichedSystemPrompt },
+            { role: "user", content: userMessage + (attempt === 1 ? schemaRetryHint : "") },
+            { role: "assistant", content: "{" },
+          ],
+          maxTokens,
+        })
+      );
 
       aiResult.text = "{" + (aiResult.text || "");
       resolvedModel = aiResult.model;
@@ -1078,6 +1105,45 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
+    if (error instanceof AITimeoutError) {
+      const timeoutPayload = deterministicFallback(
+        "AI a depasit timpul limita. Am folosit fallback deterministic."
+      );
+
+      await setIntentCache({
+        supabase: session.supabase,
+        organizationId: session.organizationId,
+        userId: session.user.id,
+        routeKey: ROUTE_KEY,
+        intentHash,
+        provider: "template",
+        model: "template",
+        response: timeoutPayload,
+        estimatedCostUsd: 0,
+        ttlMs: ERROR_CACHE_TTL_MS,
+      });
+
+      await logAIUsageEvent({
+        supabase: session.supabase,
+        organizationId: session.organizationId,
+        userId: session.user.id,
+        routeKey: ROUTE_KEY,
+        intentHash,
+        provider: "template",
+        model: "template",
+        mode: "deterministic",
+        success: true,
+        metadata: {
+          reason: "ai_timeout",
+          objective,
+          objectiveValueConfig: valueConfig,
+          roiGate: roiDecision,
+        },
+      });
+
+      return NextResponse.json(timeoutPayload);
+    }
+
     const status =
       typeof error === "object" &&
       error !== null &&
