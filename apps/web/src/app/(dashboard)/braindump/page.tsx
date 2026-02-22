@@ -315,6 +315,7 @@ function YouTubeCard({ data }: { data: YouTubeResult }) {
 const CHAT_HISTORY_KEY = "contentos:braindump:history";
 const RESULTS_CACHE_KEY = "contentos:braindump:results";
 const MAX_HISTORY = 50;
+const BRAINDUMP_REQUEST_TIMEOUT_MS = 45_000;
 
 function loadHistory(): ConversationMessage[] {
   try {
@@ -485,10 +486,14 @@ export default function BrainDumpPage() {
       if (p > 70 && selectedPlatforms.length > 2) setVisiblePlatforms((v) => [...new Set([...v, selectedPlatforms[2] ?? "tiktok"])]);
     }, 200);
 
+    let requestTimeoutRef: ReturnType<typeof setTimeout> | null = null;
     try {
+      const controller = new AbortController();
+      requestTimeoutRef = setTimeout(() => controller.abort(), BRAINDUMP_REQUEST_TIMEOUT_MS);
       const response = await fetch("/api/ai/braindump", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           rawInput: input,
           platforms: selectedPlatforms,
@@ -544,9 +549,14 @@ export default function BrainDumpPage() {
       setTimeout(() => setPhase("done"), 500);
     } catch (err) {
       clearInterval(progressInterval);
-      setError(err instanceof Error ? err.message : "Eroare necunoscută");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Cererea a durat prea mult. Incearca din nou.");
+      } else {
+        setError(err instanceof Error ? err.message : "Eroare necunoscută");
+      }
       setPhase("idle");
     } finally {
+      if (requestTimeoutRef) clearTimeout(requestTimeoutRef);
       setIsProcessing(false);
     }
   }, [inputText, messages, selectedPlatforms, objective, isProcessing]);
